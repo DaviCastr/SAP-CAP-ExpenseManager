@@ -1,0 +1,47 @@
+{
+    "[development]":{
+        "requires": {
+            "db": {
+                "credentials": {
+                    "database": ":memory:"
+                },
+                "kind": "sqlite"
+            },
+            "auth":{
+                "kind":"basic",
+                "users":{
+                    "davi":{
+                        "password": "123456",
+                        "roles": ["admin"],
+                        "attr": {
+                            "id": 1,
+                            "groups": ["group1", "group2"]
+                        }
+                    },
+                    "beatriz":{
+                        "password": "123456",
+                        "roles": ["read_only_user"],
+                        "attr": {
+                            "id": 2,
+                            "groups": ["group1"]
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "[production]": {
+        "requires": {
+            "db":{
+                "kind": "hana"
+            },
+            "uaa": {
+                "kind": "xsuaa"
+            }
+        },
+        "hana": {
+            "deploy-format": "hdbtable"
+        }
+    }
+
+}

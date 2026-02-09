@@ -1,11 +1,10 @@
-import { Request, User } from '@sap/cds';
+import { User } from '@sap/cds';
 import { AbstractError } from '@/errors';
 import { Entity } from '@models/GestorDeGastos';
 import { Either, left, right } from '@sweet-monads/either';
 import { EntityService } from './protocols';
 import { BaseServiceImplementation } from '../base/implementation';
 import { ShareRepository } from '@/repositories/share';
-import { PermissionDenied } from '@/errors/permission-denied';
 import { PersonRepository } from '@/repositories/person';
 import { EntityRepository } from '@/repositories/entity';
 import { DuplicityError } from '@/errors/duplicity';

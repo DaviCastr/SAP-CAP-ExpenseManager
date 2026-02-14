@@ -23,7 +23,7 @@ entity Persons : cuid, managed {
             Income              : Decimal      @mandatory;
             Currency            : Currency     @mandatory;
             Email               : String(100)  @mandatory;
-            Phoene              : String(20);
+            Phone               : String(20);
             Share               : Composition of many Shares
                                       on Share.Person = $self;
 

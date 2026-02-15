@@ -21,25 +21,193 @@
 // }
 
 import Decimal from 'decimal.js';
+import { ShareModel } from '@/models/share';
+import { CategoryModel } from '@/models/category';
+import { CardModel } from '@/models/card';
 
 type PersonProperties = {
-    Name                : string;
-    Image               : Buffer;
-    ImageType           : string;
-    Income              : Decimal;
-    Currency            : string;
-    Email               : string;
-    Phoene              : string;
-    Share               : Composition of many Shares on Share.Person = $self;
-    ExpenseTarget       : Decimal      @mandatory;
-    AmountToSave        : Decimal;
-    TotalExpenses       : Decimal;
-    TotalExpensesMonth  : Decimal;
-    TotalExpensesPayed  : Decimal;
-    TotalExpensesToPay  : Decimal;
-    TotalExpensesClosed : Decimal;
-    MonthCriticallity   : Integer;
-    CriticallityToPay   : Integer;
-    Category            : Composition of many Categories on Category.Person = $self;
-    Card                : Composition of many Cards on Card.Person = $self;
+    Id: string;
+    Name: string;
+    Image: Buffer;
+    ImageType: string;
+    Income: Decimal;
+    Currency: string;
+    Email: string;
+    Phone: string;
+    Share: ShareModel[];
+    ExpenseTarget: Decimal;
+    AmountToSave: Decimal;
+    TotalExpenses: Decimal;
+    TotalExpensesMonth: Decimal;
+    TotalExpensesPayed: Decimal;
+    TotalExpensesToPay: Decimal;
+    TotalExpensesClosed: Decimal;
+    MonthCriticallity: number;
+    CriticallityToPay: number;
+    Category: CategoryModel[];
+    Card: CardModel[];  
+    CreatedAt?: string;
+    CreatedBy?: string;
+    ModifiedAt?: string;
+    ModifiedBy?: string;
+}
+
+export class PersonModel {
+
+    constructor(private props: PersonProperties) { }
+
+    public get Id() {
+
+        return this.props.Id;
+
+    }
+
+    public get Name() {
+
+        return this.props.Name;
+
+    }
+
+    public get Image() {
+
+        return this.props.Image;
+
+    }
+
+    public get ImageType() {
+
+        return this.props.ImageType;
+
+    }
+
+    public get Income() {
+
+        return this.props.Income;
+
+    }
+
+    public get Currency() {
+
+        return this.props.Currency;
+
+    }
+
+    public get Email() {
+
+        return this.props.Email;
+
+    }
+
+    public get Phone() {
+
+        return this.props.Phone;
+
+    }
+
+    public get Share() {
+
+        return this.props.Share;
+
+    }
+
+    public get ExpenseTarget() {
+
+        return this.props.ExpenseTarget;
+
+    }
+
+    public get AmountToSave() {
+
+        return this.props.AmountToSave;
+
+    }
+
+    public get TotalExpenses() {
+
+        return this.props.TotalExpenses;
+
+    }
+
+    public get TotalExpensesMonth() {
+
+        return this.props.TotalExpensesMonth;
+
+    }
+
+    public get TotalExpensesPayed() {
+
+        return this.props.TotalExpensesPayed;
+
+    }
+
+    public get TotalExpensesToPay() {
+
+        return this.props.TotalExpensesToPay;
+
+    }
+
+    public get TotalExpensesClosed() {
+
+        return this.props.TotalExpensesClosed;
+
+    }
+
+    public get MonthCriticallity() {
+
+        return this.props.MonthCriticallity;
+
+    }
+
+    public get CriticallityToPay() {
+
+        return this.props.CriticallityToPay;
+
+    }
+
+    public get Category() {
+
+        return this.props.Category;
+
+    }
+
+    public get Card() {
+
+        return this.props.Card;
+
+    }
+
+    public get CreatedAt() {
+
+        return this.props.CreatedAt;
+
+    }
+
+    public get CreatedBy() {
+
+        return this.props.CreatedBy;
+
+    }
+
+    public get ModifiedAt() {
+
+        return this.props.ModifiedAt;
+
+    }
+
+    public get ModifiedBy() {
+
+        return this.props.ModifiedBy;
+
+    }
+
+    public setDefaultEmailDomain() {
+
+        if (!this.props.Email?.includes("@")) {
+
+            this.props.Email = `${this.props.Email}@gmail.com`;
+
+        }
+
+    }
+
 }

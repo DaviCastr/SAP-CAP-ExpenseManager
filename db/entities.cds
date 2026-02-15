@@ -1,13 +1,9 @@
 namespace app.dflc.gestordegastos.entities;
 
 using {
-    Country,
     Currency,
-    Language,
-    User,
     cuid,
-    managed,
-    temporal
+    managed
 } from '@sap/cds/common';
 
 entity Persons : cuid, managed {
@@ -131,7 +127,7 @@ entity Invoices : cuid, managed {
 
 
 entity Transactions : cuid, managed {
-    Indentifier       : UUID;
+    Identifier       : UUID;
     Date              : Date;
 
     @Semantics.amount.currencyCode: 'Moeda'

@@ -1,20 +1,21 @@
-// entity Shares : cuid, managed {
-//     Person : Association to Persons @mandatory;
-//     Email  : String(100)            @mandatory;
+// entity Backups : cuid, managed {
+//     Backup     : LargeBinary
+//     BackupType : String;
 // }
 
-type ShareProperties = {
+type BackupProperties = {
     Id: string;
-    Email: string;
+    Backup: Buffer;
+    BackupType: string;
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
     ModifiedBy?: string;
 }
 
-export class ShareModel {
+export class BackupModel {
 
-    constructor(private props: ShareProperties) { }
+    constructor(private props: BackupProperties) { }
 
     public get Id() {
 
@@ -22,9 +23,15 @@ export class ShareModel {
 
     }
 
-    public get Email() {
+    public get Backup() {
 
-        return this.props.Email;
+        return this.props.Backup;
+
+    }
+
+    public get BackupType() {
+
+        return this.props.BackupType;
 
     }
 
@@ -49,16 +56,6 @@ export class ShareModel {
     public get ModifiedBy() {
 
         return this.props.ModifiedBy;
-
-    }
-
-    public setDefaultEmailDomain() {
-
-        if (!this.props.Email?.includes("@")) {
-
-            this.props.Email = `${this.props.Email}@gmail.com`;
-
-        }
 
     }
 

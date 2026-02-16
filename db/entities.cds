@@ -1,4 +1,4 @@
-namespace app.dflc.gestordegastos.entities;
+namespace apps.dflc.gestordegastos.entities;
 
 using {
     Currency,

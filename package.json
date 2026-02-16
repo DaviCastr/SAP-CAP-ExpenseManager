@@ -1,11 +1,12 @@
 {
-    "name": "GestorDeGastos",
+    "name": "GestorDeGastos-Mvc-Ts",
     "version": "1.0.0",
     "description": "Gestor de Gastos",
     "dependencies": {
         "@cap-js/hana": "^2.2.0",
         "@sap/cds": "^9.2.0",
         "@sap/xssec": "^4.9.1",
+        "@sweet-monads/either": "^3.3.1",
         "decimal.js": "^10.6.0",
         "express": "^4.21.2",
         "git-commit-msg-linter": "^5.0.8",
@@ -33,16 +34,57 @@
     "private": true,
     "cds": {
         "requires": {
-            "[production]": {
-                "db": "hana",
-                "auth": "xsuaa"
+            "[development]": {
+                "requires": {
+                    "db": {
+                        "credentials": {
+                            "database": ":memory:"
+                        },
+                        "kind": "sqlite"
+                    },
+                    "auth": {
+                        "kind": "basic",
+                        "users": {
+                            "davi": {
+                                "password": "123456",
+                                "roles": [
+                                    "admin"
+                                ],
+                                "attr": {
+                                    "id": 1,
+                                    "groups": [
+                                        "group1",
+                                        "group2"
+                                    ]
+                                }
+                            },
+                            "beatriz": {
+                                "password": "123456",
+                                "roles": [
+                                    "read_only_user"
+                                ],
+                                "attr": {
+                                    "id": 2,
+                                    "groups": [
+                                        "group1"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
             },
-            "auth": {
-                "[development]": {
-                    "kind": "dummy"
+            "[production]": {
+                "requires": {
+                    "db": {
+                        "kind": "hana"
+                    },
+                    "uaa": {
+                        "kind": "xsuaa"
+                    }
                 },
-                "[production]": {
-                    "kind": "xsuaa"
+                "hana": {
+                    "deploy-format": "hdbtable"
                 }
             }
         }

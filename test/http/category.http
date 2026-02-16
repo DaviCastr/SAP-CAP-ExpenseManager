@@ -1,0 +1,84 @@
+@server=http://localhost:4004
+@username=beatriz
+@password=123456
+
+
+### Categories
+# @name Categories_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories
+Authorization: Basic {{username}}:{{password}}
+
+
+### Categories Drafts GET
+# @name Categories_Drafts_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories?$filter=(IsActiveEntity eq false)
+Authorization: Basic {{username}}:{{password}}
+
+
+### Categories Draft POST
+# @name Categories_Draft_POST
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Name-26136527",
+  "ImageType": "ImageType-26136527",
+  "Person": {
+    "ID": "14546063-f2d7-46a7-b877-6c3aa31ffb8a"
+  },
+  "createdAt": "2004-02-06T00:00:00.000Z",
+  "createdBy": "createdBy.fk72n@example.com",
+  "modifiedAt": "2010-02-21T00:00:00.000Z",
+  "modifiedBy": "modifiedBy.fk72n@example.com"
+}
+
+
+### Result from POST request above
+@draftID={{Categories_Draft_POST.response.body.$.ID}}
+
+
+### Categories Draft PATCH
+# @name Categories_Draft_Patch
+PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Name-26136527",
+  "ImageType": "ImageType-26136527",
+  "Person": {
+    "ID": "7070680a-ca80-48dc-864b-5fa155cfd7b3"
+  },
+  "createdAt": "2004-02-06T00:00:00.000Z",
+  "createdBy": "createdBy.fk72n@example.com",
+  "modifiedAt": "2010-02-21T00:00:00.000Z",
+  "modifiedBy": "modifiedBy.fk72n@example.com"
+}
+
+
+### Categories Draft Prepare
+# @name Categories_Draft_Prepare
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories(ID={{draftID}},IsActiveEntity=false)/CategoryService.draftPrepare
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Categories Draft Activate
+# @name Categories_Draft_Activate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories(ID={{draftID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Categories Draft Inactivate
+# @name Categories_Draft_Inactivate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories(ID={{draftID}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}

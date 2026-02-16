@@ -7,13 +7,15 @@
 // }
 
 import { TransactionModel } from '@/models/transaction';
+import { Readable } from 'stream';
 
-type CategoryProperties = {
+export type CategoryProperties = {
     Id: string;
+    PersonId: string;
     Name: string;
-    Image: Buffer;
+    Image?: Readable;
     ImageType: string;
-    Transactions: TransactionModel[];
+    Transactions?: TransactionModel[];
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
@@ -22,59 +24,69 @@ type CategoryProperties = {
 
 export class CategoryModel {
 
-    constructor(private props: CategoryProperties) { }
+    constructor(private properties: CategoryProperties) { }
+
+    public static with(properties: CategoryProperties): CategoryModel {
+        return new CategoryModel(properties);
+    }
 
     public get Id() {
 
-        return this.props.Id;
+        return this.properties.Id;
+
+    }
+
+    public get PersonId() {
+
+        return this.properties.PersonId;
 
     }
 
     public get Name() {
 
-        return this.props.Name;
+        return this.properties.Name;
 
     }
 
     public get Image() {
 
-        return this.props.Image;
+        return this.properties.Image;
 
     }
 
     public get ImageType() {
 
-        return this.props.ImageType;
+        return this.properties.ImageType;
 
     }
 
     public get Transactions() {
 
-        return this.props.Transactions;
+        return this.properties.Transactions;
 
     }
 
     public get CreatedAt() {
 
-        return this.props.CreatedAt;
+        return this.properties.CreatedAt;
 
     }
 
     public get CreatedBy() {
 
-        return this.props.CreatedBy;
+        return this.properties.CreatedBy;
 
     }
 
     public get ModifiedAt() {
 
-        return this.props.ModifiedAt;
+        return this.properties.ModifiedAt;
 
     }
 
     public get ModifiedBy() {
 
-        return this.props.ModifiedBy;
+        return this.properties.ModifiedBy;
 
     }
 

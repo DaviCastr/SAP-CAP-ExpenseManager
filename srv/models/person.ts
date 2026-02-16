@@ -24,17 +24,17 @@ import Decimal from 'decimal.js';
 import { ShareModel } from '@/models/share';
 import { CategoryModel } from '@/models/category';
 import { CardModel } from '@/models/card';
+import { Readable } from 'stream';
 
 type PersonProperties = {
     Id: string;
     Name: string;
-    Image: Buffer;
+    Image?: Readable;
     ImageType: string;
     Income: Decimal;
     Currency: string;
     Email: string;
     Phone: string;
-    Share: ShareModel[];
     ExpenseTarget: Decimal;
     AmountToSave: Decimal;
     TotalExpenses: Decimal;
@@ -44,8 +44,9 @@ type PersonProperties = {
     TotalExpensesClosed: Decimal;
     MonthCriticallity: number;
     CriticallityToPay: number;
-    Category: CategoryModel[];
-    Card: CardModel[];  
+    Share?: ShareModel[];
+    Category?: CategoryModel[];
+    Card?: CardModel[];  
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
@@ -55,6 +56,10 @@ type PersonProperties = {
 export class PersonModel {
 
     constructor(private props: PersonProperties) { }
+
+    public static with(properties: PersonProperties): PersonModel {
+        return new PersonModel(properties);
+    }
 
     public get Id() {
 

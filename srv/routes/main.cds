@@ -1,13 +1,14 @@
-using {app.dflc.gestordegastos.entities as entities} from '../../db/entities';
+using {apps.dflc.gestordegastos.entities as entities} from '../../db/entities';
 
 @path    : '/service/GestorDeGastos'
 @requires: 'authenticated-user'
+
 service GestorDeGastos {
 
     @cds.redirection.target
 
     @odata.draft.enabled: true
-    @odata.draft.bypass
+    //@odata.draft.bypass
     entity Persons      as projection on entities.Persons;
 
     @odata.draft.bypass

@@ -1,11 +1,12 @@
 // entity Shares : cuid, managed {
-//     Person : Association to Persons @mandatory;
+//     Share : Association to Shares @mandatory;
 //     Email  : String(100)            @mandatory;
 // }
 
 type ShareProperties = {
     Id: string;
-    Email: string;
+    User: string;
+    Permission: number;
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
@@ -16,15 +17,25 @@ export class ShareModel {
 
     constructor(private props: ShareProperties) { }
 
+    public static with(properties: ShareProperties): ShareModel {
+        return new ShareModel(properties);
+    }
+
     public get Id() {
 
         return this.props.Id;
 
     }
 
-    public get Email() {
+    public get User() {
 
-        return this.props.Email;
+        return this.props.User;
+
+    }
+
+    public get Permission() {
+
+        return this.props.Permission;
 
     }
 
@@ -49,16 +60,6 @@ export class ShareModel {
     public get ModifiedBy() {
 
         return this.props.ModifiedBy;
-
-    }
-
-    public setDefaultEmailDomain() {
-
-        if (!this.props.Email?.includes("@")) {
-
-            this.props.Email = `${this.props.Email}@gmail.com`;
-
-        }
 
     }
 

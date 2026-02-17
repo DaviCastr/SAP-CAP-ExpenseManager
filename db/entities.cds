@@ -3,7 +3,7 @@ namespace apps.dflc.gestordegastos.entities;
 using {
     Currency,
     cuid,
-    managed
+    managed,
 } from '@sap/cds/common';
 
 entity Persons : cuid, managed {
@@ -20,8 +20,8 @@ entity Persons : cuid, managed {
             Currency            : Currency     @mandatory;
             Email               : String(100)  @mandatory;
             Phone               : String(20);
-            Share               : Composition of many Shares
-                                      on Share.Person = $self;
+            Shares              : Composition of many Shares
+                                      on Shares.Person = $self;
 
             @Semantics.amount.currencyCode: 'Currency'
             ExpenseTarget       : Decimal      @mandatory;
@@ -71,8 +71,9 @@ entity Categories : cuid, managed {
 }
 
 entity Shares : cuid, managed {
-    Person : Association to Persons @mandatory;
-    Email  : String(100)            @mandatory;
+    Person    : Association to Persons @mandatory;
+    User      : String(255)            @mandatory;
+    Permission : Permissions            @assert.range: true;
 }
 
 entity Cards : cuid, managed {
@@ -127,7 +128,7 @@ entity Invoices : cuid, managed {
 
 
 entity Transactions : cuid, managed {
-    Identifier       : UUID;
+    Identifier        : UUID;
     Date              : Date;
 
     @Semantics.amount.currencyCode: 'Moeda'
@@ -172,6 +173,11 @@ annotate Transactions with {
 
 annotate Backups with {
     modifiedAt @odata.etag
+}
+
+type Permissions : Integer enum {
+    Viewer = 1;
+    Modifier = 2;
 }
 
 type SimulationReturn {

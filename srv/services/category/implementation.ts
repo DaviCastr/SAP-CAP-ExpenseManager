@@ -1,4 +1,4 @@
-import { User } from '@sap/cds';
+import { Request, User } from '@sap/cds';
 import { AbstractError } from '@/errors';
 import { Category } from '@models/GestorDeGastos';
 import { Either, left, right } from '@sweet-monads/either';
@@ -10,10 +10,99 @@ import { CategoryModel } from '@/models/category';
 export class CategoryServiceImplementation extends BaseServiceImplementation implements CategoryService {
 
     constructor(private readonly repository: CategoryRepository) {
+
         super();
+
     }
 
-    public async beforeUpdate(Category: Category, LoggedUser: User): Promise<Either<AbstractError, boolean>> {
+
+    public beforeRead(Request: Request): Either<AbstractError, boolean> {
+
+        try {
+
+            if (Request.user && Request.user.id) {
+
+                if (Request.query?.SELECT) {
+
+                    if (!Array.isArray(Request.query.SELECT.where)) {
+                        Request.query.SELECT.where = [];
+                    }
+
+                    if (Request.query.SELECT.where.length > 0) {
+                        Request.query.SELECT.where.push('and');
+                    }
+
+                    Request.query.SELECT.where.push({
+                        xpr: [
+                            '(',
+                            { ref: ['Person', 'createdBy'] },
+                            '=',
+                            { val: Request.user.id },
+                            'or',
+                            { ref: ['Person', 'Shares', 'User'] },
+                            '=',
+                            { val: Request.user.id },
+                            ')'
+                        ]
+                    });
+
+                    // Request.query.SELECT.where.push(
+                    //     { ref: ['createdBy'] },
+                    //     '=',
+                    //     {
+                    //         //val: req.user.id//attr.logonName
+                    //         val: Request.user.id//attr.logonName
+
+                    //     }
+                    // );
+
+                    // Request.query.SELECT.where.push(
+                    //     'OR',
+                    //     { ref: ['Person', 'Shares', 'User'] },
+                    //     '=',
+                    //     {
+                    //         //val: req.user.id//attr.logonName
+                    //         val: Request.user.id
+                    //     }
+                    // );
+
+                }
+            }
+
+            return right(true);
+
+        } catch (error) {
+
+            const errorInstance: Error = error as Error;
+
+            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
+
+        }
+
+    }
+
+
+    public async beforeCreate(Category: Category, LoggedUser: User): Promise<Either<AbstractError, boolean>> {
+
+        return this.checkPermission(Category, LoggedUser, 2);
+
+    }
+
+
+    public async beforeEdit(Category: Category, LoggedUser: User): Promise<Either<AbstractError, boolean>> {
+
+        return this.checkPermission(Category, LoggedUser, 2);
+
+    }
+
+
+    public async beforeDelete(Category: Category, LoggedUser: User): Promise<Either<AbstractError, boolean>> {
+
+        return this.checkPermission(Category, LoggedUser, 2);
+
+    }
+
+    private async checkPermission(Category: Category, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
 
         try {
 
@@ -40,7 +129,7 @@ export class CategoryServiceImplementation extends BaseServiceImplementation imp
 
             if (oCategory) {
 
-                const oCheckPermission = await this.checkModificationPermissionByPerson(LoggedUser, oCategory.PersonId as string);
+                const oCheckPermission = await this.checkPermissionByPersonId(LoggedUser, oCategory.PersonId as string, Permision);
 
                 if (oCheckPermission.isLeft()) {
 
@@ -56,10 +145,10 @@ export class CategoryServiceImplementation extends BaseServiceImplementation imp
 
             const errorInstance: Error = error as Error;
 
-            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string))
-            // console.error("Erro ao filtrar registros:", erro);
-            // req.error(400, "Erro ao processar a consulta:" + erro);
+            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
+
         }
 
     }
+
 }

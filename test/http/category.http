@@ -1,5 +1,5 @@
 @server=http://localhost:4004
-@username=beatriz
+@username=davi
 @password=123456
 
 
@@ -11,7 +11,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Categories Drafts GET
 # @name Categories_Drafts_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories?$filter=(IsActiveEntity eq false)
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories?$filter=(IsActiveEntity eq true)
 Authorization: Basic {{username}}:{{password}}
 
 
@@ -78,6 +78,24 @@ Authorization: Basic {{username}}:{{password}}
 ### Categories Draft Inactivate
 # @name Categories_Draft_Inactivate
 POST {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories(ID={{draftID}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Categories Delete
+# @name Categories_DELETE_Active
+DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories(ID={{draftID}},IsActiveEntity=true)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Categories Delete Draft
+# @name Categories_DELETE_draft
+DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 

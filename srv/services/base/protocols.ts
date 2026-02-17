@@ -3,5 +3,5 @@ import { User } from "@sap/cds";
 import { Either } from "@sweet-monads/either";
 
 export interface BaseService {
-    checkModificationPermissionByPerson(LoggedUser: User, PersonId: string): Promise<Either<PermissionDenied, boolean>>;
+    checkPermissionByPersonId(LoggedUser: User, PersonId: string, Permision: number): Promise<Either<PermissionDenied, boolean>>;
 }

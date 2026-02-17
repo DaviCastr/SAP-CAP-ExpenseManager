@@ -44,7 +44,7 @@ type PersonProperties = {
     TotalExpensesClosed: Decimal;
     MonthCriticallity: number;
     CriticallityToPay: number;
-    Share?: ShareModel[];
+    Shares?: ShareModel[];
     Category?: CategoryModel[];
     Card?: CardModel[];  
     CreatedAt?: string;
@@ -109,9 +109,9 @@ export class PersonModel {
 
     }
 
-    public get Share() {
+    public get Shares() {
 
-        return this.props.Share;
+        return this.props.Shares;
 
     }
 

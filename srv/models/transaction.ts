@@ -34,6 +34,12 @@ export class TransactionModel {
 
     constructor(private props: TransactionProperties) { }
 
+    public static with(properties: TransactionProperties): TransactionModel {
+
+        return new TransactionModel(properties);
+    
+    }
+
     public get Id() {
 
         return this.props.Id;

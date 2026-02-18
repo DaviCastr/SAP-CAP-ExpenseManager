@@ -25,6 +25,7 @@ import { ShareModel } from '@/models/share';
 import { CategoryModel } from '@/models/category';
 import { CardModel } from '@/models/card';
 import { Readable } from 'stream';
+import { CurrencyModel } from './currency';
 
 type PersonProperties = {
     Id: string;
@@ -32,7 +33,7 @@ type PersonProperties = {
     Image?: Readable;
     ImageType: string;
     Income: Decimal;
-    Currency: string;
+    Currency?: CurrencyModel;
     Email: string;
     Phone: string;
     ExpenseTarget: Decimal;

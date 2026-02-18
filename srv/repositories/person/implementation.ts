@@ -5,6 +5,7 @@ import { PersonModel } from "@/models/person";
 import { Person, Persons } from "@models/GestorDeGastos";
 import { PersonRepository } from "./protocols";
 import { oPersonRouteFactory } from "@/factories/routes/person";
+import { CurrencyModel } from "@/models/currency";
 
 
 export class PersonRepositoryImplementation implements PersonRepository {
@@ -41,12 +42,20 @@ export class PersonRepositoryImplementation implements PersonRepository {
 
         return Persons.map((Person: Person) => {
 
+            const oCurrencyModel = CurrencyModel.with({
+                Code: Person.Currency?.code as string,
+                Name: Person.Currency?.name as string,
+                Description: Person.Currency?.descr as string,
+                Symbol: Person.Currency?.symbol as string,
+                MinorUnit: Person.Currency?.minorUnit as number
+            });
+
             return PersonModel.with({
                 Id: Person.ID as string,
                 Name: Person.Name as string,
                 ImageType: Person.ImageType as string,
                 Income: Person.Income as unknown as Decimal,
-                Currency: Person.Currency as string,
+                Currency: oCurrencyModel,
                 Email: Person.Email as string,
                 Phone: Person.Phone as string,
                 ExpenseTarget: Person.ExpenseTarget as unknown as Decimal,

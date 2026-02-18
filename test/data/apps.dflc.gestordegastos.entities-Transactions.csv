@@ -1,1 +1,3 @@
 ID,Identifier,Date,TotalAmount,Amount,Currency_code,TotalInstallments,Installment,Description,Invoice_ID,Category_ID,createdAt,createdBy,modifiedAt,modifiedBy
+13312572-4546-48fd-8e9d-8ca399889f34,13312572-8891-4442-aa7b-0dc8b2771ab7,2021-01-10,15.03,97,226,60,24,Description-13312572,26228877-ca30-4944-910e-d793702887c4,19377604-a0f3-4376-9bcb-ef286b1a7103,2014-12-21T00:00:00.000Z,createdBy.7xc1o@example.org,2021-03-29T00:00:00.000Z,modifiedBy.7xc1o@example.org
+13312573-1d3f-4628-b625-33151c4ce424,13312573-c2b1-406b-b17a-bd4a774e9df7,2005-11-11,40.07,85.66,226,96,40,Description-13312573,26228877-ca30-4944-910e-d793702887c4,19377604-a0f3-4376-9bcb-ef286b1a7103,2023-06-03T00:00:00.000Z,createdBy.7xc1p@example.org,2003-09-13T00:00:00.000Z,modifiedBy.7xc1p@example.net

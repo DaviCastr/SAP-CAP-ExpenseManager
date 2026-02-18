@@ -11,3 +11,5 @@ using from './routes/share';
 //Category
 using from './routes/category';
 
+//Transaction
+using from './routes/transaction';

@@ -11,7 +11,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Categories Drafts GET
 # @name Categories_Drafts_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories?$filter=(IsActiveEntity eq true)
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories?$filter=(IsActiveEntity eq false)
 Authorization: Basic {{username}}:{{password}}
 
 

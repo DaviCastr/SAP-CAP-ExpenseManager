@@ -4,15 +4,23 @@
 //       minorUnit : Int16     @(title : '{i18n>CurrencyMinorUnit}');
 // }
 
-type CurrencyProperties = {
+export type CurrencyProperties = {
     Code: string;
+    Name: string;
+    Description: string;
     Symbol: string;
     MinorUnit: number;
 }
 
 export class CurrencyModel {
-    
+
     constructor(private props: CurrencyProperties) { }
+
+    public static with(properties: CurrencyProperties): CurrencyModel {
+
+        return new CurrencyModel(properties);
+
+    }
 
     public get Code() {
 

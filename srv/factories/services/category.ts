@@ -1,11 +1,18 @@
-import { CategoryService, CategoryServiceImplementation } from "@/services/category";
-import { CategoryRepositoryImplementation } from "@/repositories/category";
+import { CategoryService } from "@/services/category";
+import { CategoryServiceImplementation } from "@/services/category/implementation";
+import { oCategoryRepositoryFactory } from "../repositories/category";
+import { oTransactionRepositoryFactory } from "../repositories/transaction";
+import { oPersonRepositoryFactory } from "../repositories/person";
+import { oShareRepositoryFactory } from "../repositories/share";
 
 const makeCustomerService = (): CategoryService => {
 
-    const oCategoryRepository = new CategoryRepositoryImplementation();
-
-    return new CategoryServiceImplementation(oCategoryRepository);
+    return new CategoryServiceImplementation(
+        oPersonRepositoryFactory,
+        oShareRepositoryFactory,
+        oCategoryRepositoryFactory,
+        oTransactionRepositoryFactory
+    );
 
 }
 

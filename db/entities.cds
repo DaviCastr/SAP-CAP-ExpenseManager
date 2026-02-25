@@ -74,7 +74,15 @@ entity Shares : cuid, managed {
     Person    : Association to Persons @mandatory;
     User      : String(255)            @mandatory;
     Permission : Permissions            @assert.range: true;
+    //Pensar se faço Entities: composi...
 }
+
+// entity Entities : cuid, managed {
+//     Share    : Association to Share @mandatory;
+//     Entity : enum...
+//     Permission : Permissions            @assert.range: true; 
+//     //Pensar se faço Entities: composi...
+// }
 
 entity Cards : cuid, managed {
 
@@ -141,7 +149,7 @@ entity Transactions : cuid, managed {
     Installment       : Integer;
     Description       : String(255);
     Invoice           : Association to Invoices @mandatory; //@assert.target
-    Category          : Association to Categories
+    Category          : Association to Categories @mandatory;
 }
 
 entity Backups : cuid, managed {
@@ -153,31 +161,33 @@ entity Backups : cuid, managed {
 }
 
 //Anotações
-annotate Persons with {
-    modifiedAt @odata.etag
-}
+// annotate Persons with {
+//     modifiedAt @odata.etag
+// }
 
 
-annotate Cards with {
-    modifiedAt @odata.etag
-}
+// annotate Cards with {
+//     modifiedAt @odata.etag
+// }
 
 
-annotate Invoices with {
-    modifiedAt @odata.etag
-}
+// annotate Invoices with {
+//     modifiedAt @odata.etag
+// }
 
-annotate Transactions with {
-    modifiedAt @odata.etag
-}
+// annotate Transactions with {
+//     modifiedAt @odata.etag
+// }
 
-annotate Backups with {
-    modifiedAt @odata.etag
-}
+// annotate Backups with {
+//     modifiedAt @odata.etag
+// }
 
 type Permissions : Integer enum {
     Viewer = 1;
-    Modifier = 2;
+    Creator = 2;
+    Modifier = 3;
+    Deleter = 4;
 }
 
 type SimulationReturn {

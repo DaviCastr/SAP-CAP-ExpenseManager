@@ -1,17 +1,17 @@
-import cds, { Service } from '@sap/cds';
-
+import cds, { entity, Request } from '@sap/cds';
 
 import { CategoryProperties, CategoryModel } from "@/models/category";
 import { CategoryRepository } from "./protocols";
 import { Categories, Category } from '@models/GestorDeGastos';
-import { Readable } from 'stream';
-import { oCategoryRouteFactory } from '@/factories/routes/category';
+import { BaseRepositoryImplementation } from '../base/implementation';
+import { ServiceLocator } from '@/infrastructure/ServiceLocator';
 
-export class CategoryRepositoryImplementation implements CategoryRepository {
+export class CategoryRepositoryImplementation extends BaseRepositoryImplementation implements CategoryRepository {
+
 
     public async findById(Id: CategoryProperties["Id"]): Promise<CategoryModel | null> {
 
-        const oCategoriesEntity = oCategoryRouteFactory.getEntity();
+        const oCategoriesEntity = this.getEntity();
 
         const oSql = SELECT.from(oCategoriesEntity).where({ ID: Id });
 
@@ -19,17 +19,32 @@ export class CategoryRepositoryImplementation implements CategoryRepository {
 
         const oCategoriesModel = this.mapCategoryResult(oCategories);
 
-        if (oCategoriesModel){
+        if (oCategoriesModel) {
 
             return oCategoriesModel[0];
 
         } else {
-            
+
             return null;
 
         }
 
     }
+
+    
+    protected getEntity(): entity {
+
+        return ServiceLocator.getEntity('Categories');
+
+    }
+
+
+    protected personPath(): string {
+
+        return 'Person';
+        
+    }
+
 
     private mapCategoryResult(Categories: Categories): CategoryModel[] | null {
 
@@ -43,7 +58,6 @@ export class CategoryRepositoryImplementation implements CategoryRepository {
 
             return CategoryModel.with({
                 Id: Category.ID as string,
-                PersonId: Category.Person_ID as string,
                 Name: Category.Name as string,
                 ImageType: Category.ImageType as string,
                 CreatedAt: Category.createdAt as string,
@@ -55,5 +69,5 @@ export class CategoryRepositoryImplementation implements CategoryRepository {
         });
 
     }
-    
+
 }

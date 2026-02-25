@@ -4,6 +4,8 @@
 //       minorUnit : Int16     @(title : '{i18n>CurrencyMinorUnit}');
 // }
 
+import { Currency } from "@models/GestorDeGastos";
+
 export type CurrencyProperties = {
     Code: string;
     Name: string;
@@ -37,6 +39,18 @@ export class CurrencyModel {
     public get MinorUnit() {
 
         return this.props.MinorUnit;
+
+    }
+
+    public toEntityObject(): Currency{
+
+        return {
+            code: this.props.Code,
+            name: this.props.Name,
+            descr: this.props.Description,
+            minorUnit: this.props.MinorUnit,
+            symbol: this.props.Symbol
+        }
 
     }
 

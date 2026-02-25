@@ -1,0 +1,72 @@
+import { Transactions } from "@models/GestorDeGastos";
+import { BaseControllerResponse } from "../base";
+import { BaseControllerImplementation } from "../base/implementation";
+import { TransactionController } from "./protocols";
+import { TransactionService } from "@/services/transaction";
+import { Transaction } from "@models/apps/dflc/gestordegastos/entities";
+
+export class TransactionControllerImplementation extends BaseControllerImplementation<Transaction> implements TransactionController {
+
+    protected Service: TransactionService;
+
+    constructor(Service: TransactionService) {
+
+        super();
+        this.Service = Service;
+
+    }
+
+
+    public async onDelete(Transaction: Transaction): Promise<BaseControllerResponse> {
+
+        const oResult = await this.Service.onDelete(Transaction);
+
+        if (oResult.isLeft()) {
+            return this.error(oResult.value.code, oResult.value.message);
+        }
+
+        return this.success(204, oResult.value);
+
+    }
+
+
+    public async afterRead(Transactions: Transactions): Promise<BaseControllerResponse> {
+
+        const oResult = await this.Service.afterRead(Transactions);
+
+        if (oResult.isLeft()) {
+            return this.error(oResult.value.code, oResult.value.message);
+        }
+
+        return this.success(200, oResult.value);
+
+    }
+
+
+    public async afterCreate(Transactions: Transactions): Promise<BaseControllerResponse> {
+
+        const oResult = await this.Service.afterCreate(Transactions);
+
+        if (oResult.isLeft()) {
+            return this.error(oResult.value.code, oResult.value.message);
+        }
+
+        return this.success(201, oResult.value);
+
+    }
+
+
+    public async afterUpdate(Transactions: Transactions): Promise<BaseControllerResponse> {
+
+        const oResult = await this.Service.afterUpdate(Transactions);
+
+        if (oResult.isLeft()) {
+            return this.error(oResult.value.code, oResult.value.message);
+        }
+
+        return this.success(204, oResult.value);
+
+    }
+
+
+}

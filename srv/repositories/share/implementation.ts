@@ -1,17 +1,20 @@
-import cds from "@sap/cds";
+import cds, { entity, Request } from "@sap/cds";
 
 import { ShareModel } from "@/models/share";
 import { ShareRepository } from "./protocols";
 import { Share } from "@models/GestorDeGastos";
 import { oShareRouteFactory } from "@/factories/routes/share";
 import { Shares } from "@models/apps/dflc/gestordegastos/entities";
+import { BaseRepositoryImplementation } from "../base/implementation";
+import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 
-export class ShareRepositoryImplementation implements ShareRepository {
+export class ShareRepositoryImplementation extends BaseRepositoryImplementation implements ShareRepository {
+
 
     public async findByPersonId(PersonId: Share['Person_ID']): Promise<ShareModel[] | null> {
 
-        const oShareEntity = oShareRouteFactory.getEntity();
+        const oShareEntity = this.getEntity();
 
         const oSql = SELECT.from(oShareEntity).where({ Person_ID: PersonId });
 
@@ -22,6 +25,21 @@ export class ShareRepositoryImplementation implements ShareRepository {
         return oSharesModel;
 
     }
+
+
+    protected getEntity(): entity {
+
+       return ServiceLocator.getEntity('Shares');
+
+    }
+
+
+    protected personPath(): string {
+
+        return 'Person';
+
+    }
+
 
     private mapShareResult(Shares: Shares): ShareModel[] | null {
 

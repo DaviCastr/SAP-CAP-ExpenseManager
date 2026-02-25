@@ -1,5 +1,5 @@
-import { TransactionRepositoryImplementation } from "@/repositories/transaction";
-import { TransactionRepository } from "@/repositories/transaction";
+import { TransactionRepositoryImplementation } from "@/repositories/transaction/implementation";
+import { TransactionRepository } from "@/repositories/transaction/protocols";
 
 
 const makeTransactionRepository = (): TransactionRepository => {

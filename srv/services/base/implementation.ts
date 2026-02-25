@@ -1,50 +1,209 @@
 import { PermissionDenied } from "@/errors/permission-denied";
-import { User } from "@sap/cds";
+import { Request, User } from "@sap/cds";
 import { Either, left, right } from "@sweet-monads/either";
 import { BaseService } from "./protocols";
-import { oPersonRepositoryFactory } from "@/factories/repositories/person";
-import { oShareRepositoryFactory } from "@/factories/repositories/share";
 import { ShareModel } from "@/models/share";
+import { ShareRepository } from "@/repositories/share";
+import { PersonRepository } from "@/repositories/person";
+import { AbstractError } from "@/errors";
+import { BaseRepository } from "@/repositories/base";
 
-export class BaseServiceImplementation implements BaseService {
+export abstract class BaseServiceImplementation<Entity> implements BaseService<Entity> {
+
+    protected abstract Repository: BaseRepository;
+
+    constructor(
+        private readonly PersonRepository: PersonRepository,
+        private readonly ShareRepository: ShareRepository) { }
+
+    public beforeRead(Request: any): Either<AbstractError, boolean> {
+
+        try {
+
+            const oUserId = Request.user?.id;
+
+            if (!oUserId || !Request.query?.SELECT)
+                return right(true);
+
+            const oPersonPath = this.personPath();
+
+            const where = Request.query.SELECT.where ?? [];
+
+            if (where.length > 0)
+                where.push('and');
+
+            where.push({
+                xpr: [
+                    '(',
+
+                    { ref: [...oPersonPath, 'createdBy'] },
+                    '=',
+                    { val: oUserId },
+
+                    'or',
+
+                    {
+                        xpr: [
+                            '(',
+                            { ref: [...oPersonPath, 'Shares', 'User'] },
+                            '=',
+                            { val: oUserId },
+                            // 'and',
+                            // {
+                            //     xpr: [
+                            //         { ref: ['Person', 'Shares', 'User'] },
+                            //         '=',
+                            //         { val.user.id },
+                            //         // 'or',
+                            //         // { ref: ['Person', 'Shares', 'User'] },
+                            //         // '=',
+                            //         // { val: 2 },
+                            //         // 'or',
+                            //         // { ref: ['Person', 'Shares', 'Permission'] },
+                            //         // '=',
+                            //         // { val: 3 },
+                            //         // 'or',
+                            //         // { ref: ['Person', 'Shares', 'Permission'] },
+                            //         // '=',
+                            //         // { val: 4 }
+                            //     ]
+                            // },
+                            ')'
+                        ]
+                    },
+
+                    ')'
+                ]
+            });
+
+            Request.query.SELECT.where = where;
+
+            // Request.query.where([
+            //     '(',
+            //     { ref: [...oPersonPath, 'createdBy'] },
+            //     '=',
+            //     { val: oUserId },
+
+            //     'or',
+
+            //     { ref: [...oPersonPath, 'Shares', 'User'] },
+            //     '=',
+            //     { val: oUserId },
+
+            //     ')'
+            // ]);
+
+            return right(true);
+
+        } catch (oError) {
+
+            const errorInstance: Error = oError as Error;
+
+            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
+
+        }
+
+    }
+
+
+    public beforeCreate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
+
+        return this.checkPermission(Entity, User, this.getPermissionForCreate());
+
+    }
+
+
+    public beforeUpdate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
+
+        return this.checkPermission(Entity, User, this.getPermissionForUpdate());
+
+    }
+
+
+    public beforeEdit(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
+
+        return this.checkPermission(Entity, User, this.getPermissionForUpdate());
+
+    }
+
+
+    public async beforeDelete(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
+
+        return this.checkPermission(Entity, User, this.getPermissionForDelete());
+
+    }
+
+
+    protected abstract personPath(): string[];
+
+
+    protected getPermissionForCreate() { return 2; }
+
+
+    protected getPermissionForUpdate() { return 3; }
+
+
+    protected getPermissionForDelete() { return 4; }
+
+
+    protected async checkPermission(Entity: any, User: User, Permission: number): Promise<Either<AbstractError, boolean>> {
+
+        try {
+
+            const oPersonID: string | null = await this.Repository.findPersonIdById(Entity.ID as string);
+
+            if (!oPersonID)
+                return right(true);
+
+            return this.checkPermissionByPersonId(User, oPersonID, Permission);
+
+        } catch (oError) {
+
+            const errorInstance: Error = oError as Error;
+
+            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
+
+        }
+
+    }
 
     public async checkPermissionByPersonId(LoggedUser: User, PersonId: string, Permision: number): Promise<Either<PermissionDenied, boolean>> {
 
-        const oPerson = await oPersonRepositoryFactory.findById(PersonId);
+        const oPerson = await this.PersonRepository.findById(PersonId);
 
         if (LoggedUser && oPerson) {
 
             if (LoggedUser?.id !== oPerson.CreatedBy) {
 
-                const oShares = await oShareRepositoryFactory.findByPersonId(PersonId);
+                const oShares = await this.ShareRepository.findByPersonId(PersonId);
 
                 if (oShares) {
 
                     let oPermissionByShare: Boolean = false;
 
-                    if (Permision == 2){
+                    if (Permision > 1) {
 
-                        oPermissionByShare = oShares.filter((oShare: ShareModel) => oShare.User == LoggedUser?.id && oShare.Permission == 2).length > 0;
-                    
+                        oPermissionByShare = oShares.filter((oShare: ShareModel) => oShare.User == LoggedUser?.id && oShare.Permission >= Permision).length > 0;
+
                     } else {
 
-                        oPermissionByShare = oShares.filter((oShare: ShareModel) => oShare.User == LoggedUser?.id && oShare.Permission == 1).length > 0;
+                        oPermissionByShare = oShares.filter((oShare: ShareModel) => oShare.User == LoggedUser?.id).length > 0;
 
                     }
 
                     if (!oPermissionByShare) {
 
-                        const stack = new Error().stack as string;
+                        const oStack = new Error().stack as string;
 
-                        return left(new PermissionDenied('error.modificationPermissionDenied', 403, stack));
+                        return left(new PermissionDenied('error.modificationPermissionDenied', 403, oStack));
 
                     }
 
                 } else {
 
-                    const stack = new Error().stack as string;
+                    const oStack = new Error().stack as string;
 
-                    return left(new PermissionDenied('error.modificationPermissionDenied', 403, stack));
+                    return left(new PermissionDenied('error.modificationPermissionDenied', 403, oStack));
 
                 }
 

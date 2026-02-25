@@ -1,18 +1,20 @@
-import cds from "@sap/cds";
+import cds, { entity, Request } from "@sap/cds";
 import Decimal from "decimal.js";
 
 import { PersonModel } from "@/models/person";
 import { Person, Persons } from "@models/GestorDeGastos";
 import { PersonRepository } from "./protocols";
-import { oPersonRouteFactory } from "@/factories/routes/person";
 import { CurrencyModel } from "@/models/currency";
+import { BaseRepositoryImplementation } from "../base/implementation";
+import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 
-export class PersonRepositoryImplementation implements PersonRepository {
+export class PersonRepositoryImplementation extends BaseRepositoryImplementation implements PersonRepository {
+
 
     public async findById(Id: Person["ID"]): Promise<PersonModel | null> {
 
-        const oPersonEntity = oPersonRouteFactory.getEntity();
+        const oPersonEntity = this.getEntity();
 
         const oSql = SELECT.from(oPersonEntity).where({ ID: Id });
 
@@ -31,6 +33,21 @@ export class PersonRepositoryImplementation implements PersonRepository {
         }
 
     }
+
+
+    protected getEntity(): entity {
+
+        return ServiceLocator.getEntity('Persons');
+
+    }
+
+
+    protected personPath(): string {
+
+        return '';
+
+    }
+
 
     private mapPersonResult(Persons: Persons): PersonModel[] | null {
 

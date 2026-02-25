@@ -1,5 +1,6 @@
-import { CategoryRoute, CategoryRouteImplementation } from "@/routes/category/index";
+import { CategoryRoute } from "@/routes/category/index";
 import { oCategoryControllerFactory } from "../controllers/category";
+import { CategoryRouteImplementation } from "@/routes/category/implementation";
 
 
 const makeCategoryRoute = (): CategoryRoute => {

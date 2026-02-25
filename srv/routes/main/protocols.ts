@@ -1,5 +1,7 @@
-import { Request } from '@sap/cds';
+import { ApplicationService } from "@sap/cds";
 
-export type FullRequestParams<ExpectedResults> = Request & {
-    results: ExpectedResults;
-};
+export interface MainRoute {
+
+    main(Service: ApplicationService): void;
+
+}

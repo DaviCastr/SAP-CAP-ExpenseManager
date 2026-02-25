@@ -11,7 +11,6 @@ import { Readable } from 'stream';
 
 export type CategoryProperties = {
     Id: string;
-    PersonId: string;
     Name: string;
     Image?: Readable;
     ImageType: string;
@@ -33,12 +32,6 @@ export class CategoryModel {
     public get Id() {
 
         return this.properties.Id;
-
-    }
-
-    public get PersonId() {
-
-        return this.properties.PersonId;
 
     }
 

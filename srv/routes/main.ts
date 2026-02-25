@@ -1,4 +1,4 @@
-import { oCategoryRouteFactory } from '@/factories/routes/category';
+import { oMainRouteFactory } from '@/factories/routes/main';
 import cds, { Request, Service } from '@sap/cds';
 
 class GestaoGastos extends cds.ApplicationService {
@@ -7,7 +7,7 @@ class GestaoGastos extends cds.ApplicationService {
 
     init(): Promise<void> {
 
-        oCategoryRouteFactory.main(this);
+        oMainRouteFactory.main(this)
 
         return super.init();
 

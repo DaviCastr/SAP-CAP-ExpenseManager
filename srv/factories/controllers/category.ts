@@ -1,6 +1,6 @@
-import { CategoryController, CategoryControllerImplementation } from "@/controllers/category";
-import { CategoryServiceImplementation } from "@/services/category";
+import { CategoryController } from "@/controllers/category";
 import { oCategoryServiceFactory } from "../services/category";
+import { CategoryControllerImplementation } from "@/controllers/category/implementation";
 
 
 const makeCategoryController = (): CategoryController => {

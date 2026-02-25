@@ -1,0 +1,1 @@
+export type { TransactionController } from './protocols';

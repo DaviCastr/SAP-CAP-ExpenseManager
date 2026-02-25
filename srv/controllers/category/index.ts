@@ -1,2 +1,1 @@
-export * from './protocols';
-export * from './implementation';
+export type { CategoryController } from './protocols';

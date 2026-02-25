@@ -1,6 +1,8 @@
 import { PersonModel } from "@/models/person";
 import { Person } from "@models/GestorDeGastos";
+import { Request } from "@sap/cds";
+import { BaseRepository } from "../base";
 
-export interface PersonRepository {
+export interface PersonRepository extends BaseRepository {
     findById(Id: Person['ID']): Promise<PersonModel | null>;
 }

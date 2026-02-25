@@ -1,5 +1,5 @@
 @server=http://localhost:4004
-@username=davi
+@username=beatriz
 @password=123456
 
 
@@ -11,7 +11,16 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Categories Drafts GET
 # @name Categories_Drafts_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories?$filter=(IsActiveEntity eq false)
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
+Authorization: Basic {{username}}:{{password}}
+
+
+### Categories Drafts GET
+# @name Categories_Drafts_and_Actives_merge
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Category/Categories?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
+Accept-Language:pt-BR
+Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
 Authorization: Basic {{username}}:{{password}}
 
 
@@ -25,7 +34,7 @@ Authorization: Basic {{username}}:{{password}}
   "Name": "Name-26136527",
   "ImageType": "ImageType-26136527",
   "Person": {
-    "ID": "14546063-f2d7-46a7-b877-6c3aa31ffb8a"
+    "ID": "11111111-1111-1111-1111-111111111111"
   },
   "createdAt": "2004-02-06T00:00:00.000Z",
   "createdBy": "createdBy.fk72n@example.com",
@@ -48,7 +57,7 @@ Authorization: Basic {{username}}:{{password}}
   "Name": "Name-26136527",
   "ImageType": "ImageType-26136527",
   "Person": {
-    "ID": "7070680a-ca80-48dc-864b-5fa155cfd7b3"
+    "ID": "14546063-f2d7-46a7-b877-6c3aa31ffb8a"
   },
   "createdAt": "2004-02-06T00:00:00.000Z",
   "createdBy": "createdBy.fk72n@example.com",

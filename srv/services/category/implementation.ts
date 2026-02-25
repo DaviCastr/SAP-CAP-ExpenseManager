@@ -5,145 +5,36 @@ import { Either, left, right } from '@sweet-monads/either';
 import { CategoryService } from './protocols';
 import { BaseServiceImplementation } from '../base/implementation';
 import { CategoryRepository } from '@/repositories/category';
-import { CategoryModel } from '@/models/category';
-import { oTransactionRepositoryFactory } from '@/factories/repositories/transaction';
 import { PermissionDenied } from '@/errors/permission-denied';
+import { TransactionRepository } from '@/repositories/transaction';
+import { PersonRepository } from '@/repositories/person';
+import { ShareRepository } from '@/repositories/share';
 
-export class CategoryServiceImplementation extends BaseServiceImplementation implements CategoryService {
+export class CategoryServiceImplementation extends BaseServiceImplementation<Category> implements CategoryService {
 
-    constructor(private readonly repository: CategoryRepository) {
+    protected Repository: CategoryRepository;
 
-        super();
+    constructor(
+        PersonRepository: PersonRepository,
+        ShareRepository: ShareRepository,
+        Repository: CategoryRepository,
+        private readonly TransactionRepository: TransactionRepository
+    ) {
 
-    }
+        super(PersonRepository, ShareRepository);
 
-
-    public beforeRead(Request: Request): Either<AbstractError, boolean> {
-
-        try {
-
-            if (Request.user && Request.user.id) {
-
-                if (Request.query?.SELECT) {
-
-                    if (!Array.isArray(Request.query.SELECT.where)) {
-                        Request.query.SELECT.where = [];
-                    }
-
-                    if (Request.query.SELECT.where.length > 0) {
-                        Request.query.SELECT.where.push('and');
-                    }
-
-                    Request.query.SELECT.where.push({
-                        xpr:
-                            [
-                                '(',
-
-                                { ref: ['Person', 'createdBy'] },
-                                '=',
-                                { val: Request.user.id },
-
-                                'or',
-
-                                {
-                                    xpr: [
-                                        '(',
-                                        { ref: ['Person', 'Shares', 'User'] },
-                                        '=',
-                                        { val: Request.user.id },
-                                        'and',
-
-                                        {
-                                            xpr: [
-                                                { ref: ['Person', 'Shares', 'Permission'] },
-                                                '=',
-                                                { val: 1 },
-                                                'or',
-                                                { ref: ['Person', 'Shares', 'Permission'] },
-                                                '=',
-                                                { val: 2 }
-                                            ]
-                                        },
-
-                                        ')'
-                                    ]
-                                },
-
-                                ')'
-                            ]
-                    });
-
-                    // Request.query.SELECT.where.push({
-                    //     xpr: [
-                    //         '(',
-                    //         { ref: ['Person', 'createdBy'] },
-                    //         '=',
-                    //         { val: Request.user.id },
-                    //         'or',
-                    //         { ref: ['Person', 'Shares', 'User'] },
-                    //         '=',
-                    //         { val: Request.user.id },
-                    //         ')'
-                    //     ]
-                    // });
-
-                    // Request.query.SELECT.where.push(
-                    //     { ref: ['createdBy'] },
-                    //     '=',
-                    //     {
-                    //         //val: req.user.id//attr.logonName
-                    //         val: Request.user.id//attr.logonName
-
-                    //     }
-                    // );
-
-                    // Request.query.SELECT.where.push(
-                    //     'OR',
-                    //     { ref: ['Person', 'Shares', 'User'] },
-                    //     '=',
-                    //     {
-                    //         //val: req.user.id//attr.logonName
-                    //         val: Request.user.id
-                    //     }
-                    // );
-
-                }
-            }
-
-            return right(true);
-
-        } catch (error) {
-
-            const errorInstance: Error = error as Error;
-
-            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
-
-        }
-
-    }
-
-
-    public async beforeCreate(Category: Category, LoggedUser: User): Promise<Either<AbstractError, boolean>> {
-
-        return this.checkPermission(Category, LoggedUser, 2);
-
-    }
-
-
-    public async beforeEdit(Category: Category, LoggedUser: User): Promise<Either<AbstractError, boolean>> {
-
-        return this.checkPermission(Category, LoggedUser, 2);
+        this.Repository = Repository;
 
     }
 
 
     public async beforeDelete(Category: Category, LoggedUser: User): Promise<Either<AbstractError, boolean>> {
 
-        const oPermission = await this.checkPermission(Category, LoggedUser, 2);
+        const oPermission = await this.checkPermission(Category, LoggedUser, this.getPermissionForDelete());
 
         if (oPermission.isRight()) {
 
-            return this.checkTransactionExistence(Category);
+            return this.checkDeleteByTransactionExistence(Category);
 
         } else {
 
@@ -153,34 +44,27 @@ export class CategoryServiceImplementation extends BaseServiceImplementation imp
 
     }
 
-    private async checkPermission(Category: Category, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
+
+
+    protected async checkPermission(Category: Category, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
 
         try {
 
-            let oCategory: CategoryModel | null;
+            let oPersonID: string | null;
 
             if (!Category.Person_ID) {
 
-                oCategory = await this.repository.findById(Category.ID as string);
+                oPersonID = await this.Repository.findPersonIdById(Category.ID as string);
 
             } else {
 
-                oCategory = CategoryModel.with({
-                    Id: Category.ID as string,
-                    PersonId: Category.Person_ID as string,
-                    Name: Category.Name as string,
-                    ImageType: Category.ImageType as string,
-                    CreatedAt: Category.createdAt as string,
-                    CreatedBy: Category.createdBy as string,
-                    ModifiedAt: Category.modifiedAt as string,
-                    ModifiedBy: Category.modifiedBy as string
-                });
+                oPersonID = Category.Person_ID;
 
             }
 
-            if (oCategory) {
+            if (oPersonID) {
 
-                const oCheckPermission = await this.checkPermissionByPersonId(LoggedUser, oCategory.PersonId as string, Permision);
+                const oCheckPermission = await this.checkPermissionByPersonId(LoggedUser, oPersonID as string, Permision);
 
                 if (oCheckPermission.isLeft()) {
 
@@ -192,19 +76,27 @@ export class CategoryServiceImplementation extends BaseServiceImplementation imp
 
             return right(true);
 
-        } catch (error) {
+        } catch (oError) {
 
-            const errorInstance: Error = error as Error;
+            const errorInstance: Error = oError as Error;
 
             return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
 
         }
+ 
+    }
+
+
+    protected personPath(): string[] {
+
+        return ['Person'];
 
     }
 
-    private async checkTransactionExistence(Category: Category): Promise<Either<AbstractError, boolean>> {
 
-        const oTransactions = await oTransactionRepositoryFactory.findByCategoryID(Category.ID, 1);
+    public async checkDeleteByTransactionExistence(Category: Category): Promise<Either<AbstractError, boolean>> {
+
+        const oTransactions = await this.TransactionRepository.findByCategoryID(Category.ID, 1);
 
         if (Array.isArray(oTransactions)) {
 

@@ -1,5 +1,5 @@
 // entity Transactions : cuid, managed {
-//     Indentifier       : UUID;
+//     Identifier       : UUID;
 //     Date              : Date;
 //     TotalAmount       : Decimal;
 //     Amount            : Decimal;
@@ -13,6 +13,7 @@
 
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
+import { Transaction as TransactionEntityType } from '@models/GestorDeGastos';
 
 type TransactionProperties = {
     Id: string;
@@ -30,6 +31,8 @@ type TransactionProperties = {
     ModifiedBy?: string;
 }
 
+type TransactionEntityProperties = TransactionEntityType;
+
 export class TransactionModel {
 
     constructor(private props: TransactionProperties) { }
@@ -37,7 +40,7 @@ export class TransactionModel {
     public static with(properties: TransactionProperties): TransactionModel {
 
         return new TransactionModel(properties);
-    
+
     }
 
     public get Id() {
@@ -115,6 +118,34 @@ export class TransactionModel {
     public get ModifiedBy() {
 
         return this.props.ModifiedBy;
+
+    }
+
+    public set TotalAmount(TotalAmount: Decimal) {
+
+        this.props.TotalAmount = TotalAmount;
+
+    }
+
+    public toObject(): TransactionProperties {
+
+        return this.props;
+
+    }
+
+    public toEntityObject(): TransactionEntityProperties {
+
+        return {
+            ID: this.props.Id,
+            Identifier: this.props.Identifier,
+            Date: this.props.Date as TransactionEntityProperties['Date'],
+            TotalAmount: this.props.TotalAmount.toNumber(),
+            Amount: this.props.Amount.toNumber(),
+            Currency: this.props.Currency.toEntityObject(),
+            TotalInstallments: this.props.TotalInstallments,
+            Installment: this.props.Installment,
+            Description: this.props.Description,
+        };
 
     }
 

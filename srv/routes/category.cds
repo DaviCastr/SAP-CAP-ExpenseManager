@@ -17,17 +17,8 @@ service CategoryService {
                 'CREATE',
                 'UPDATE',
                 'DELETE'
-            ],
-            where: 'createdBy = $user'
+            ]
         }
-        //     {
-        //         grant: 'UPDATE',
-        //         where: 'Person.createdBy = $user or exists Person.Shares[User = $user and Permission = #Modifier]'
-        //     },
-        //     {
-        //         grant: 'CREATE',
-        //         where: 'Person.createdBy = $user or exists Person.Shares[User = $user and Permission = #Modifier]'
-        //     }
     ]
     entity Categories as projection on entities.Categories;
 

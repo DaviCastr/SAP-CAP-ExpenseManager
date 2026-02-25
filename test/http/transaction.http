@@ -1,0 +1,110 @@
+@server=http://localhost:4004
+@username=beatriz
+@password=123456
+
+
+### Transactions
+# @name Transactions_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions
+Authorization: Basic {{username}}:{{password}}
+
+
+### Transactions Drafts GET
+# @name Transactions_Drafts_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions?$filter=(IsActiveEntity eq false)
+Authorization: Basic {{username}}:{{password}}
+
+
+### Transactions Drafts GET
+# @name Transactions_Drafts_and_Actives_merge
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
+Accept-Language:pt-BR
+Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
+Authorization: Basic {{username}}:{{password}}
+
+
+### Transactions Draft POST
+# @name Transactions_Draft_POST
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Identifier": "14160169-b269-4ca3-9db3-62318ed9e3d2",
+  "Date": "2021-12-18",
+  "TotalAmount": 39.95,
+  "Amount": 59.9,
+  "TotalInstallments": 47,
+  "Installment": 96,
+  "Description": "Description-14160169",
+  "Invoice": {
+    "ID": "inv11111-1111-1111-1111-111111111111"
+  },
+  
+  "Category": {
+    "ID": "2500424e-1f82-4544-8e53-8c74cc42f3e2"
+  },
+  "createdAt": "2011-03-01T00:00:00.000Z",
+  "createdBy": "createdBy.8fi21@example.org",
+  "modifiedAt": "2002-12-16T00:00:00.000Z",
+  "modifiedBy": "modifiedBy.8fi21@example.net"
+}
+
+
+### Result from POST request above
+@draftID={{Transactions_Draft_POST.response.body.$.ID}}
+
+
+### Transactions Draft PATCH
+# @name Transactions_Draft_Patch
+PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Identifier": "14160169-b269-4ca3-9db3-62318ed9e3d2",
+  "Date": "2021-12-18",
+  "TotalAmount": 150,
+  "Amount": 80,
+  "TotalInstallments": 47,
+  "Installment": 96,
+  "Description": "Description-14160169",
+  "Invoice": {
+    "ID": "inv11111-1111-1111-1111-111111111111"
+  },
+  "Category": {
+    "ID": "2500424e-1f82-4544-8e53-8c74cc42f3e2"
+  },
+  "createdAt": "2011-03-01T00:00:00.000Z",
+  "createdBy": "createdBy.8fi21@example.org",
+  "modifiedAt": "2002-12-16T00:00:00.000Z",
+  "modifiedBy": "modifiedBy.8fi21@example.net"
+}
+
+
+### Transactions Draft Prepare
+# @name Transactions_Draft_Prepare
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions(ID={{draftID}},IsActiveEntity=false)/TransactionService.draftPrepare
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Transactions Draft Activate
+# @name Transactions_Draft_Activate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions(ID={{draftID}},IsActiveEntity=false)/TransactionService.draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Transactions Draft Activate
+# @name Transactions_Draft_Inactivate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions(ID={{draftID}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}

@@ -54,7 +54,6 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
             return ShareModel.with({
                 Id: Share.ID as string,
                 User: Share.User as string,
-                Permission: Share.Permission as number,
                 CreatedAt: Share.createdAt as string,
                 CreatedBy: Share.createdBy as string,
                 ModifiedAt: Share.modifiedAt as string,

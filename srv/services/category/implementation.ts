@@ -9,6 +9,7 @@ import { PermissionDenied } from '@/errors/permission-denied';
 import { TransactionRepository } from '@/repositories/transaction';
 import { PersonRepository } from '@/repositories/person';
 import { ShareRepository } from '@/repositories/share';
+import { EntityRepository } from '@/repositories/entity';
 
 export class CategoryServiceImplementation extends BaseServiceImplementation<Category> implements CategoryService {
 
@@ -17,11 +18,12 @@ export class CategoryServiceImplementation extends BaseServiceImplementation<Cat
     constructor(
         PersonRepository: PersonRepository,
         ShareRepository: ShareRepository,
+        EntityRepository: EntityRepository,
         Repository: CategoryRepository,
         private readonly TransactionRepository: TransactionRepository
     ) {
 
-        super(PersonRepository, ShareRepository);
+        super(PersonRepository, ShareRepository, EntityRepository);
 
         this.Repository = Repository;
 
@@ -90,6 +92,13 @@ export class CategoryServiceImplementation extends BaseServiceImplementation<Cat
     protected personPath(): string[] {
 
         return ['Person'];
+
+    }
+
+
+    protected entityCode(): number {
+
+        return 2;
 
     }
 

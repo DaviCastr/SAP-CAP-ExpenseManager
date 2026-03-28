@@ -9,7 +9,7 @@ service TransactionService {
     @restrict: [
         {
             grant: 'READ',
-            where: 'Invoice.Card.Person.createdBy = $user or exists Invoice.Card.Person.Shares[User = $user and Permission in (1,2)]'
+            where: 'Invoice.Card.Person.createdBy = $user or exists Invoice.Card.Person.Shares[User = $user and exists Entities[ Entity = 2 and Permission is not null] ]'
         },
 
         {

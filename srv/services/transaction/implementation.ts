@@ -11,6 +11,7 @@ import { PersonRepository } from "@/repositories/person";
 import { ShareRepository } from "@/repositories/share";
 import { Request, User } from "@sap/cds";
 import { InvoiceRepository } from "@/repositories/invoice/protocols";
+import { EntityRepository } from '@/repositories/entity';
 
 export class TransactionServiceImplementation extends BaseServiceImplementation<Transaction> implements TransactionService {
 
@@ -19,11 +20,12 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
     constructor(
         PersonRepository: PersonRepository,
         ShareRepository: ShareRepository,
+        EntityRepository: EntityRepository,
         Repository: TransactionRepository,
         private readonly InvoiceRepository: InvoiceRepository,
     ) {
 
-        super(PersonRepository, ShareRepository);
+        super(PersonRepository, ShareRepository, EntityRepository);
 
         this.Repository = Repository;
 
@@ -230,6 +232,13 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
     protected personPath(): string[] {
 
         return ['Invoice', 'Card', 'Person'];
+
+    }
+
+
+    protected entityCode(): number {
+
+        return 7;
 
     }
 

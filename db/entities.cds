@@ -71,18 +71,17 @@ entity Categories : cuid, managed {
 }
 
 entity Shares : cuid, managed {
-    Person    : Association to Persons @mandatory;
-    User      : String(255)            @mandatory;
-    Permission : Permissions            @assert.range: true;
-    //Pensar se faço Entities: composi...
+    Person   : Association to Persons @mandatory;
+    User     : String(255)            @mandatory;
+    Entities : Composition of many Entities
+                   on Entities.Share = $self;
 }
 
-// entity Entities : cuid, managed {
-//     Share    : Association to Share @mandatory;
-//     Entity : enum...
-//     Permission : Permissions            @assert.range: true; 
-//     //Pensar se faço Entities: composi...
-// }
+entity Entities : cuid, managed {
+    Share      : Association to Shares @mandatory;
+    Entity     : EntitiesCodes         @assert.range: true;
+    Permission : Permissions           @assert.range: true;
+}
 
 entity Cards : cuid, managed {
 
@@ -148,7 +147,7 @@ entity Transactions : cuid, managed {
     TotalInstallments : Integer;
     Installment       : Integer;
     Description       : String(255);
-    Invoice           : Association to Invoices @mandatory; //@assert.target
+    Invoice           : Association to Invoices   @mandatory; //@assert.target
     Category          : Association to Categories @mandatory;
 }
 
@@ -183,11 +182,22 @@ entity Backups : cuid, managed {
 //     modifiedAt @odata.etag
 // }
 
-type Permissions : Integer enum {
+type Permissions   : Integer enum {
     Viewer = 1;
     Creator = 2;
     Modifier = 3;
     Deleter = 4;
+}
+
+type EntitiesCodes : Integer enum {
+    Persons = 1;
+    Categories = 2;
+    Shares = 3;
+    Entities = 4;
+    Cards = 5;
+    Invoices = 6;
+    Transactions = 7;
+    Backups = 8;
 }
 
 type SimulationReturn {

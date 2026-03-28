@@ -4,9 +4,11 @@ import { Either, left, right } from "@sweet-monads/either";
 import { BaseService } from "./protocols";
 import { ShareModel } from "@/models/share";
 import { ShareRepository } from "@/repositories/share";
+import { EntityRepository } from "@/repositories/entity";
 import { PersonRepository } from "@/repositories/person";
 import { AbstractError } from "@/errors";
 import { BaseRepository } from "@/repositories/base";
+import { EntityModel } from "@/models/entity";
 
 export abstract class BaseServiceImplementation<Entity> implements BaseService<Entity> {
 
@@ -14,7 +16,8 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     constructor(
         private readonly PersonRepository: PersonRepository,
-        private readonly ShareRepository: ShareRepository) { }
+        private readonly ShareRepository: ShareRepository,
+        private readonly EntityRepository: EntityRepository) { }
 
     public beforeRead(Request: any): Either<AbstractError, boolean> {
 
@@ -26,72 +29,79 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
                 return right(true);
 
             const oPersonPath = this.personPath();
+            const oEntityCode = this.entityCode();
 
-            const where = Request.query.SELECT.where ?? [];
+            // const where = Request.query.SELECT.where ?? [];
 
-            if (where.length > 0)
-                where.push('and');
+            // if (where.length > 0)
+            //     where.push('and');
 
-            where.push({
-                xpr: [
-                    '(',
+            // where.push({
+            //     xpr: [
+            //         '(',
 
-                    { ref: [...oPersonPath, 'createdBy'] },
-                    '=',
-                    { val: oUserId },
+            //         { ref: [...oPersonPath, 'createdBy'] },
+            //         '=',
+            //         { val: oUserId },
 
-                    'or',
+            //         'or',
 
-                    {
-                        xpr: [
-                            '(',
-                            { ref: [...oPersonPath, 'Shares', 'User'] },
-                            '=',
-                            { val: oUserId },
-                            // 'and',
-                            // {
-                            //     xpr: [
-                            //         { ref: ['Person', 'Shares', 'User'] },
-                            //         '=',
-                            //         { val.user.id },
-                            //         // 'or',
-                            //         // { ref: ['Person', 'Shares', 'User'] },
-                            //         // '=',
-                            //         // { val: 2 },
-                            //         // 'or',
-                            //         // { ref: ['Person', 'Shares', 'Permission'] },
-                            //         // '=',
-                            //         // { val: 3 },
-                            //         // 'or',
-                            //         // { ref: ['Person', 'Shares', 'Permission'] },
-                            //         // '=',
-                            //         // { val: 4 }
-                            //     ]
-                            // },
-                            ')'
-                        ]
-                    },
+            //         {
+            //             xpr: [
+            //                 '(',
+            //                 { ref: [...oPersonPath, 'Shares', 'User'] },
+            //                 '=',
+            //                 { val: oUserId },
+            //                 // 'and',
+            //                 // {
+            //                 //     xpr: [
+            //                 //         { ref: ['Person', 'Shares', 'User'] },
+            //                 //         '=',
+            //                 //         { val.user.id },
+            //                 //         // 'or',
+            //                 //         // { ref: ['Person', 'Shares', 'User'] },
+            //                 //         // '=',
+            //                 //         // { val: 2 },
+            //                 //         // 'or',
+            //                 //         // { ref: ['Person', 'Shares', 'Permission'] },
+            //                 //         // '=',
+            //                 //         // { val: 3 },
+            //                 //         // 'or',
+            //                 //         // { ref: ['Person', 'Shares', 'Permission'] },
+            //                 //         // '=',
+            //                 //         // { val: 4 }
+            //                 //     ]
+            //                 // },
+            //                 ')'
+            //             ]
+            //         },
 
-                    ')'
-                ]
-            });
+            //         ')'
+            //     ]
+            // });
 
-            Request.query.SELECT.where = where;
+            // Request.query.SELECT.where = where;
 
-            // Request.query.where([
-            //     '(',
-            //     { ref: [...oPersonPath, 'createdBy'] },
-            //     '=',
-            //     { val: oUserId },
+            Request.query.where([
+                '(',
+                { ref: [...oPersonPath, 'createdBy'] },
+                '=',
+                { val: oUserId },
 
-            //     'or',
+                'or',
 
-            //     { ref: [...oPersonPath, 'Shares', 'User'] },
-            //     '=',
-            //     { val: oUserId },
+                '(',
+                { ref: [...oPersonPath, 'Shares', 'User'] },
+                '=',
+                { val: oUserId },
+                'and',
+                { ref: [...oPersonPath, 'Shares', 'Entities', 'Entity'] },
+                '=',
+                { val: oEntityCode },
+                ')',
 
-            //     ')'
-            // ]);
+                ')'
+            ]);
 
             return right(true);
 
@@ -136,6 +146,8 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     protected abstract personPath(): string[];
 
+    protected abstract entityCode(): Number;
+
 
     protected getPermissionForCreate() { return 2; }
 
@@ -175,19 +187,35 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
             if (LoggedUser?.id !== oPerson.CreatedBy) {
 
-                const oShares = await this.ShareRepository.findByPersonId(PersonId);
+                let oShares = await this.ShareRepository.findByPersonId(PersonId);
 
                 if (oShares) {
 
                     let oPermissionByShare: Boolean = false;
 
-                    if (Permision > 1) {
+                    oShares = oShares.filter((oShare: ShareModel) => oShare.User == LoggedUser?.id);
 
-                        oPermissionByShare = oShares.filter((oShare: ShareModel) => oShare.User == LoggedUser?.id && oShare.Permission >= Permision).length > 0;
+                    if (oShares.length > 0) {
 
-                    } else {
+                        for (const oShare of oShares) {
 
-                        oPermissionByShare = oShares.filter((oShare: ShareModel) => oShare.User == LoggedUser?.id).length > 0;
+                            const oEntities = await this.EntityRepository.findByShareId(oShare.Id);
+
+                            if (oEntities) {
+
+                                if (Permision > 1) {
+
+                                    oPermissionByShare = oEntities.filter((oEntity: EntityModel) => oEntity.Entity == this.entityCode() && oEntity.Permission >= Permision).length > 0;
+
+                                } else {
+
+                                    oPermissionByShare = oEntities.filter((oEntity: EntityModel) =>  oEntity.Entity == this.entityCode()).length > 0;
+
+                                }
+
+                            }
+
+                        }
 
                     }
 

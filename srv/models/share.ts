@@ -6,7 +6,6 @@
 type ShareProperties = {
     Id: string;
     User: string;
-    Permission: number;
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
@@ -30,12 +29,6 @@ export class ShareModel {
     public get User() {
 
         return this.props.User;
-
-    }
-
-    public get Permission() {
-
-        return this.props.Permission;
 
     }
 

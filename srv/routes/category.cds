@@ -9,16 +9,14 @@ service CategoryService {
     @restrict: [
         {
             grant: 'READ',
-            where: 'Person.createdBy = $user or exists Person.Shares[User = $user and Permission in (1,2)]'
+            where: 'Person.createdBy=$user or exists Person.Shares[ User = $user and exists Entities[ Share = $self and Entity = 2 and Permission is not null] ]'
         },
 
-        {
-            grant: [
-                'CREATE',
-                'UPDATE',
-                'DELETE'
-            ]
-        }
+        {grant: [
+            'CREATE',
+            'UPDATE',
+            'DELETE'
+        ]}
     ]
     entity Categories as projection on entities.Categories;
 

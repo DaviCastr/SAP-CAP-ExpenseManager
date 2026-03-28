@@ -24,33 +24,7 @@ export class CategoryRouteImplementation extends BaseRouteImplementation<Categor
 
         const { Categories } = Service.entities;
 
-        Service.before("READ", Categories as entity, this.beforeRead.bind(this));
-        Service.before("UPDATE", Categories as entity, this.beforeUpdate.bind(this));
-        Service.before("EDIT", Categories as entity, this.beforeEdit.bind(this));
-        Service.before("DELETE", Categories as entity, this.beforeDelete.bind(this));
-
-        //Draft
-        Service.before("READ", Categories.drafts as entity, this.beforeRead.bind(this));
-        Service.before("CREATE", Categories.drafts as entity, this.beforeCreate.bind(this));
-        Service.before("DELETE", Categories.drafts as entity, this.beforeDelete.bind(this));
-
-        // Service.on("READ", Categories, async (req, next) => {
-
-        //     let active = await next(); // ativos
-
-        //     if(!Array.isArray(active)){
-        //         active = [active];
-        //     }
-
-        //     const draftsOnly = await cds.run(
-        //         SELECT.from(Categories.drafts!) 
-        //             .where({ HasActiveEntity: false })
-        //     );
-
-        //     return [...active, ...draftsOnly];
-
-        // });
-
+        this.mainBase(Service, Categories);
 
     }
 

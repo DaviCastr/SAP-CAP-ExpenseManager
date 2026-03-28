@@ -1,0 +1,1 @@
+export type { EntityRepository } from './protocols';

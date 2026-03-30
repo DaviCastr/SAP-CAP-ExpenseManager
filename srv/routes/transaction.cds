@@ -9,7 +9,17 @@ service TransactionService {
     @restrict: [
         {
             grant: 'READ',
-            where: 'Invoice.Card.Person.createdBy = $user or exists Invoice.Card.Person.Shares[User = $user and exists Entities[ Entity = 2 and Permission is not null] ]'
+            where: `Invoice.Card.Person.createdBy = $user or
+                    exists (
+                        select 1 from apps.dflc.gestordegastos.entities.Shares as S
+                        inner join apps.dflc.gestordegastos.entities.Entities as E
+                            on E.Share_ID = S.ID
+                        where 
+                        S.Person_ID = Person.ID and
+                        S.User = $user and
+                        E.Entity = 7 and
+                        E.Permission is not null
+                    )`
         },
 
         {

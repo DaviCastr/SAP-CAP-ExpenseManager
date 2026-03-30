@@ -1,5 +1,5 @@
 import { PermissionDenied } from "@/errors/permission-denied";
-import { Request, User } from "@sap/cds";
+import cds, { Request, User } from "@sap/cds";
 import { Either, left, right } from "@sweet-monads/either";
 import { BaseService } from "./protocols";
 import { ShareModel } from "@/models/share";
@@ -82,24 +82,33 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
             // Request.query.SELECT.where = where;
 
+            // Request.query.where([
+            //     '(',
+            //     { ref: [...oPersonPath, 'createdBy'] },
+            //     '=',
+            //     { val: oUserId },
+
+            //     'or',
+
+            //     '(',
+            //     { ref: [...oPersonPath, 'Shares', 'User'] },
+            //     '=',
+            //     { val: oUserId },
+            //     'and',
+            //     { ref: [...oPersonPath, 'Shares', 'Entities', 'Entity'] },
+            //     '=',
+            //     { val: oEntityCode },
+            //     ')',
+
+            //     ')'
+            // ]);
+
+
             Request.query.where([
                 '(',
-                { ref: [...oPersonPath, 'createdBy'] },
-                '=',
-                { val: oUserId },
-
+                { ref: [...oPersonPath, 'createdBy'] }, '=', { val: oUserId },
                 'or',
-
-                '(',
-                { ref: [...oPersonPath, 'Shares', 'User'] },
-                '=',
-                { val: oUserId },
-                'and',
-                { ref: [...oPersonPath, 'Shares', 'Entities', 'Entity'] },
-                '=',
-                { val: oEntityCode },
-                ')',
-
+                this.buildPermissionExists(oUserId, oEntityCode as number),
                 ')'
             ]);
 
@@ -146,7 +155,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     protected abstract personPath(): string[];
 
-    protected abstract entityCode(): Number;
+    protected abstract entityCode(): number;
 
 
     protected getPermissionForCreate() { return 2; }
@@ -209,7 +218,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
                                 } else {
 
-                                    oPermissionByShare = oEntities.filter((oEntity: EntityModel) =>  oEntity.Entity == this.entityCode()).length > 0;
+                                    oPermissionByShare = oEntities.filter((oEntity: EntityModel) => oEntity.Entity == this.entityCode()).length > 0;
 
                                 }
 
@@ -240,6 +249,47 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
         }
 
         return right(true);
+
+    }
+
+
+    private buildPermissionExists(oUserId: string, oEntityCode: number) {
+
+        return {
+            xpr: [
+                'exists',
+                {
+                    SELECT: {
+                        from: { ref: ['apps.dflc.gestordegastos.entities.Shares'], as: 'S' },
+                        columns: [{ val: 1 }],
+                        where: [
+                            { ref: ['S', 'User'] }, '=', { val: oUserId },
+                            'and',
+                            { ref: ['S', 'Person_ID'] }, '=', { ref: ['Person', 'ID'] },
+                            'and',
+                            {
+                                xpr: [
+                                    'exists',
+                                    {
+                                        SELECT: {
+                                            from: { ref: ['apps.dflc.gestordegastos.entities.Entities'], as: 'E' },
+                                            columns: [{ val: 1 }],
+                                            where: [
+                                                { ref: ['E', 'Share_ID'] }, '=', { ref: ['S', 'ID'] },
+                                                'and',
+                                                { ref: ['E', 'Entity'] }, '=', { val: oEntityCode },
+                                                'and',
+                                                { ref: ['E', 'Permission'] }, 'is not', { val: null }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ]
+        };
 
     }
 

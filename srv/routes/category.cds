@@ -9,7 +9,17 @@ service CategoryService {
     @restrict: [
         {
             grant: 'READ',
-            where: 'Person.createdBy=$user or exists Person.Shares[ User = $user and exists Entities[ Share = $self and Entity = 2 and Permission is not null] ]'
+            where: `Person.createdBy = $user or 
+                    exists (
+                        select 1 from apps.dflc.gestordegastos.entities.Shares as S
+                        inner join apps.dflc.gestordegastos.entities.Entities as E
+                            on E.Share_ID = S.ID
+                        where 
+                        S.Person_ID = Person.ID and
+                        S.User = $user and
+                        E.Entity = 2 and
+                        E.Permission is not null
+                    )`
         },
 
         {grant: [

@@ -246,6 +246,12 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
             }
 
+        } else if (!oPerson) {
+
+            const oStack = new Error().stack as string;
+
+            return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
+
         }
 
         return right(true);

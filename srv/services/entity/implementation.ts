@@ -1,35 +1,33 @@
 import { Request, User } from '@sap/cds';
 import { AbstractError } from '@/errors';
-import { Share } from '@models/GestorDeGastos';
+import { Entity } from '@models/GestorDeGastos';
 import { Either, left, right } from '@sweet-monads/either';
-import { ShareService } from './protocols';
+import { EntityService } from './protocols';
 import { BaseServiceImplementation } from '../base/implementation';
 import { ShareRepository } from '@/repositories/share';
 import { PermissionDenied } from '@/errors/permission-denied';
-import { TransactionRepository } from '@/repositories/transaction';
 import { PersonRepository } from '@/repositories/person';
 import { EntityRepository } from '@/repositories/entity';
 import { DuplicityError } from '@/errors/duplicity';
 
-export class ShareServiceImplementation extends BaseServiceImplementation<Share> implements ShareService {
+export class EntityServiceImplementation extends BaseServiceImplementation<Entity> implements EntityService {
 
-    protected Repository: ShareRepository;
+    protected Repository: EntityRepository;
 
     constructor(
         PersonRepository: PersonRepository,
         ShareRepository: ShareRepository,
         EntityRepository: EntityRepository,
-        private readonly TransactionRepository: TransactionRepository
     ) {
 
         super(PersonRepository, ShareRepository, EntityRepository);
 
-        this.Repository = ShareRepository;
+        this.Repository = EntityRepository;
 
     }
 
 
-    public async beforeCreate(Entity: Share, User: User): Promise<Either<AbstractError, boolean>> {
+    public async beforeCreate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
         const result = await this.checkPermission(Entity, User, this.getPermissionForCreate());
 
@@ -37,24 +35,24 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
             return result;
         }
 
-        return this.checkDuplicityByUser(Entity);
+        return this.checkDuplicityByEntity(Entity);
 
     }
 
 
-    protected async checkPermission(Entity: Share, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
+    protected async checkPermission(Entity: Entity, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
 
         try {
 
             let oPersonID: string | null;
 
-            if (!Entity.Person_ID) {
+            if (!Entity.Share_ID) {
 
-                oPersonID = Entity.Person_ID = await this.Repository.findPersonIdById(Entity.ID as string);
+                oPersonID = Entity.Share_ID = await this.Repository.findPersonIdById(Entity.ID as string);
 
             } else {
 
-                oPersonID = Entity.Person_ID;
+                oPersonID = await this.ShareRepository.findPersonIdById(Entity.Share_ID);
 
             }
 
@@ -85,36 +83,37 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
 
     protected personPath(): string[] {
 
-        return ['Person'];
+        return ['Share', 'Person'];
 
     }
 
 
     protected entityCode(): number {
 
-        return 2;
+        return 3;
 
     }
 
-    private async checkDuplicityByUser(Share: Share): Promise<Either<DuplicityError, boolean>> {
+    private async checkDuplicityByEntity(Entity: Entity): Promise<Either<DuplicityError, boolean>> {
 
-        let oPersonID: string | null;
+        let oShareId: string | undefined;
 
-        if (!Share.Person_ID) {
+        if (!Entity.Share_ID) {
 
-                oPersonID = await this.Repository.findPersonIdById(Share.ID as string);
+            const oShare = await this.ShareRepository.findById(Entity.ID as string);
+            oShareId = oShare?.Id;
 
-            } else {
+        } else {
 
-                oPersonID = Share.Person_ID;
+            oShareId = Entity.Share_ID;
 
-            }
+        }
 
-        const oShares = await this.Repository.findByPersonId(oPersonID);
+        const oEntities = await this.Repository.findByShareId(oShareId);
 
-        if (oShares?.length) {
+        if (oEntities?.length) {
 
-            const exists = oShares.find((item) => item.User == Share?.User);
+            const exists = oEntities.find((item) => item.Entity == Entity?.Entity);
 
             if (exists) {
 

@@ -4,7 +4,6 @@ import cds, { Request, Service } from '@sap/cds';
 class GestaoGastos extends cds.ApplicationService {
 
 
-
     init(): Promise<void> {
 
         oMainRouteFactory.main(this)
@@ -12,6 +11,7 @@ class GestaoGastos extends cds.ApplicationService {
         return super.init();
 
     }
+    
 
 }
 

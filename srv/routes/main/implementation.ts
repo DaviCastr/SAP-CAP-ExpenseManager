@@ -5,6 +5,8 @@ import { oCategoryRouteFactory } from "@/factories/routes/category";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 import { BaseController } from "@/controllers/base";
 import { oTransactionRouteFactory } from "@/factories/routes/transaction";
+import { oShareRouteFactory } from "@/factories/routes/share";
+import { oEntityRouteFactory } from "@/factories/routes/entity";
 
 export class MainRouteImplementation extends BaseRouteImplementation<any> implements MainRoute {
 
@@ -22,6 +24,10 @@ export class MainRouteImplementation extends BaseRouteImplementation<any> implem
     public main(Service: ApplicationService): void {
 
         ServiceLocator.setGestorService(Service);
+
+        oShareRouteFactory.main(Service);
+
+        oEntityRouteFactory.main(Service);
         
         oCategoryRouteFactory.main(Service);
 

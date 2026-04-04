@@ -15,9 +15,9 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
     protected abstract Repository: BaseRepository;
 
     constructor(
-        private readonly PersonRepository: PersonRepository,
-        private readonly ShareRepository: ShareRepository,
-        private readonly EntityRepository: EntityRepository) { }
+        protected readonly PersonRepository: PersonRepository,
+        protected readonly ShareRepository: ShareRepository,
+        protected readonly EntityRepository: EntityRepository) { }
 
     public beforeRead(Request: any): Either<AbstractError, boolean> {
 
@@ -171,7 +171,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
         try {
 
-            const oPersonID: string | null = await this.Repository.findPersonIdById(Entity.ID as string);
+            const oPersonID: string | null = Entity.Person_ID = await this.Repository.findPersonIdById(Entity.ID as string);
 
             if (!oPersonID)
                 return right(true);

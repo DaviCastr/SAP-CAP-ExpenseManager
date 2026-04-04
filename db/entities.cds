@@ -191,9 +191,9 @@ type Permissions   : Integer enum {
 
 type EntitiesCodes : Integer enum {
     Persons = 1;
-    Categories = 2;
-    Shares = 3;
-    Entities = 4;
+    Shares = 2;
+    Entities = 3;
+    Categories = 4;
     Cards = 5;
     Invoices = 6;
     Transactions = 7;

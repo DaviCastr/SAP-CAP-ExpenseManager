@@ -13,11 +13,22 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
     public async findByShareId(ShareId: Entity['Share_ID']): Promise<EntityModel[] | null> {
 
-        const oEntityEntity = this.getEntity();
+        let oEntityEntity = this.getEntity();
 
-        const oSql = SELECT.from(oEntityEntity).where({ Share_ID: ShareId });
+        let oSql = SELECT.from(oEntityEntity).where({ Share_ID: ShareId });
 
-        const oEntities = await cds.run(oSql);
+        let oEntities = await cds.run(oSql);
+
+        if ((oEntityEntity as any)?.isDraft) {
+
+            oEntityEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oEntityEntity).where({ Share_ID: ShareId });
+
+            const additionalEntities = await cds.run(oSql) || [];
+            oEntities = [...(oEntities || []), ...additionalEntities];
+
+        }
 
         const oEntitiesModel = this.mapEntityResult(oEntities);
 
@@ -26,9 +37,9 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
     }
 
 
-    protected getEntity(): entity {
+    protected getEntity(ignoreDraft = false): entity {
 
-       return ServiceLocator.getEntity('Entities');
+        return ServiceLocator.getEntity('Entities', ignoreDraft);
 
     }
 

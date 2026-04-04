@@ -11,6 +11,31 @@ import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export class ShareRepositoryImplementation extends BaseRepositoryImplementation implements ShareRepository {
 
+    public async findById(Id: Share["ID"]): Promise<ShareModel | null> {
+
+        let oShareEntity = this.getEntity();
+
+        let oSql = SELECT.from(oShareEntity).where({ ID: Id });
+
+        let oShares = await cds.run(oSql);
+
+        if ((oShareEntity as any)?.isDraft) {
+
+            oShareEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oShareEntity).where({ Id: Id });
+
+            const additionalShares = await cds.run(oSql) || [];
+            oShares = [...(oShares || []), ...additionalShares];
+
+        }
+
+        const oSharesModel = this.mapShareResult(oShares)?.[0];
+
+        return oSharesModel?.[0];
+
+    }
+
 
     public async findByPersonId(PersonId: Share['Person_ID']): Promise<ShareModel[] | null> {
 
@@ -20,7 +45,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         let oShares = await cds.run(oSql);
 
-        if (!oShares?.length || (oShareEntity as any)?.isDraft) {
+        if ((oShareEntity as any)?.isDraft) {
 
             oShareEntity = this.getEntity(true);
 
@@ -31,7 +56,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         }
 
-        const oSharesModel = this.mapShareResult(oShares); 
+        const oSharesModel = this.mapShareResult(oShares);
 
         return oSharesModel;
 
@@ -41,12 +66,12 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
     public async findByUser(User: Share["User"]): Promise<ShareModel[] | null> {
 
         let oShareEntity = this.getEntity();
- 
+
         let oSql = SELECT.from(oShareEntity).where({ User: User });
 
         let oShares = await cds.run(oSql);
 
-        if (!oShares?.length || (oShareEntity as any)?.isDraft) {
+        if ((oShareEntity as any)?.isDraft) {
 
             oShareEntity = this.getEntity(true);
 
@@ -55,7 +80,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
             const additionalShares = await cds.run(oSql) || [];
             oShares = [...(oShares || []), ...additionalShares];
 
-        } 
+        }
 
         const oSharesModel = this.mapShareResult(oShares);
 

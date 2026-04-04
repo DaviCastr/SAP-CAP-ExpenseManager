@@ -1,0 +1,75 @@
+@server=http://localhost:4004
+@username=beatriz
+@password=123456
+
+
+### Entities
+# @name Entities_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities
+Authorization: Basic {{username}}:{{password}}
+
+
+### Entities Drafts GET
+# @name Entities_Drafts_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities?$filter=(IsActiveEntity eq false)
+Authorization: Basic {{username}}:{{password}}
+
+
+### Entities Draft POST
+# @name Entities_Draft_POST
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Share": {
+    "ID": "s1111111-1111-1111-1111-111111111111"
+  },
+  "Entity": 6,
+  "Permission": 3,
+  "createdAt": "2011-08-01T00:00:00.000Z",
+  "createdBy": "createdBy.8wua1@example.com",
+  "modifiedAt": "2005-12-06T00:00:00.000Z",
+  "modifiedBy": "modifiedBy.8wua1@example.net"
+}
+
+
+### Result from POST request above
+@draftID={{Entities_Draft_POST.response.body.$.ID}}
+
+
+### Entities Draft PATCH
+# @name Entities_Draft_Patch
+PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Share": {
+    "ID": "97319657-c7e2-41ab-a6af-351e6f39de2a"
+  },
+  "Entity": 6,
+  "Permission": 3,
+  "createdAt": "2011-08-01T00:00:00.000Z",
+  "createdBy": "createdBy.8wua1@example.com",
+  "modifiedAt": "2005-12-06T00:00:00.000Z",
+  "modifiedBy": "modifiedBy.8wua1@example.net"
+}
+
+
+### Entities Draft Prepare
+# @name Entities_Draft_Prepare
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities(ID={{draftID}},IsActiveEntity=false)/EntityService.draftPrepare
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Entities Draft Activate
+# @name Entities_Draft_Activate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities(ID={{draftID}},IsActiveEntity=false)/EntityService.draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}

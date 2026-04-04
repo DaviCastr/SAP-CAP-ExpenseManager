@@ -11,6 +11,10 @@ service GestorDeGastos {
     //@odata.draft.bypass
     entity Persons      as projection on entities.Persons;
 
+    entity Shares      as projection on entities.Shares;
+
+    entity Entities      as projection on entities.Entities;
+
     @odata.draft.bypass
     entity Categories   as projection on entities.Categories;
 

@@ -8,6 +8,9 @@ using from './routes/person';
 //Share
 using from './routes/share';
 
+//Entities
+using from './routes/entity';
+
 //Category
 using from './routes/category';
 

@@ -1,0 +1,1 @@
+export type { EntityRoute } from './protocols';

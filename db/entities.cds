@@ -71,8 +71,8 @@ entity Categories : cuid, managed {
 }
 
 entity Shares : cuid, managed {
-    Person   : Association to Persons @mandatory;
     User     : String(255)            @mandatory;
+    Person   : Association to Persons @mandatory;
     Entities : Composition of many Entities
                    on Entities.Share = $self;
 }

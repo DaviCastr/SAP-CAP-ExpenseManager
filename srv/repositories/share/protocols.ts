@@ -5,4 +5,5 @@ import { Request } from "@sap/cds";
 
 export interface ShareRepository extends BaseRepository{
     findByPersonId(PersonId: Share['Person_ID']): Promise<ShareModel[] | null>;
+    findByUser(User: Share['User']): Promise<ShareModel[] | null>;
 }

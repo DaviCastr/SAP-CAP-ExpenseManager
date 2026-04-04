@@ -46,8 +46,7 @@ export class CategoryServiceImplementation extends BaseServiceImplementation<Cat
 
     }
 
-
-
+    
     protected async checkPermission(Category: Category, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
 
         try {

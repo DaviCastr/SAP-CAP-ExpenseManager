@@ -47,9 +47,9 @@ export class ServiceLocator {
     }
 
 
-    public static getEntity(EntityName: string): entity {
+    public static getEntity(EntityName: string, ignoreDraft = false): entity {
 
-        if (this.getRequest()?.target?.name?.endsWith(`.${EntityName}.drafts`)) {
+        if (this.getRequest()?.target?.name?.endsWith(`.${EntityName}.drafts`) && !ignoreDraft) {
 
             return this.getRequest().target as entity;
 

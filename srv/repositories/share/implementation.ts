@@ -14,11 +14,48 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
     public async findByPersonId(PersonId: Share['Person_ID']): Promise<ShareModel[] | null> {
 
-        const oShareEntity = this.getEntity();
+        let oShareEntity = this.getEntity();
 
-        const oSql = SELECT.from(oShareEntity).where({ Person_ID: PersonId });
+        let oSql = SELECT.from(oShareEntity).where({ Person_ID: PersonId });
 
-        const oShares = await cds.run(oSql);
+        let oShares = await cds.run(oSql);
+
+        if (!oShares?.length || (oShareEntity as any)?.isDraft) {
+
+            oShareEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oShareEntity).where({ Person_ID: PersonId });
+
+            const additionalShares = await cds.run(oSql) || [];
+            oShares = [...(oShares || []), ...additionalShares];
+
+        }
+
+        const oSharesModel = this.mapShareResult(oShares); 
+
+        return oSharesModel;
+
+    }
+
+
+    public async findByUser(User: Share["User"]): Promise<ShareModel[] | null> {
+
+        let oShareEntity = this.getEntity();
+ 
+        let oSql = SELECT.from(oShareEntity).where({ User: User });
+
+        let oShares = await cds.run(oSql);
+
+        if (!oShares?.length || (oShareEntity as any)?.isDraft) {
+
+            oShareEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oShareEntity).where({ User: User });
+
+            const additionalShares = await cds.run(oSql) || [];
+            oShares = [...(oShares || []), ...additionalShares];
+
+        } 
 
         const oSharesModel = this.mapShareResult(oShares);
 
@@ -27,9 +64,9 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
     }
 
 
-    protected getEntity(): entity {
+    protected getEntity(ignoreDraft = false): entity {
 
-       return ServiceLocator.getEntity('Shares');
+        return ServiceLocator.getEntity('Shares', ignoreDraft);
 
     }
 
@@ -54,6 +91,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
             return ShareModel.with({
                 Id: Share.ID as string,
                 User: Share.User as string,
+                PersonId: Share.Person_ID as string,
                 CreatedAt: Share.createdAt as string,
                 CreatedBy: Share.createdBy as string,
                 ModifiedAt: Share.modifiedAt as string,

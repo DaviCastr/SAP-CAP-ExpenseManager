@@ -9,6 +9,7 @@ import { PermissionDenied } from '@/errors/permission-denied';
 import { TransactionRepository } from '@/repositories/transaction';
 import { PersonRepository } from '@/repositories/person';
 import { EntityRepository } from '@/repositories/entity';
+import { DuplicityError } from '@/errors/duplicity';
 
 export class ShareServiceImplementation extends BaseServiceImplementation<Share> implements ShareService {
 
@@ -28,37 +29,32 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
     }
 
 
-    public async beforeDelete(Share: Share, LoggedUser: User): Promise<Either<AbstractError, boolean>> {
+    public async beforeCreate(Entity: Share, User: User): Promise<Either<AbstractError, boolean>> {
 
-        const oPermission = await this.checkPermission(Share, LoggedUser, this.getPermissionForDelete());
+        const result = await this.checkPermission(Entity, User, this.getPermissionForCreate());
 
-        if (oPermission.isRight()) {
-
-            return this.checkDeleteByTransactionExistence(Share);
-
-        } else {
-
-            return oPermission;
-
+        if (result.isLeft()) {
+            return result;
         }
+
+        return this.checkDuplicityByUser(Entity);
 
     }
 
 
-
-    protected async checkPermission(Share: Share, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
+    protected async checkPermission(Entity: Share, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
 
         try {
 
             let oPersonID: string | null;
 
-            if (!Share.Person_ID) {
+            if (!Entity.Person_ID) {
 
-                oPersonID = await this.Repository.findPersonIdById(Share.ID as string);
+                oPersonID = await this.Repository.findPersonIdById(Entity.ID as string);
 
             } else {
 
-                oPersonID = Share.Person_ID;
+                oPersonID = Entity.Person_ID;
 
             }
 
@@ -83,7 +79,7 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
             return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
 
         }
- 
+
     }
 
 
@@ -100,18 +96,19 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
 
     }
 
+    private async checkDuplicityByUser(Share: Share): Promise<Either<DuplicityError, boolean>> {
 
-    public async checkDeleteByTransactionExistence(Share: Share): Promise<Either<AbstractError, boolean>> {
+        const oShares = await this.Repository.findByUser(Share.User);
 
-        const oTransactions = await this.TransactionRepository.findByCategoryID(Share.ID, 1);
+        if (oShares?.length) {
 
-        if (Array.isArray(oTransactions)) {
+            const exists = oShares.find((item) => item.PersonId == Share?.Person_ID);
 
-            if (oTransactions.length > 0) {
+            if (exists) {
 
-                const stack = new Error().stack as string;
+                const oStack = new Error().stack as string;
 
-                return left(new PermissionDenied('error.exclusionOfShareInUsePermissionDenied', 403, stack));
+                return left(new DuplicityError(oStack));
 
             }
 
@@ -120,5 +117,6 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
         return right(true);
 
     }
+
 
 }

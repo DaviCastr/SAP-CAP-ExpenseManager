@@ -173,8 +173,13 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
             const oPersonID: string | null = Entity.Person_ID = await this.Repository.findPersonIdById(Entity.ID as string);
 
-            if (!oPersonID)
-                return right(true);
+            if (!oPersonID) {
+
+                const oStack = new Error().stack as string;
+
+                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
+                
+            }
 
             return this.checkPermissionByPersonId(User, oPersonID, Permission);
 

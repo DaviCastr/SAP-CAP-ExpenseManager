@@ -14,9 +14,11 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         Service.before("READ", EntityDB as entity, this.beforeRead.bind(this));
         Service.before("CREATE", EntityDB?.drafts as entity, this.beforeCreate.bind(this));
         Service.before("UPDATE", EntityDB as entity, this.beforeUpdate.bind(this));
+        Service.before("PATCH", EntityDB as entity, this.beforeUpdate.bind(this));
+        Service.before("PATCH", EntityDB?.drafts as entity, this.beforeUpdate.bind(this));
         Service.before("EDIT", EntityDB as entity, this.beforeEdit.bind(this));
-        Service.before("DELETE", EntityDB as entity, this.beforeEdit.bind(this));
-        Service.before("DELETE", EntityDB?.drafts as entity, this.beforeEdit.bind(this));
+        Service.before("DELETE", EntityDB as entity, this.beforeDelete.bind(this));
+        Service.before("DELETE", EntityDB?.drafts as entity, this.beforeDelete.bind(this));
 
         // Service.on("READ", EntityDB, async (req, next) => {
 

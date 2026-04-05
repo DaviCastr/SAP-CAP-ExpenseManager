@@ -46,14 +46,10 @@ Authorization: Basic {{username}}:{{password}}
 
 {
   "Share": {
-    "ID": "97319657-c7e2-41ab-a6af-351e6f39de2a"
+    "ID": "s1111111-1111-1111-1111-111111111111"
   },
   "Entity": 6,
-  "Permission": 3,
-  "createdAt": "2011-08-01T00:00:00.000Z",
-  "createdBy": "createdBy.8wua1@example.com",
-  "modifiedAt": "2005-12-06T00:00:00.000Z",
-  "modifiedBy": "modifiedBy.8wua1@example.net"
+  "Permission": 3
 }
 
 

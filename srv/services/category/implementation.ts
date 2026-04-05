@@ -46,7 +46,7 @@ export class CategoryServiceImplementation extends BaseServiceImplementation<Cat
 
     }
 
-    
+
     protected async checkPermission(Category: Category, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
 
         try {
@@ -73,6 +73,12 @@ export class CategoryServiceImplementation extends BaseServiceImplementation<Cat
 
                 }
 
+            } else {
+
+                const oStack = new Error().stack as string;
+
+                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
+
             }
 
             return right(true);
@@ -84,7 +90,7 @@ export class CategoryServiceImplementation extends BaseServiceImplementation<Cat
             return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
 
         }
- 
+
     }
 
 

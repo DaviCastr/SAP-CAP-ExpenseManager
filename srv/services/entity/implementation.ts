@@ -8,6 +8,7 @@ import { ShareRepository } from '@/repositories/share';
 import { PersonRepository } from '@/repositories/person';
 import { EntityRepository } from '@/repositories/entity';
 import { DuplicityError } from '@/errors/duplicity';
+import { PermissionDenied } from '@/errors/permission-denied';
 
 export class EntityServiceImplementation extends BaseServiceImplementation<Entity> implements EntityService {
 
@@ -29,6 +30,19 @@ export class EntityServiceImplementation extends BaseServiceImplementation<Entit
     public async beforeCreate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
         const result = await this.checkPermission(Entity, User, this.getPermissionForCreate());
+
+        if (result.isLeft()) {
+            return result;
+        }
+
+        return this.checkDuplicityByEntity(Entity);
+
+    }
+
+
+    public async beforeUpdate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
+
+        const result = await this.checkPermission(Entity, User, this.getPermissionForUpdate());
 
         if (result.isLeft()) {
             return result;
@@ -64,6 +78,12 @@ export class EntityServiceImplementation extends BaseServiceImplementation<Entit
                     return left(oCheckPermission.value);
 
                 }
+
+            } else {
+
+                const oStack = new Error().stack as string;
+
+                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
 
             }
 
@@ -112,7 +132,7 @@ export class EntityServiceImplementation extends BaseServiceImplementation<Entit
 
         if (oEntities?.length) {
 
-            const exists = oEntities.find((item) => item.Entity == Entity?.Entity);
+            const exists = oEntities.find((item) => item.Entity == Entity?.Entity && item?.Id != Entity?.ID);
 
             if (exists) {
 

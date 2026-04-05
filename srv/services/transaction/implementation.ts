@@ -12,6 +12,7 @@ import { ShareRepository } from "@/repositories/share";
 import { Request, User } from "@sap/cds";
 import { InvoiceRepository } from "@/repositories/invoice/protocols";
 import { EntityRepository } from '@/repositories/entity';
+import { PermissionDenied } from "@/errors/permission-denied";
 
 export class TransactionServiceImplementation extends BaseServiceImplementation<Transaction> implements TransactionService {
 
@@ -213,6 +214,12 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
                     return left(oCheckPermission.value);
 
                 }
+
+            } else {
+
+                const oStack = new Error().stack as string;
+
+                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
 
             }
 

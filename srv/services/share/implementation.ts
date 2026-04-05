@@ -42,6 +42,19 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
     }
 
 
+    public async beforeUpdate(Entity: Share, User: User): Promise<Either<AbstractError, boolean>> {
+
+        const result = await this.checkPermission(Entity, User, this.getPermissionForUpdate());
+
+        if (result.isLeft()) {
+            return result;
+        }
+
+        return this.checkDuplicityByUser(Entity);
+
+    }
+
+
     protected async checkPermission(Entity: Share, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
 
         try {
@@ -67,6 +80,12 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
                     return left(oCheckPermission.value);
 
                 }
+
+            } else {
+
+                const oStack = new Error().stack as string;
+
+                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
 
             }
 
@@ -102,19 +121,19 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
 
         if (!Share.Person_ID) {
 
-                oPersonID = await this.Repository.findPersonIdById(Share.ID as string);
+            oPersonID = await this.Repository.findPersonIdById(Share.ID as string);
 
-            } else {
+        } else {
 
-                oPersonID = Share.Person_ID;
+            oPersonID = Share.Person_ID;
 
-            }
+        }
 
         const oShares = await this.Repository.findByPersonId(oPersonID);
 
         if (oShares?.length) {
 
-            const exists = oShares.find((item) => item.User == Share?.User);
+            const exists = oShares.find((item) => item.User == Share?.User && item?.Id != Share.ID);
 
             if (exists) {
 

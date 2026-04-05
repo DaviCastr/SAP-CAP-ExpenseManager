@@ -52,11 +52,7 @@ Authorization: Basic {{username}}:{{password}}
       "modifiedAt": "2010-12-24T00:00:00.000Z",
       "modifiedBy": "modifiedBy.fb4du@example.com"
     }
-  ],
-  "createdAt": "2014-12-19T00:00:00.000Z",
-  "createdBy": "createdBy.baxr3@example.com",
-  "modifiedAt": "2013-01-12T00:00:00.000Z",
-  "modifiedBy": "modifiedBy.baxr3@example.net"
+  ]
 }
 
 
@@ -72,33 +68,9 @@ Authorization: Basic {{username}}:{{password}}
 
 {
   "Person": {
-    "ID": "7868363d-f17c-4834-bbda-5705fe2b9a39"
+    "ID": "11111111-1111-1111-1111-111111111111"
   },
-  "User": "User-18986079",
-  "Entities": [
-    {
-      "ID": "25713137-cc32-4779-ab40-9956b80875bf",
-      "Entity": 6,
-      "Permission": 3,
-      "createdAt": "2000-10-01T00:00:00.000Z",
-      "createdBy": "createdBy.fb4dt@example.com",
-      "modifiedAt": "2002-09-11T00:00:00.000Z",
-      "modifiedBy": "modifiedBy.fb4dt@example.com"
-    },
-    {
-      "ID": "25713138-b02c-4612-9b00-2d453202e787",
-      "Entity": 8,
-      "Permission": 3,
-      "createdAt": "2006-07-18T00:00:00.000Z",
-      "createdBy": "createdBy.fb4du@example.org",
-      "modifiedAt": "2010-12-24T00:00:00.000Z",
-      "modifiedBy": "modifiedBy.fb4du@example.com"
-    }
-  ],
-  "createdAt": "2014-12-19T00:00:00.000Z",
-  "createdBy": "createdBy.baxr3@example.com",
-  "modifiedAt": "2013-01-12T00:00:00.000Z",
-  "modifiedBy": "modifiedBy.baxr3@example.net"
+  "User": "teste"
 }
 
 

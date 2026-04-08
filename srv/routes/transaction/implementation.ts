@@ -36,15 +36,13 @@ export class TransactionRouteImplementation extends BaseRouteImplementation<Tran
     }
 
 
-    private async afterRead(Transactions: Transactions | Transaction, Request: Request): Promise<void> {
-
-        ServiceLocator.setRequest(Request);
+    protected async afterRead(Transactions: Transactions | Transaction, Request: Request): Promise<void> {
 
         const oTransactions = Array.isArray(Transactions)
             ? Transactions
             : [Transactions];
 
-        const oResult = await oTransactionControllerFactory.afterRead(oTransactions);
+        const oResult = await this.Controller.afterRead(oTransactions);
 
         if (oResult.status >= 400) {
             return this.returnRejectMessage(Request, oResult);
@@ -61,13 +59,11 @@ export class TransactionRouteImplementation extends BaseRouteImplementation<Tran
 
     private async afterCreate(Transactions: Transactions | Transaction, Request: Request): Promise<void> {
 
-        ServiceLocator.setRequest(Request);
-
         const oTransactions = Array.isArray(Transactions)
             ? Transactions
             : [Transactions];
 
-        const oResult = await oTransactionControllerFactory.afterCreate(oTransactions);
+        const oResult = await this.Controller.afterCreate(oTransactions);
 
         if (oResult.status != 201) {
             return this.returnRejectMessage(Request, oResult);
@@ -78,13 +74,11 @@ export class TransactionRouteImplementation extends BaseRouteImplementation<Tran
 
     private async afterUpdate(Transactions: Transactions | Transaction, Request: Request): Promise<void> {
 
-        ServiceLocator.setRequest(Request);
-
         const oTransactions = Array.isArray(Transactions)
             ? Transactions
             : [Transactions];
 
-        const oResult = await oTransactionControllerFactory.afterUpdate(oTransactions);
+        const oResult = await this.Controller.afterUpdate(oTransactions);
 
         if (oResult.status != 204) {
             return this.returnRejectMessage(Request, oResult);
@@ -94,8 +88,6 @@ export class TransactionRouteImplementation extends BaseRouteImplementation<Tran
 
 
     private async onDelete(Request: Request, Next: Function): Promise<void> {
-
-        ServiceLocator.setRequest(Request);
 
         const oTransaction: Transaction = {
             ...Request.data,

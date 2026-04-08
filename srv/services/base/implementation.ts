@@ -9,6 +9,8 @@ import { PersonRepository } from "@/repositories/person";
 import { AbstractError } from "@/errors";
 import { BaseRepository } from "@/repositories/base";
 import { EntityModel } from "@/models/entity";
+import { Orchestrator } from "@/infrastructure/Orchestrator";
+import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export abstract class BaseServiceImplementation<Entity> implements BaseService<Entity> {
 
@@ -127,21 +129,21 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     public beforeCreate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
-        return this.checkPermission(Entity, User, this.getPermissionForCreate());
+        return this.processBeforeCreate(Entity, User);
 
     }
 
 
     public beforeUpdate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
-        return this.checkPermission(Entity, User, this.getPermissionForUpdate());
+        return this.processBeforeUpdate(Entity, User);
 
     }
 
 
     public beforeEdit(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
-        return this.checkPermission(Entity, User, this.getPermissionForUpdate());
+        return this.processBeforeUpdate(Entity, User);
 
     }
 
@@ -149,6 +151,64 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
     public async beforeDelete(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
         return this.checkPermission(Entity, User, this.getPermissionForDelete());
+ 
+    }
+
+
+    public async afterRead(Entities: Entity[], User: User): Promise<Either<AbstractError, Entity[]>> {
+
+        return this.processAfterRead(Entities, User);
+
+    }
+
+
+    public async processBeforeCreate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
+
+        const result = await this.checkPermission(Entity, User, this.getPermissionForCreate());
+
+        if (result.isLeft()) {
+            return result;
+        }
+
+        return Orchestrator.processBeforeCreate(Entity, User);
+
+    }
+
+
+    public async processBeforeUpdate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
+
+        const result = await this.checkPermission(Entity, User, this.getPermissionForCreate());
+
+        if (result.isLeft()) {
+            return result;
+        }
+
+        return Orchestrator.processBeforeCreate(Entity, User);
+
+    }
+
+
+    public async processAfterRead(Entities: Entity[], User: User): Promise<Either<AbstractError, Entity[]>> {
+
+        const filtered: Entity[] = [];
+
+        for (const entity of Entities) {
+
+            const permission = await this.checkPermission(
+                entity,
+                User,
+                this.getPermissionForRead()
+            );
+
+            if (permission.isLeft()) continue;
+
+            const processed = await Orchestrator.processAfterRead(entity, User);
+
+            if (processed.isRight()) filtered.push(processed?.value);
+
+        }
+
+        return right(filtered);
 
     }
 
@@ -156,6 +216,9 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
     protected abstract personPath(): string[];
 
     protected abstract entityCode(): number;
+
+
+    protected getPermissionForRead() { return 1; }
 
 
     protected getPermissionForCreate() { return 2; }
@@ -167,31 +230,59 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
     protected getPermissionForDelete() { return 4; }
 
 
-    protected async checkPermission(Entity: any, User: User, Permission: number): Promise<Either<AbstractError, boolean>> {
+    protected async checkPermission(Entity: any, User: User, Permission: number) {
 
-        try {
+        const cache = ServiceLocator.getPermissionCache();
 
-            const oPersonID: string | null = Entity.Person_ID = await this.Repository.findPersonIdById(Entity.ID as string);
+        const userId = User?.id;
 
-            if (!oPersonID) {
+        let personId = cache.personMap.get(Entity.ID);
 
-                const oStack = new Error().stack as string;
+        if (!personId) {
 
-                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
-                
+            personId =
+                Entity.Person_ID ||
+                Entity.Person?.ID ||
+                await this.Repository.findPersonIdById(Entity.ID);
+
+            if (personId) {
+                cache.personMap.set(Entity.ID, personId);
             }
-
-            return this.checkPermissionByPersonId(User, oPersonID, Permission);
-
-        } catch (oError) {
-
-            const errorInstance: Error = oError as Error;
-
-            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
 
         }
 
+        if (!personId) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.invalidPersonId', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.invalidPersonId';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
+
+        const key = ServiceLocator.buildPermissionKey(
+            userId,
+            personId,
+            this.entityCode(),
+            Permission
+        );
+
+        if (cache.permissionChecked.has(key)) {
+            return right(true);
+        }
+
+        const result = await this.checkPermissionByPersonId(User, personId, Permission);
+
+        if (result.isRight()) {
+            cache.permissionChecked.add(key);
+        }
+
+        return result;
+
     }
+
 
     public async checkPermissionByPersonId(LoggedUser: User, PersonId: string, Permision: number): Promise<Either<PermissionDenied, boolean>> {
 
@@ -237,7 +328,10 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
                         const oStack = new Error().stack as string;
 
-                        return left(new PermissionDenied('error.modificationPermissionDenied', 403, oStack));
+                        const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                            'error.modificationPermissionDenied';
+
+                        return left(new PermissionDenied(message, 403, oStack));
 
                     }
 
@@ -245,7 +339,10 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
                     const oStack = new Error().stack as string;
 
-                    return left(new PermissionDenied('error.modificationPermissionDenied', 403, oStack));
+                    const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                        'error.modificationPermissionDenied';
+
+                    return left(new PermissionDenied(message, 403, oStack));
 
                 }
 
@@ -255,7 +352,10 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
             const oStack = new Error().stack as string;
 
-            return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
+            const message = this.getMessage('error.invalidPersonId', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.invalidPersonId';
+
+            return left(new PermissionDenied(message, 403, oStack));
 
         }
 
@@ -264,7 +364,59 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
     }
 
 
-    private buildPermissionExists(oUserId: string, oEntityCode: number) {
+    private getEntityLabel(entityCode: number, request: any): string {
+
+        const map = {
+            1: 'Persons',
+            2: 'Shares',
+            3: 'Entities',
+            4: 'Categories',
+            5: 'Cards',
+            6: 'Invoices',
+            7: 'Transactions',
+            8: 'Backups'
+        };
+
+        const entityName = map[entityCode];
+
+        if (!entityName) {
+            return cds.i18n.messages.at('unknown.entity', request.locale) as string;
+        }
+
+        return cds.i18n.messages.at(
+            `entity.name.${entityName}`,
+            request.locale
+        ) as string;
+
+    }
+
+
+    protected getMessage(
+        key: string,
+        request: any,
+        entityCode?: number,
+        args?: Record<string, any>
+    ): string {
+
+        let finalArgs = args || {};
+
+        if (entityCode) {
+            finalArgs = {
+                ...finalArgs,
+                entity: this.getEntityLabel(entityCode, request)
+            };
+        }
+
+        return cds.i18n.messages.at(
+            key,
+            request.locale || 'pt',
+            finalArgs
+        ) as string;
+
+    }
+
+
+    protected buildPermissionExists(oUserId: string, oEntityCode: number) {
 
         return {
             xpr: [

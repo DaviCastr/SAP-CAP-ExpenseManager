@@ -1,4 +1,4 @@
-import { AbstractError, ServerError } from "@/errors";
+import { AbstractError } from "@/errors";
 import { Transactions, Transaction } from "@models/GestorDeGastos";
 import { Either, right, left } from "@sweet-monads/either";
 import { TransactionService } from "./protocols";
@@ -9,10 +9,11 @@ import { TransactionRepository } from "@/repositories/transaction";
 import { BaseServiceImplementation } from "../base/implementation";
 import { PersonRepository } from "@/repositories/person";
 import { ShareRepository } from "@/repositories/share";
-import { Request, User } from "@sap/cds";
+import { User } from "@sap/cds";
 import { InvoiceRepository } from "@/repositories/invoice/protocols";
 import { EntityRepository } from '@/repositories/entity';
 import { PermissionDenied } from "@/errors/permission-denied";
+import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export class TransactionServiceImplementation extends BaseServiceImplementation<Transaction> implements TransactionService {
 
@@ -45,22 +46,27 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
             const errorInstance: Error = error as Error;
 
-            return left(new ServerError(errorInstance.stack as string, errorInstance.message));
+            return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
 
         }
 
     }
 
 
-    public async afterRead(Transactions: Transactions): Promise<Either<AbstractError, Transactions>> {
+    public async afterRead(Transactions: Transactions, User: User): Promise<Either<AbstractError, Transactions>> {
 
         try {
+
+            const result = await this.processAfterRead(Transactions, User);
+            let oTransactionsFiltered: Transactions = [];
+            if(result.isRight()) oTransactionsFiltered = result.value;
+            else oTransactionsFiltered = []
 
             let oTransactionReference: TransactionModel | null = null;
 
             const oTransactionsData: Transactions = [];
 
-            for (let Transaction of Transactions) {
+            for (let Transaction of oTransactionsFiltered) {
 
                 const oCurrencyModel = CurrencyModel.with({
                     Code: Transaction.Currency?.code as string,
@@ -124,7 +130,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
             const errorInstance: Error = error as Error;
 
-            return left(new ServerError(errorInstance.stack as string, errorInstance.message));
+            return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
 
         }
 
@@ -155,7 +161,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
             const errorInstance: Error = error as Error;
 
-            return left(new ServerError(errorInstance.stack as string, errorInstance.message));
+            return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
 
         }
 
@@ -182,56 +188,73 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
             const errorInstance: Error = error as Error;
 
-            return left(new ServerError(errorInstance.stack as string, errorInstance.message));
+            return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
 
         }
 
     }
 
 
-    protected async checkPermission(Transaction: Transaction, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
+    protected async checkPermission(Transaction: Transaction, User: User, Permission: number) {
 
-        try {
+        const cache = ServiceLocator.getPermissionCache();
 
-            let oPersonID: string | null;
+        const userId = User?.id;
 
-            if (!Transaction.Invoice_ID) {
+        let personId = cache.personMap.get(Transaction.ID);
 
-                oPersonID = await this.Repository.findPersonIdById(Transaction.ID as string);
+        if (!personId) {
 
-            } else {
+            if (!Transaction?.Invoice_ID && !Transaction?.Invoice?.ID) {
 
-                oPersonID = await this.InvoiceRepository.findPersonIdById(Transaction.Invoice_ID as string);
-
-            }
-
-            if (oPersonID) {
-
-                const oCheckPermission = await this.checkPermissionByPersonId(LoggedUser, oPersonID as string, Permision);
-
-                if (oCheckPermission.isLeft()) {
-
-                    return left(oCheckPermission.value);
-
-                }
+                personId =
+                    await this.Repository.findPersonIdById(Transaction?.ID as string);
 
             } else {
 
-                const oStack = new Error().stack as string;
+                let personIdByInvoice = cache.personMap.get(Transaction?.Invoice_ID || Transaction?.Invoice?.ID);
 
-                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
+                personId =
+                    personIdByInvoice ||
+                    await this.ShareRepository.findPersonIdById((Transaction?.Invoice_ID || Transaction?.Invoice?.ID) as string);
 
             }
 
-            return right(true);
-
-        } catch (oError) {
-
-            const errorInstance: Error = oError as Error;
-
-            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
+            if (personId) {
+                cache.personMap.set(Transaction.ID, personId);
+            }
 
         }
+
+        if (!personId) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.invalidPersonId', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.invalidPersonId';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
+
+        const key = ServiceLocator.buildPermissionKey(
+            userId,
+            personId,
+            this.entityCode(),
+            Permission
+        );
+
+        if (cache.permissionChecked.has(key)) {
+            return right(true);
+        }
+
+        const result = await this.checkPermissionByPersonId(User, personId, Permission);
+
+        if (result.isRight()) {
+            cache.permissionChecked.add(key);
+        }
+
+        return result;
 
     }
 

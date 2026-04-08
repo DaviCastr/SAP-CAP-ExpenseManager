@@ -10,6 +10,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
     protected mainBase(Service: Service, EntityDB: entity) {
 
         //Before
+        Service.before("*", this.beforeAll.bind(this));
         Service.before("READ", EntityDB?.drafts as entity, this.beforeRead.bind(this));
         Service.before("READ", EntityDB as entity, this.beforeRead.bind(this));
         Service.before("CREATE", EntityDB?.drafts as entity, this.beforeCreate.bind(this));
@@ -19,6 +20,10 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         Service.before("EDIT", EntityDB as entity, this.beforeEdit.bind(this));
         Service.before("DELETE", EntityDB as entity, this.beforeDelete.bind(this));
         Service.before("DELETE", EntityDB?.drafts as entity, this.beforeDelete.bind(this));
+
+        //After
+        Service.after("READ", EntityDB as entity, this.afterRead.bind(this));
+        Service.after("READ", EntityDB?.drafts as entity, this.afterRead.bind(this));
 
         // Service.on("READ", EntityDB, async (req, next) => {
 
@@ -80,9 +85,20 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
     }
 
 
-    protected async beforeRead(Request: Request): Promise<void> {
+    protected async beforeAll(Request: Request): Promise<void> {
 
-        ServiceLocator.setRequest(Request);
+        (cds.context as any)._request = Request;
+
+        (cds.context as any)._meta = {
+            event: Request.event,
+            hasTarget: !!Request.target,
+            isDraft: Request.data?.IsActiveEntity === false
+        };
+
+    }
+
+
+    protected async beforeRead(Request: Request): Promise<void> {
 
         const oResult = this.Controller.beforeRead(Request);
 
@@ -96,8 +112,6 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
 
     protected async beforeCreate(Request: Request): Promise<void> {
-
-        ServiceLocator.setRequest(Request);
 
         const oEntity: Entity = Request.data;
 
@@ -113,8 +127,6 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
 
     protected async beforeUpdate(Request: Request): Promise<void> {
-
-        ServiceLocator.setRequest(Request);
 
         const oEntity: Entity = {
             ...Request.data,
@@ -134,8 +146,6 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
     protected async beforeEdit(Request: Request): Promise<void> {
 
-        ServiceLocator.setRequest(Request);
-
         const oEntity: Entity = {
             ...Request.data,
             ID: Request.data?.ID ?? Request.params[0]?.ID
@@ -154,8 +164,6 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
     protected async beforeDelete(Request: Request): Promise<void> {
 
-        ServiceLocator.setRequest(Request);
-
         const oEntity: Entity = {
             ...Request.data,
             ID: Request.data?.ID ?? Request.params[0]?.ID
@@ -170,5 +178,26 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         }
 
     }
+
+
+    protected async afterRead(Entities: Entity[] | Entity, Request: Request): Promise<void> {
+
+        const oEntities = Array.isArray(Entities)
+            ? Entities
+            : [Entities];
+
+        const oResult = await this.Controller.afterRead(oEntities, Request.user);
+
+        if (oResult.status >= 400) {
+            return this.returnRejectMessage(Request, oResult);
+        }
+
+        const oResultData = oResult.data as Entity[];
+
+        oEntities.length = 0;
+        oEntities.push(...oResultData);
+
+    }
+
 
 }

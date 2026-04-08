@@ -3,7 +3,6 @@ import cds, { entity, Request } from "@sap/cds";
 export class ServiceLocator {
 
     private static GestorService: cds.Service;
-    private static Request: Request;
 
 
     public static setGestorService(Service: any) {
@@ -13,16 +12,9 @@ export class ServiceLocator {
     }
 
 
-    public static setRequest(Request: Request) {
-
-        this.Request = Request;
-
-    }
-
-
     public static getRequest(): Request {
 
-        return this.Request;
+        return (cds.context as any)?._request as Request;
 
     }
 
@@ -42,7 +34,7 @@ export class ServiceLocator {
 
     public static getServiceName(): string {
 
-        return this.Request?.target?.name?.split('.')[0];
+        return this.getRequest()?.target?.name?.split('.')[0];
 
     }
 
@@ -69,6 +61,34 @@ export class ServiceLocator {
 
         return oEntity as entity;
 
+    }
+
+
+    public static getPermissionCache() {
+
+        const request = this.getRequest() as any;
+
+        if (!request?.context?.permissionCache) {
+            request.context.permissionCache = {
+                personMap: new Map(),
+                permissionChecked: new Set(),
+                sharesByPerson: new Map(),
+                entitiesByShare: new Map(),
+            };
+        }
+
+        return request.context.permissionCache;
+
+    }
+
+
+    public static buildPermissionKey(
+        userId: string,
+        personId: string,
+        entityCode: number,
+        permission: number
+    ) {
+        return `${userId}|${personId}|${entityCode}|${permission}`;
     }
 
 

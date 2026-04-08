@@ -13,6 +13,7 @@ export interface BaseController<Entity> {
     beforeUpdate(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse>;
     beforeEdit(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse>;
     beforeDelete(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse>;
+    afterRead(Entities: Entity[], LoggedUser: User): Promise<BaseControllerResponse>;
     success(code: number, data: unknown): BaseControllerResponse;
     error(code: number, message: string): BaseControllerResponse;
 

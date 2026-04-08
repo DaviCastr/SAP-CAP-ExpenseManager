@@ -5,16 +5,22 @@ import { oPersonRepositoryFactory } from "../repositories/person";
 import { oShareRepositoryFactory } from "../repositories/share";
 import { oInvoiceRepositoryFactory } from "../repositories/invoice";
 import { oEntityRepositoryFactory } from "../repositories/entity";
+import { service } from "@sap/cds";
+import { ServiceRegistry } from "@/infrastructure/ServiceRegistry";
 
 const makeCustomerService = (): TransactionService => {
 
-    return new TransactionServiceImplementation(
+    const service = new TransactionServiceImplementation(
         oPersonRepositoryFactory,
         oShareRepositoryFactory,
         oEntityRepositoryFactory,
         oTransactionRepositoryFactory,
         oInvoiceRepositoryFactory
     );
+
+    ServiceRegistry.register('Transactions', service);
+
+    return service;
 
 }
 

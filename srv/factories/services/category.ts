@@ -5,16 +5,21 @@ import { oTransactionRepositoryFactory } from "../repositories/transaction";
 import { oPersonRepositoryFactory } from "../repositories/person";
 import { oShareRepositoryFactory } from "../repositories/share";
 import { oEntityRepositoryFactory } from "../repositories/entity";
+import { ServiceRegistry } from "@/infrastructure/ServiceRegistry";
 
 const makeCustomerService = (): CategoryService => {
 
-    return new CategoryServiceImplementation(
+    const service = new CategoryServiceImplementation(
         oPersonRepositoryFactory,
         oShareRepositoryFactory,
         oEntityRepositoryFactory,
         oCategoryRepositoryFactory,
         oTransactionRepositoryFactory
     );
+
+    ServiceRegistry.register('Categories', service);
+
+    return service;
 
 }
 

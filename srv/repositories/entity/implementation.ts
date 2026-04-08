@@ -37,21 +37,7 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
     }
 
 
-    protected getEntity(ignoreDraft = false): entity {
-
-        return ServiceLocator.getEntity('Entities', ignoreDraft);
-
-    }
-
-
-    protected personPath(): string {
-
-        return 'Share.Person';
-
-    }
-
-
-    private mapEntityResult(Entities: Entities): EntityModel[] | null {
+    public mapEntityResult(Entities: Entities): EntityModel[] | null {
 
         if (Entities.length === 0) {
 
@@ -74,5 +60,20 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
         });
 
     }
+
+
+    protected getEntity(ignoreDraft = false): entity {
+
+        return ServiceLocator.getEntity('Entities', ignoreDraft);
+
+    }
+
+
+    protected personPath(): string {
+
+        return 'Share.Person';
+
+    }
+
 
 }

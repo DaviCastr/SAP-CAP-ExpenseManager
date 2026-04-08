@@ -10,6 +10,7 @@ import { TransactionRepository } from '@/repositories/transaction';
 import { PersonRepository } from '@/repositories/person';
 import { EntityRepository } from '@/repositories/entity';
 import { DuplicityError } from '@/errors/duplicity';
+import { ServiceLocator } from '@/infrastructure/ServiceLocator';
 
 export class ShareServiceImplementation extends BaseServiceImplementation<Share> implements ShareService {
 
@@ -31,7 +32,20 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
 
     public async beforeCreate(Entity: Share, User: User): Promise<Either<AbstractError, boolean>> {
 
-        const result = await this.checkPermission(Entity, User, this.getPermissionForCreate());
+        const result = await this.processBeforeCreate(Entity, User);
+
+        if (result.isLeft()) {
+            return result;
+        }
+
+        return this.checkDuplicityByUser(Entity);
+
+    }
+
+
+    public async beforeEdit(Entity: Share, User: User): Promise<Either<AbstractError, boolean>> {
+
+        const result = await this.processBeforeCreate(Entity, User);
 
         if (result.isLeft()) {
             return result;
@@ -44,7 +58,7 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
 
     public async beforeUpdate(Entity: Share, User: User): Promise<Either<AbstractError, boolean>> {
 
-        const result = await this.checkPermission(Entity, User, this.getPermissionForUpdate());
+        const result = await this.processBeforeUpdate(Entity, User);
 
         if (result.isLeft()) {
             return result;
@@ -55,49 +69,62 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
     }
 
 
-    protected async checkPermission(Entity: Share, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
+    protected async checkPermission(Share: Share, User: User, Permission: number) {
 
-        try {
+        const cache = ServiceLocator.getPermissionCache();
 
-            let oPersonID: string | null;
+        const userId = User?.id;
 
-            if (!Entity.Person_ID) {
+        let personId = cache.personMap.get(Share.ID);
 
-                oPersonID = Entity.Person_ID = await this.Repository.findPersonIdById(Entity.ID as string);
+        if (!personId) {
 
-            } else {
+            if (!Share?.Person_ID && !Share?.Person?.ID) {
 
-                oPersonID = Entity.Person_ID;
-
-            }
-
-            if (oPersonID) {
-
-                const oCheckPermission = await this.checkPermissionByPersonId(LoggedUser, oPersonID as string, Permision);
-
-                if (oCheckPermission.isLeft()) {
-
-                    return left(oCheckPermission.value);
-
-                }
+                personId =
+                    await this.Repository.findPersonIdById(Share?.ID as string);
 
             } else {
 
-                const oStack = new Error().stack as string;
-
-                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
+                personId = Share?.Person_ID || Share?.Person?.ID;
 
             }
 
-            return right(true);
-
-        } catch (oError) {
-
-            const errorInstance: Error = oError as Error;
-
-            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
+            if (personId) {
+                cache.personMap.set(Share.ID, personId);
+            }
 
         }
+
+        if (!personId) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.invalidPersonId', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.invalidPersonId';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
+
+        const key = ServiceLocator.buildPermissionKey(
+            userId,
+            personId,
+            this.entityCode(),
+            Permission
+        );
+
+        if (cache.permissionChecked.has(key)) {
+            return right(true);
+        }
+
+        const result = await this.checkPermissionByPersonId(User, personId, Permission);
+
+        if (result.isRight()) {
+            cache.permissionChecked.add(key);
+        }
+
+        return result;
 
     }
 
@@ -117,36 +144,67 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
 
     private async checkDuplicityByUser(Share: Share): Promise<Either<DuplicityError, boolean>> {
 
-        let oPersonID: string | null;
+        const cache = ServiceLocator.getPermissionCache();
 
-        if (!Share.Person_ID) {
+        let personId: string | null;
 
-            oPersonID = await this.Repository.findPersonIdById(Share.ID as string);
+        if (!Share?.Person_ID && !Share?.Person?.ID) {
+
+            personId =
+                Share.Person?.ID ||
+                await this.Repository.findPersonIdById(Share.ID as string);
 
         } else {
 
-            oPersonID = Share.Person_ID;
+            personId = (Share?.Person_ID || Share?.Person?.ID) as string;
 
         }
 
-        const oShares = await this.Repository.findByPersonId(oPersonID);
+        if (!personId) {
+            return right(true);
+        }
 
-        if (oShares?.length) {
+        let shares = cache.sharesByPerson.get(personId);
 
-            const exists = oShares.find((item) => item.User == Share?.User && item?.Id != Share.ID);
+        if (!shares) {
 
-            if (exists) {
+            shares = await this.Repository.findByPersonId(personId);
 
-                const oStack = new Error().stack as string;
-
-                return left(new DuplicityError(oStack));
-
+            if (shares?.length) {
+                cache.sharesByPerson.set(personId, shares);
+            } else {
+                shares = [];
+                cache.sharesByPerson.set(personId, shares);
             }
 
         }
 
-        return right(true);
+        const exists = shares.find(
+            (item) =>
+                item.User === Share?.User &&
+                item.Id !== Share.ID
+        );
 
+        if (exists) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.duplicity', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.duplicity';
+
+            return left(new DuplicityError(oStack, message));
+
+        }
+
+        shares.push(
+            (this.Repository as any)?.mapShareResult([Share])?.[0] ||
+            {
+                ...Share,
+                Id: Share.ID
+            }
+        );
+
+        return right(true);
     }
 
 

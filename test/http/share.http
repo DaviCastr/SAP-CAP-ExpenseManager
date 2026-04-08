@@ -5,7 +5,7 @@
 
 ### Shares
 # @name Shares_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Share/Shares
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Share/Shares?$expand=Entities
 Authorization: Basic {{username}}:{{password}}
 
 
@@ -45,7 +45,7 @@ Authorization: Basic {{username}}:{{password}}
       "modifiedBy": "modifiedBy.fb4dt@example.com"
     },
     {
-      "Entity": 8,
+      "Entity": 6,
       "Permission": 3,
       "createdAt": "2006-07-18T00:00:00.000Z",
       "createdBy": "createdBy.fb4du@example.org",

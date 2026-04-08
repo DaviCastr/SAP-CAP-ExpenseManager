@@ -8,65 +8,78 @@ export abstract class BaseControllerImplementation<Entity> implements BaseContro
 
     public beforeRead(Request: Request): BaseControllerResponse {
 
-         const result = this.Service.beforeRead(Request);
+        const result = this.Service.beforeRead(Request);
 
         if (result.isLeft()) {
             return this.error(result.value.code, result.value.message);
         }
 
-        return this.success(200, result.value); 
-           
+        return this.success(200, result.value);
+
     }
 
 
     public async beforeCreate(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse> {
-        
+
         const result = await this.Service.beforeCreate(Entity, LoggedUser);
 
         if (result.isLeft()) {
             return this.error(result.value.code, result.value.message);
         }
 
-        return this.success(201, result.value); 
+        return this.success(201, result.value);
 
     }
 
 
     public async beforeUpdate(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse> {
-        
+
         const result = await this.Service.beforeUpdate(Entity, LoggedUser);
 
         if (result.isLeft()) {
             return this.error(result.value.code, result.value.message);
         }
 
-        return this.success(204, result.value); 
+        return this.success(204, result.value);
 
     }
 
 
     public async beforeEdit(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse> {
-        
+
         const result = await this.Service.beforeEdit(Entity, LoggedUser);
 
         if (result.isLeft()) {
             return this.error(result.value.code, result.value.message);
         }
 
-        return this.success(204, result.value); 
+        return this.success(204, result.value);
 
     }
 
 
     public async beforeDelete(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse> {
-        
+
         const result = await this.Service.beforeDelete(Entity, LoggedUser);
 
         if (result.isLeft()) {
             return this.error(result.value.code, result.value.message);
         }
 
-        return this.success(204, result.value); 
+        return this.success(204, result.value);
+
+    }
+
+
+    public async afterRead(Entities: Entity[], LoggedUser: User): Promise<BaseControllerResponse> {
+
+        const oResult = await this.Service.afterRead(Entities, LoggedUser);
+
+        if (oResult.isLeft()) {
+            return this.error(oResult.value.code, oResult.value.message);
+        }
+
+        return this.success(200, oResult.value);
 
     }
 

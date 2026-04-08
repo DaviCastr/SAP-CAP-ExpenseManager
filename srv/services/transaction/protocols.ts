@@ -6,7 +6,6 @@ import { BaseService } from "../base";
 
 export interface TransactionService extends BaseService<Transaction> {
     onDelete(Transaction: Transaction): Promise<Either<AbstractError, void>>;
-    afterRead(Transactions: Transactions): Promise<Either<AbstractError, Transactions>>;
     afterCreate(Transactions: Transactions): Promise<Either<AbstractError, void>>;
     afterUpdate(Transactions: Transactions): Promise<Either<AbstractError, void>>; 
 }

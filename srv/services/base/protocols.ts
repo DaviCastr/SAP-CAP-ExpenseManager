@@ -8,4 +8,5 @@ export interface BaseService<Entity> {
     beforeUpdate(Entity: Entity, LoggedUser: User): Promise<Either<AbstractError, boolean>>
     beforeEdit(Entity: Entity, LoggedUser: User): Promise<Either<AbstractError, boolean>>
     beforeDelete(Entity: Entity, LoggedUser: User): Promise<Either<AbstractError, boolean>>
+    afterRead(Entities: Entity[], LoggedUser: User): Promise<Either<AbstractError, Entity[]>>;
 }

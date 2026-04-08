@@ -89,21 +89,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
     }
 
 
-    protected getEntity(ignoreDraft = false): entity {
-
-        return ServiceLocator.getEntity('Shares', ignoreDraft);
-
-    }
-
-
-    protected personPath(): string {
-
-        return 'Person';
-
-    }
-
-
-    private mapShareResult(Shares: Shares): ShareModel[] | null {
+    public mapShareResult(Shares: Shares): ShareModel[] | null {
 
         if (Shares.length === 0) {
 
@@ -126,5 +112,20 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
         });
 
     }
+
+
+    protected getEntity(ignoreDraft = false): entity {
+
+        return ServiceLocator.getEntity('Shares', ignoreDraft);
+
+    }
+
+
+    protected personPath(): string {
+
+        return 'Person';
+
+    }
+
 
 }

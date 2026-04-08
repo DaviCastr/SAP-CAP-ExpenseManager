@@ -10,6 +10,7 @@ import { TransactionRepository } from '@/repositories/transaction';
 import { PersonRepository } from '@/repositories/person';
 import { ShareRepository } from '@/repositories/share';
 import { EntityRepository } from '@/repositories/entity';
+import { ServiceLocator } from '@/infrastructure/ServiceLocator';
 
 export class CategoryServiceImplementation extends BaseServiceImplementation<Category> implements CategoryService {
 
@@ -47,49 +48,62 @@ export class CategoryServiceImplementation extends BaseServiceImplementation<Cat
     }
 
 
-    protected async checkPermission(Category: Category, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
+    protected async checkPermission(Category: Category, User: User, Permission: number) {
 
-        try {
+        const cache = ServiceLocator.getPermissionCache();
 
-            let oPersonID: string | null;
+        const userId = User?.id;
 
-            if (!Category.Person_ID) {
+        let personId = cache.personMap.get(Category.ID);
 
-                oPersonID = await this.Repository.findPersonIdById(Category.ID as string);
+        if (!personId) {
 
-            } else {
+            if (!Category?.Person_ID && !Category?.Person?.ID) {
 
-                oPersonID = Category.Person_ID;
-
-            }
-
-            if (oPersonID) {
-
-                const oCheckPermission = await this.checkPermissionByPersonId(LoggedUser, oPersonID as string, Permision);
-
-                if (oCheckPermission.isLeft()) {
-
-                    return left(oCheckPermission.value);
-
-                }
+                personId =
+                    await this.Repository.findPersonIdById(Category?.ID as string);
 
             } else {
 
-                const oStack = new Error().stack as string;
-
-                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
+                personId = Category?.Person_ID || Category?.Person?.ID;
 
             }
 
-            return right(true);
-
-        } catch (oError) {
-
-            const errorInstance: Error = oError as Error;
-
-            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
+            if (personId) {
+                cache.personMap.set(Category.ID, personId);
+            }
 
         }
+
+        if (!personId) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.invalidPersonId', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.invalidPersonId';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
+
+        const key = ServiceLocator.buildPermissionKey(
+            userId,
+            personId,
+            this.entityCode(),
+            Permission
+        );
+
+        if (cache.permissionChecked.has(key)) {
+            return right(true);
+        }
+
+        const result = await this.checkPermissionByPersonId(User, personId, Permission);
+
+        if (result.isRight()) {
+            cache.permissionChecked.add(key);
+        }
+
+        return result;
 
     }
 

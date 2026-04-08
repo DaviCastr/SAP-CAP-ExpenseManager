@@ -9,6 +9,8 @@ import { PersonRepository } from '@/repositories/person';
 import { EntityRepository } from '@/repositories/entity';
 import { DuplicityError } from '@/errors/duplicity';
 import { PermissionDenied } from '@/errors/permission-denied';
+import { ServiceLocator } from '@/infrastructure/ServiceLocator';
+import { Share } from '@models/apps/dflc/gestordegastos/entities';
 
 export class EntityServiceImplementation extends BaseServiceImplementation<Entity> implements EntityService {
 
@@ -29,7 +31,7 @@ export class EntityServiceImplementation extends BaseServiceImplementation<Entit
 
     public async beforeCreate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
-        const result = await this.checkPermission(Entity, User, this.getPermissionForCreate());
+        const result = await this.processBeforeCreate(Entity, User);
 
         if (result.isLeft()) {
             return result;
@@ -42,7 +44,7 @@ export class EntityServiceImplementation extends BaseServiceImplementation<Entit
 
     public async beforeUpdate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
-        const result = await this.checkPermission(Entity, User, this.getPermissionForUpdate());
+        const result = await this.processBeforeUpdate(Entity, User);
 
         if (result.isLeft()) {
             return result;
@@ -53,49 +55,79 @@ export class EntityServiceImplementation extends BaseServiceImplementation<Entit
     }
 
 
-    protected async checkPermission(Entity: Entity, LoggedUser: User, Permision: number): Promise<Either<AbstractError, boolean>> {
+    public async beforeEdit(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
-        try {
+        const result = await this.processBeforeUpdate(Entity, User);
 
-            let oPersonID: string | null;
+        if (result.isLeft()) {
+            return result;
+        }
 
-            if (!Entity.Share_ID) {
+        return this.checkDuplicityByEntity(Entity);
 
-                oPersonID = Entity.Share_ID = await this.Repository.findPersonIdById(Entity.ID as string);
+    }
+
+
+    protected async checkPermission(Entity: Entity, User: User, Permission: number) {
+
+        const cache = ServiceLocator.getPermissionCache();
+
+        const userId = User?.id;
+
+        let personId = cache.personMap.get(Entity.ID);
+
+        if (!personId) {
+
+            if (!Entity?.Share_ID && !Entity?.Share?.ID) {
+
+                personId =
+                    await this.Repository.findPersonIdById(Entity?.ID as string);
 
             } else {
 
-                oPersonID = await this.ShareRepository.findPersonIdById(Entity.Share_ID);
+                let personIdByShare = cache.personMap.get(Entity?.Share_ID || Entity?.Share?.ID);
+
+                personId =
+                    personIdByShare ||
+                    await this.ShareRepository.findPersonIdById((Entity?.Share_ID || Entity?.Share?.ID) as string);
 
             }
 
-            if (oPersonID) {
-
-                const oCheckPermission = await this.checkPermissionByPersonId(LoggedUser, oPersonID as string, Permision);
-
-                if (oCheckPermission.isLeft()) {
-
-                    return left(oCheckPermission.value);
-
-                }
-
-            } else {
-
-                const oStack = new Error().stack as string;
-
-                return left(new PermissionDenied('error.invalidPersonId', 403, oStack));
-
+            if (personId) {
+                cache.personMap.set(Entity.ID, personId);
             }
-
-            return right(true);
-
-        } catch (oError) {
-
-            const errorInstance: Error = oError as Error;
-
-            return left(new AbstractError(errorInstance.message, 400, errorInstance.stack as string));
 
         }
+
+        if (!personId) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.invalidPersonId', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.invalidPersonId';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
+
+        const key = ServiceLocator.buildPermissionKey(
+            userId,
+            personId,
+            this.entityCode(),
+            Permission
+        );
+
+        if (cache.permissionChecked.has(key)) {
+            return right(true);
+        }
+
+        const result = await this.checkPermissionByPersonId(User, personId, Permission);
+
+        if (result.isRight()) {
+            cache.permissionChecked.add(key);
+        }
+
+        return result;
 
     }
 
@@ -115,37 +147,66 @@ export class EntityServiceImplementation extends BaseServiceImplementation<Entit
 
     private async checkDuplicityByEntity(Entity: Entity): Promise<Either<DuplicityError, boolean>> {
 
-        let oShareId: string | undefined;
+        const cache = ServiceLocator.getPermissionCache();
 
-        if (!Entity.Share_ID) {
+        let shareId: string | undefined;
+
+        if (!Entity?.Share_ID && !Entity?.Share?.ID) {
 
             const oShare = await this.ShareRepository.findById(Entity.ID as string);
-            oShareId = oShare?.Id;
+            shareId = oShare?.Id;
 
         } else {
 
-            oShareId = Entity.Share_ID;
+            shareId = Entity.Share_ID || Entity?.Share?.ID;
 
         }
 
-        const oEntities = await this.Repository.findByShareId(oShareId);
+        if (!shareId) {
+            return right(true);
+        }
 
-        if (oEntities?.length) {
+        let entities = cache.entitiesByShare.get(shareId);
 
-            const exists = oEntities.find((item) => item.Entity == Entity?.Entity && item?.Id != Entity?.ID);
+        if (!entities) {
 
-            if (exists) {
+            entities = await this.Repository.findByShareId(shareId);
 
-                const oStack = new Error().stack as string;
-
-                return left(new DuplicityError(oStack));
-
+            if (entities?.length) {
+                cache.entitiesByShare.set(shareId, entities);
+            } else {
+                entities = [];
+                cache.entitiesByShare.set(shareId, entities);
             }
 
         }
 
-        return right(true);
+        const exists = entities.find(
+            (item) =>
+                item.Entity == Entity?.Entity &&
+                item.Id != Entity?.ID
+        );
 
+        if (exists) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.duplicity', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.duplicity';
+
+            return left(new DuplicityError(oStack, message));
+
+        }
+
+        entities.push(
+            (this.Repository as any)?.mapEntityResult([Entity])?.[0] ||
+            {
+                ...Entity,
+                Id: Entity.ID
+            }
+        );
+
+        return right(true);
     }
 
 

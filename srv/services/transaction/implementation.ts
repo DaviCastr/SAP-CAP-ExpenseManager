@@ -216,7 +216,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
                 personId =
                     personIdByInvoice ||
-                    await this.ShareRepository.findPersonIdById((Transaction?.Invoice_ID || Transaction?.Invoice?.ID) as string);
+                    await this.InvoiceRepository.findPersonIdById((Transaction?.Invoice_ID || Transaction?.Invoice?.ID) as string);
 
             }
 

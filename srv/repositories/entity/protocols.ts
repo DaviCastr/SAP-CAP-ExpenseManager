@@ -1,5 +1,5 @@
 import { EntityModel } from "@/models/entity";
-import { Entity } from "@models/GestorDeGastos";
+import { Entity } from "@models/apps/dflc/gestordegastos/entities";
 import { BaseRepository } from "../base";
 import { Request } from "@sap/cds";
 

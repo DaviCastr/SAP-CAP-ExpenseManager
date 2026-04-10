@@ -2,7 +2,7 @@ import cds, { entity, Request } from '@sap/cds';
 
 import { CategoryProperties, CategoryModel } from "@/models/category";
 import { CategoryRepository } from "./protocols";
-import { Categories, Category } from '@models/GestorDeGastos';
+import { Categories, Category } from '@models/apps/dflc/gestordegastos/entities';
 import { BaseRepositoryImplementation } from '../base/implementation';
 import { ServiceLocator } from '@/infrastructure/ServiceLocator';
 

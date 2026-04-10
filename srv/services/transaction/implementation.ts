@@ -1,5 +1,5 @@
 import { AbstractError } from "@/errors";
-import { Transactions, Transaction } from "@models/GestorDeGastos";
+import { Transactions, Transaction } from "@models/apps/dflc/gestordegastos/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { TransactionService } from "./protocols";
 import { TransactionModel } from "@/models/transaction";
@@ -270,6 +270,11 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
         return 7;
 
+    }
+
+
+    protected parentField(): string | null {
+        return 'Invoice.ID';
     }
 
 

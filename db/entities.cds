@@ -7,51 +7,51 @@ using {
 } from '@sap/cds/common';
 
 entity Persons : cuid, managed {
-            Name                : String(100)  @mandatory;
+    Name                        : String(100)  @mandatory;
 
-            @Core.MediaType               : ImageType
-            Image               : LargeBinary  @UI: {IsImage: true}  @stream;
+    @Core.MediaType               : ImageType
+    Image                       : LargeBinary  @UI: {IsImage: true}  @stream;
 
-            @Core.IsMediaType             : true
-            ImageType           : String;
+    @Core.IsMediaType             : true
+    ImageType                   : String;
 
-            @Semantics.amount.currencyCode: 'Currency'
-            Income              : Decimal      @mandatory;
-            Currency            : Currency     @mandatory;
-            Email               : String(100)  @mandatory;
-            Phone               : String(20);
-            Shares              : Composition of many Shares
+    @Semantics.amount.currencyCode: 'Currency'
+    Income                      : Decimal      @mandatory;
+    Currency                    : Currency     @mandatory;
+    Email                       : String(100)  @mandatory;
+    Phone                       : String(20);
+    Shares                      : Composition of many Shares
                                       on Shares.Person = $self;
 
-            @Semantics.amount.currencyCode: 'Currency'
-            ExpenseTarget       : Decimal      @mandatory;
+    @Semantics.amount.currencyCode: 'Currency'
+    ExpenseTarget               : Decimal      @mandatory;
 
-            @Semantics.amount.currencyCode: 'Currency'
+    @Semantics.amount.currencyCode: 'Currency'
     virtual AmountToSave        : Decimal;
 
-            @Semantics.amount.currencyCode: 'Currency'
+    @Semantics.amount.currencyCode: 'Currency'
     virtual TotalExpenses       : Decimal;
 
-            @Semantics.amount.currencyCode: 'Currency'
+    @Semantics.amount.currencyCode: 'Currency'
     virtual TotalExpensesMonth  : Decimal;
 
-            @Semantics.amount.currencyCode: 'Currency'
+    @Semantics.amount.currencyCode: 'Currency'
     virtual TotalExpensesPayed  : Decimal;
 
-            @Semantics.amount.currencyCode: 'Currency'
+    @Semantics.amount.currencyCode: 'Currency'
     virtual TotalExpensesToPay  : Decimal;
 
-            @Semantics.amount.currencyCode: 'Currency'
+    @Semantics.amount.currencyCode: 'Currency'
     virtual TotalExpensesClosed : Decimal;
 
     virtual MonthCriticallity   : Integer;
 
     virtual CriticallityToPay   : Integer;
 
-            Category            : Composition of many Categories
+    Category                    : Composition of many Categories
                                       on Category.Person = $self;
 
-            Card                : Composition of many Cards
+    Card                        : Composition of many Cards
                                       on Card.Person = $self;
 }
 
@@ -85,34 +85,34 @@ entity Entities : cuid, managed {
 
 entity Cards : cuid, managed {
 
-            Name                    : String(50)             @mandatory;
+    Name                            : String(50)             @mandatory;
 
-            @Core.MediaType               : ImageType
-            @UI                           : {IsImage: true}
-            Image                   : LargeBinary;
+    @Core.MediaType               : ImageType
+    @UI                           : {IsImage: true}
+    Image                           : LargeBinary;
 
-            @Core.IsMediaType             : true
-            ImageType               : String;
+    @Core.IsMediaType             : true
+    ImageType                       : String;
 
-            @Semantics.amount.currencyCode: 'Moeda'
-            Limit                   : Decimal                @mandatory;
-            Currency                : Currency               @mandatory;
+    @Semantics.amount.currencyCode: 'Moeda'
+    Limit                           : Decimal                @mandatory;
+    Currency                        : Currency               @mandatory;
 
-            @Semantics.amount.currencyCode: 'Moeda'
+    @Semantics.amount.currencyCode: 'Moeda'
     virtual AvailableLimit          : Decimal;
-            DueDay                  : Integer                @mandatory; // Dia do vencimento
-            ClosingDay              : Integer                @mandatory; // Dia do fechamento da fatura
+    DueDay                          : Integer                @mandatory; // Dia do vencimento
+    ClosingDay                      : Integer                @mandatory; // Dia do fechamento da fatura
 
-            @Semantics.amount.currencyCode: 'Moeda'
+    @Semantics.amount.currencyCode: 'Moeda'
     virtual InvoiceAmountForPayment : Decimal;
 
-            @Semantics.amount.currencyCode: 'Moeda'
+    @Semantics.amount.currencyCode: 'Moeda'
     virtual OpenInvoiceAmount       : Decimal;
 
-            Invoice                 : Composition of many Invoices
-                                          on Invoice.Card = $self;
+    Invoices                        : Composition of many Invoices
+                                          on Invoices.Card = $self;
 
-            Person                  : Association to Persons @mandatory; // @assert.target
+    Person                          : Association to Persons @mandatory; // @assert.target
 }
 
 entity Invoices : cuid, managed {

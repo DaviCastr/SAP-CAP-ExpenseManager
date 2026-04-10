@@ -12,15 +12,16 @@
 //         Invoice                 : Composition of many Invoices on Invoice.Card = $self;
 //         Person                  : Association to Persons @mandatory; // @assert.target
 // }
-
+import { Readable } from "stream";
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
 import { InvoiceModel } from '@/models/invoice';
+import { Card as CardEntityType } from '@models/apps/dflc/gestordegastos/entities';
 
 type CardProperties = {
     Id: string;
     Name: string;
-    Image: Buffer;
+    Image: Readable;
     ImageType: string;
     Limit: Decimal;
     Currency: CurrencyModel;
@@ -36,9 +37,17 @@ type CardProperties = {
     ModifiedBy?: string;
 }
 
+type CardEntityProperties = CardEntityType;
+
 export class CardModel {
 
     constructor(private props: CardProperties) { }
+
+    public static with(properties: CardProperties): CardModel {
+
+        return new CardModel(properties);
+
+    }
 
     public get Id() {
 
@@ -133,6 +142,35 @@ export class CardModel {
     public get ModifiedBy() {
 
         return this.props.ModifiedBy;
+
+    }
+
+    public toObject(): CardProperties {
+
+        return this.props;
+
+    }
+
+    public toEntityObject(): CardEntityProperties {
+
+        return {
+            ID: this.props.Id,
+            Name: this.props.Name,
+            Image: this.props.Image as Readable,
+            ImageType: this.props.ImageType,
+            Limit: this.props.Limit?.toNumber(),
+            Currency: this.Currency?.toEntityObject(),
+            AvailableLimit: this.props.AvailableLimit?.toNumber(),
+            DueDay: this.props.DueDay,
+            ClosingDay: this.props.ClosingDay,
+            InvoiceAmountForPayment: this.props.InvoiceAmountForPayment?.toNumber(),
+            OpenInvoiceAmount: this.props.OpenInvoiceAmount?.toNumber(),
+            Invoices: this.props.Invoices?.map((item)=> item.toEntityObject()),
+            createdAt: this.props.CreatedAt,
+            createdBy: this.props.CreatedBy,
+            modifiedAt: this.props.ModifiedAt,
+            modifiedBy: this.props.ModifiedBy
+        };
 
     }
 

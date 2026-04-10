@@ -1,0 +1,1 @@
+export type { InvoiceService } from './protocols';

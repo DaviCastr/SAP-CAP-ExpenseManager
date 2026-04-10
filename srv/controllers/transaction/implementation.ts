@@ -1,4 +1,4 @@
-import { Transactions } from "@models/GestorDeGastos";
+import { Transactions } from "@models/apps/dflc/gestordegastos/entities";
 import { BaseControllerResponse } from "../base";
 import { BaseControllerImplementation } from "../base/implementation";
 import { TransactionController } from "./protocols";
@@ -26,19 +26,6 @@ export class TransactionControllerImplementation extends BaseControllerImplement
         }
 
         return this.success(204, oResult.value);
-
-    }
-
-
-    public async afterRead(Transactions: Transactions): Promise<BaseControllerResponse> {
-
-        const oResult = await this.Service.afterRead(Transactions);
-
-        if (oResult.isLeft()) {
-            return this.error(oResult.value.code, oResult.value.message);
-        }
-
-        return this.success(200, oResult.value);
 
     }
 

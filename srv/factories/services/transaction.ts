@@ -5,7 +5,6 @@ import { oPersonRepositoryFactory } from "../repositories/person";
 import { oShareRepositoryFactory } from "../repositories/share";
 import { oInvoiceRepositoryFactory } from "../repositories/invoice";
 import { oEntityRepositoryFactory } from "../repositories/entity";
-import { service } from "@sap/cds";
 import { ServiceRegistry } from "@/infrastructure/ServiceRegistry";
 
 const makeCustomerService = (): TransactionService => {

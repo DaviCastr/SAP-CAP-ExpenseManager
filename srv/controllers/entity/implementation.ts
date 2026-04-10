@@ -1,4 +1,4 @@
-import { Entity } from "@models/GestorDeGastos";
+import { Entity } from "@models/apps/dflc/gestordegastos/entities";
 import { BaseControllerImplementation } from "../base/implementation";
 import { EntityController } from "./protocols";
 import { EntityService } from "@/services/entity";

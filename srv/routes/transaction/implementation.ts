@@ -1,7 +1,7 @@
 import { ApplicationService, entity, Request } from "@sap/cds";
 import { TransactionRoute } from "./protocols";
 import { oTransactionControllerFactory } from "@/factories/controllers/transaction";
-import { Transaction, Transactions } from "@models/GestorDeGastos";
+import { Transaction, Transactions } from "@models/apps/dflc/gestordegastos/entities";
 import { TransactionController } from "@/controllers/transaction";
 import { BaseRouteImplementation } from "../base/implementation";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
@@ -28,31 +28,8 @@ export class TransactionRouteImplementation extends BaseRouteImplementation<Tran
         Service.on("DELETE", Transactions as entity, this.onDelete.bind(this));
 
         //After
-        Service.after("READ", Transactions as entity, this.afterRead.bind(this));
-        Service.after("READ", Transactions?.drafts as entity, this.afterRead.bind(this));
         Service.after("CREATE", Transactions as entity, this.afterCreate.bind(this));
         Service.after("UPDATE", Transactions as entity, this.afterUpdate.bind(this));
-
-    }
-
-
-    protected async afterRead(Transactions: Transactions | Transaction, Request: Request): Promise<void> {
-
-        const oTransactions = Array.isArray(Transactions)
-            ? Transactions
-            : [Transactions];
-
-        const oResult = await this.Controller.afterRead(oTransactions);
-
-        if (oResult.status >= 400) {
-            return this.returnRejectMessage(Request, oResult);
-        }
-
-        const oResultData = oResult.data as Transactions;
-
-        oTransactions.forEach((row, i) => {
-            Object.assign(row, oResultData[i]);
-        });
 
     }
 

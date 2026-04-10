@@ -11,7 +11,8 @@
 
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
-import { TransactionModel } from '@/models/transaction';
+import { Invoice as InvoiceEntityType } from '@models/apps/dflc/gestordegastos/entities';
+import { TransactionModel } from './transaction';
 
 type InvoiceProperties = {
     Id: string;
@@ -28,9 +29,17 @@ type InvoiceProperties = {
     ModifiedBy?: string;
 }
 
+type InvoiceEntityProperties = InvoiceEntityType;
+
 export class InvoiceModel {
 
     constructor(private props: InvoiceProperties) { }
+
+    public static with(properties: InvoiceProperties): InvoiceModel {
+
+        return new InvoiceModel(properties);
+
+    }
 
     public get Id() {
 
@@ -101,6 +110,37 @@ export class InvoiceModel {
     public get ModifiedBy() {
 
         return this.props.ModifiedBy;
+
+    }
+
+    public set Description(description: string) {
+
+        this.props.Description = description;
+
+    }
+
+    public toObject(): InvoiceProperties {
+
+        return this.props;
+
+    }
+
+    public toEntityObject(): InvoiceEntityProperties {
+
+        return {
+            ID: this.props.Id,
+            Year: this.props.Year,
+            Month: this.props.Month,
+            TotalAmount: this.props.TotalAmount.toNumber(),
+            Description: this.props.Description,
+            Currency: this.props.Currency.toEntityObject(),
+            InvoiceSent: this.props.InvoiceSent,
+            Transactions: this.props.Transactions?.map((item) => item.toEntityObject()),
+            createdAt: this.props.CreatedAt,
+            createdBy: this.props.CreatedBy,
+            modifiedAt: this.props.ModifiedAt,
+            modifiedBy: this.props.ModifiedBy
+        };
 
     }
 

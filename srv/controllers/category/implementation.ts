@@ -1,4 +1,4 @@
-import { Category } from "@models/GestorDeGastos";
+import { Category } from "@models/apps/dflc/gestordegastos/entities";
 import { BaseControllerImplementation } from "../base/implementation";
 import { CategoryController } from "./protocols";
 import { CategoryService } from "@/services/category";

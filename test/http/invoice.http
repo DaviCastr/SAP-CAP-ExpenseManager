@@ -1,0 +1,145 @@
+@server=http://localhost:4004
+@username=beatriz
+@password=123456
+
+
+### Invoices
+# @name Invoices_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices?$select=Year&$expand=Transactions
+Authorization: Basic {{username}}:{{password}}
+
+
+### Invoices Drafts GET
+# @name Invoices_Drafts_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
+Authorization: Basic {{username}}:{{password}}
+
+
+### Invoices Drafts GET
+# @name Invoices_Drafts_and_Actives_merge
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
+Accept-Language:pt-BR
+Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
+Authorization: Basic {{username}}:{{password}}
+
+
+### Invoices Draft POST
+# @name Invoices_Draft_POST
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "ID": "a2a37b4b-6f82-4bd2-88cd-d1dbb607ad28",
+  "Year": 2026,
+  "Month": 4,
+  "Description": "Description-29674348",
+  "TotalAmount": 64.46,
+  "InvoiceSent": true,
+  "Card": {
+    "ID": "card3333-3333-3333-3333-333333333333"
+  },
+  "Transactions": [
+    {
+      "ID": "12220157-c671-412f-a464-bcc221e0f984",
+      "Identifier": "12220157-3a48-4776-b2e1-ba79a2927ee5",
+      "Date": "2015-03-04",
+      "TotalAmount": 97.69,
+      "Amount": 54.48,
+      "Currency": {
+        "code": "229"
+      },
+      "TotalInstallments": 49,
+      "Installment": 34,
+      "Description": "Description-12220157",
+      "Category": {
+        "ID": "17665101-d3e9-4aa8-b957-59d24eea9304"
+      }
+    },
+    {
+      "ID": "12220158-6088-4e67-94b3-e12a75e4bc9e",
+      "Identifier": "12220158-32a9-4dd4-831c-f453d6431e2e",
+      "Date": "2009-07-04",
+      "TotalAmount": 71.07,
+      "Amount": 94.2,
+      "Currency": {
+        "code": "229"
+      },
+      "TotalInstallments": 30,
+      "Installment": 71,
+      "Description": "Description-12220158",
+      "Category": {
+        "ID": "17665101-d3e9-4aa8-b957-59d24eea9304"
+      }
+    }
+  ]
+}
+
+
+### Result from POST request above
+@draftID={{Invoices_Draft_POST.response.body.$.ID}}
+
+### Invoices Draft PATCH
+# @name Invoices_Draft_Patch
+PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "ID": "a2a37b4b-6f82-4bd2-88cd-d1dbb607ad28",
+  "Year": 2026,
+  "Month": 5,
+  "Description": "Description-29674348",
+  "TotalAmount": 64.46,
+  "InvoiceSent": true,
+  "Card": {
+    "ID": "card3333-3333-3333-3333-333333333333"
+  }
+}
+
+
+
+### Invoices Draft Prepare
+# @name Invoices_Draft_Prepare
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)/InvoiceService.draftPrepare
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Invoices Draft Activate
+# @name Invoices_Draft_Activate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Invoices Draft Inactivate
+# @name Invoices_Draft_Inactivate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Invoices Delete
+# @name Invoices_DELETE_Active
+DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=true)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Invoices Delete Draft
+# @name Invoices_DELETE_draft
+DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}

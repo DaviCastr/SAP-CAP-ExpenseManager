@@ -13,7 +13,7 @@
 
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
-import { Transaction as TransactionEntityType } from '@models/GestorDeGastos';
+import { Transaction as TransactionEntityType } from '@models/apps/dflc/gestordegastos/entities';
 
 type TransactionProperties = {
     Id: string;
@@ -145,6 +145,10 @@ export class TransactionModel {
             TotalInstallments: this.props.TotalInstallments,
             Installment: this.props.Installment,
             Description: this.props.Description,
+            createdAt: this.props.CreatedAt,
+            createdBy: this.props.CreatedBy,
+            modifiedAt: this.props.ModifiedAt,
+            modifiedBy: this.props.ModifiedBy
         };
 
     }

@@ -1,7 +1,7 @@
 import cds, { entity } from "@sap/cds";
 
 import { TransactionModel } from "@/models/transaction";
-import { Transaction, Transactions } from "@models/GestorDeGastos";
+import { Transaction, Transactions } from "@models/apps/dflc/gestordegastos/entities";
 import { TransactionRepository } from "./protocols";
 import { CurrencyModel } from "@/models/currency";
 import Decimal from "decimal.js";
@@ -14,11 +14,23 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
     public async findByID(Id: Transaction["ID"]): Promise<TransactionModel | null> {
 
-        const oSql = this.getReportBaseSql();
+        let oSql = this.getReportBaseSql();
 
         oSql.where({ ID: Id });
 
-        const oTransactions: Transactions = await cds.run(oSql);
+        let oTransactions: Transactions = await cds.run(oSql);
+
+        if ((this.getEntity() as any)?.isDraft) {
+
+            oSql = this.getReportBaseSql(true);
+
+            oSql.where({ ID: Id });
+
+            const additionalTransactions: Transactions = await cds.run(oSql) || [];
+
+            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+
+        }
 
         const oTransactionsModel = await this.mapTransactionResult(oTransactions);
 
@@ -35,7 +47,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
     public async findByCategoryID(CategoryID: Transaction["Category_ID"], Limit: number): Promise<TransactionModel[] | null> {
 
-        const oSql = this.getReportBaseSql();
+        let oSql = this.getReportBaseSql();
 
         oSql.where({ Category_ID: CategoryID });
 
@@ -45,7 +57,25 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         }
 
-        const oTransactions = await cds.run(oSql);
+        let oTransactions = await cds.run(oSql);
+
+        if ((this.getEntity() as any)?.isDraft) {
+
+            oSql = this.getReportBaseSql(true);
+
+            oSql.where({ Category_ID: CategoryID });
+
+            if (Limit != 0 && Limit) {
+
+                oSql.limit(Limit);
+
+            }
+
+            const additionalTransactions: Transactions = await cds.run(oSql) || [];
+
+            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+
+        }
 
         const oTransactionsModel = await this.mapTransactionResult(oTransactions);
 
@@ -54,18 +84,18 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
     }
 
 
-    private getReportBaseSql(Request?: Request): cds.ql.SELECT<unknown, unknown> {
+    private getReportBaseSql(ignoreDraft?: boolean): cds.ql.SELECT<unknown, unknown> {
 
-        const oTransactionEntity = this.getEntity(Request);
+        const oTransactionEntity = this.getEntity(ignoreDraft);
 
         return SELECT.from(oTransactionEntity);
 
     }
 
 
-    protected getEntity(Request?: Request): entity {
+    protected getEntity(ignoreDraft?: boolean): entity {
 
-        return ServiceLocator.getEntity('Transactions');
+        return ServiceLocator.getEntity('Transactions', ignoreDraft);
 
     }
 

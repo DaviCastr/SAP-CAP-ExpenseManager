@@ -4,7 +4,7 @@
 //       minorUnit : Int16     @(title : '{i18n>CurrencyMinorUnit}');
 // }
 
-import { Currency } from "@models/GestorDeGastos";
+import { Currency } from "@models/apps/dflc/gestordegastos/entities";
 
 export type CurrencyProperties = {
     Code: string;

@@ -17,7 +17,7 @@ class GestaoGastos extends cds.ApplicationService {
 
     init(req) {
 
-        const { Pessoa, Categoria, Cartao, Fatura, Transacao, Backup } = this.entities;
+        const { Pessoa, Cartao, Fatura, Backup } = this.entities;
 
         try {
 
@@ -41,22 +41,12 @@ class GestaoGastos extends cds.ApplicationService {
 
             this.after("READ", Fatura, async (req, context) => { return await this.afterReadFatura(req, context) });
 
-            this.after("READ", Transacao, async (req, context) => { return await this.afterReadTransacao(req, context) });
-
-            this.before("CREATE", Transacao, this.beforeCreateUpdateDeleteTransacao);
-
-            this.on("DELETE", Transacao.drafts, this.beforeCreateUpdateDeleteTransacao);
-
-            this.after("UPDATE", Transacao.drafts, this.beforeCreateUpdateDeleteTransacao);
-
             this.before("UPDATE", Backup, this.beforeUpdateBackup);
 
             //Ações utilizados no ui5/fiori
             this.on("simulaPorMesAno", this.simulaPorMesAno);
 
             this.on("adicionarGasto", async (req, context) => { return await this.adicionarGastoPrincipal(req, context) });
-
-            this.on("excluirTransacao", async (req, context) => { return await this.excluirTransacaoPrincipal(req, context) });
 
             this.on("exportarBackup", async (req, context) => { return await this.exportarBackupPrincipal(req, context) });
 
@@ -65,14 +55,6 @@ class GestaoGastos extends cds.ApplicationService {
             this.on("enviarPrevisaoDetalhada", this.enviarPrevisaoDetalhadaPrincipal);
 
             //Ações utilizadas em app ui5 e sapbuild apps
-            this.on("inserirCategoria", async (req, next) => await this.inserirCategoriaPrincipal(req, next));
-
-            this.on("modificarCategoria", async (req, context) => await this.modificarCategoriaPrincipal(req, context));
-
-            this.on("inserirCartao", async (req, next) => await this.inserirCartaoPrincipal(req, next));
-
-            this.on("modificarCartao", async (req, context) => await this.modificarCartaoPrincipal(req, context));
-
             this.on("recuperaCategoriasParaGastoTotal", async (req, next) => await this.recuperaCategoriasParaGastoTotalPrincipal(req, next));
 
             this.on("recuperaCategorias", async (req, next) => await this.recuperaCategoriasPrincipal(req, next));
@@ -628,67 +610,6 @@ class GestaoGastos extends cds.ApplicationService {
 
     }
 
-    async beforeCreateUpdateDeleteTransacao(data, req) {
-
-        const transacoes = Array.isArray(data) ? data : [data];
-
-        const { Fatura, Transacao } = this.entities;
-
-        for (const transacao of transacoes) {
-
-            if (req.event == 'UPDATE' && 'Valor' in transacao) {
-
-                const transacao_old = await SELECT.one.from(Transacao).where({ ID: transacao.ID });
-
-                if (transacao_old) {
-                    const oSoma = await SELECT.one`coalesce (sum (Valor),0) as Valor`.from(Transacao.drafts).where({ Fatura_ID: transacao_created.Fatura_ID });
-                    const oValorTotal = oSoma
-
-                    await UPDATE(Fatura.drafts, transacao_old.Fatura_ID).with({ ValorTotal: oValorTotal })
-                } else {
-
-                    const transacao_created = await SELECT.one.from(Transacao.drafts).where({ ID: transacao.ID });
-
-                    const oSoma = await SELECT.one`coalesce (sum (Valor),0) as Valor`.from(Transacao.drafts).where({ Fatura_ID: transacao_created.Fatura_ID });
-
-                    const oValorTotal = oSoma.Valor;
-
-                    await UPDATE(Fatura.drafts, transacao_created.Fatura_ID).with({ ValorTotal: oValorTotal })
-
-                }
-
-            } else if (data.event) {
-                const transacao_old = await SELECT.one.from(Transacao.drafts).where({ ID: transacao.data.ID });
-
-                const oSoma = await SELECT.one`coalesce (sum (Valor),0) as Valor`.from(Transacao.drafts).where({ Fatura_ID: transacao_old.Fatura_ID });
-
-                const oValorTotal = oSoma.Valor - transacao_old.Valor;
-
-                await UPDATE(Fatura.drafts, transacao_old.Fatura_ID).with({ ValorTotal: oValorTotal })
-
-                const res = await req();//Avança próxima exclusão caso haja
-
-                return res
-
-            } else if (req.event == 'CREATE' && 'Valor' in transacao) {
-                const fatura = await SELECT.one.from(Fatura.drafts).where({ ID: transacao.Fatura_ID });
-
-                if (fatura) {
-                    const oValorTotal = 0.0;
-                    if (fatura.ValorTotal)
-                        oValorTotal = fatura.ValorTotal + transacao.Valor;
-                    else
-                        oValorTotal = transacao.Valor
-
-                    await UPDATE(Fatura.drafts, fatura.ID).with({ ValorTotal: oValorTotal })
-                }
-            }
-
-        }
-
-        return true;
-
-    }
 
     async beforeUpdateBackup(data) {
 
@@ -1095,142 +1016,6 @@ class GestaoGastos extends cds.ApplicationService {
         await UPDATE(Fatura, Fatura_ID).with({ ValorTotal: oValorTotal })
 
     }
-
-    async excluirTransacaoPrincipal(req, context) {
-
-        const { Transacao, Fatura } = this.entities
-
-        const { fatura, transacao, identificador, excluirRelacionadas } = req.data;
-
-        try {
-
-            let oTransacao = await SELECT.one.columns("createdBy").from(Transacao).where({ ID: transacao });
-
-            if (req.user && req.user.id) {
-                if (oTransacao.createdBy !== req.user.id) {
-
-                    req.reject(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-
-                }
-            }
-
-            if (!excluirRelacionadas) {
-
-                await DELETE.from(Transacao).where({ ID: transacao });
-                await this.atualizaValorFatura(fatura);
-
-            } else {
-
-                let oFaturas = await SELECT`Fatura_ID`.from(Transacao).where({ Identificador: identificador });
-
-                await DELETE.from(Transacao).where({ Identificador: identificador });
-
-                for (const fatura of oFaturas) {
-
-                    await this.atualizaValorFatura(fatura.Fatura_ID);
-
-                }
-
-            }
-
-            return {
-                sucesso: true
-            }
-
-        } catch (err) {
-
-        }
-
-    }
-
-    // async exportarBackup(req) {
-    //     const { Pessoa, Cartao } = this.entities;
-
-    //     const tx = cds.transaction(req);
-    //     const workbook = new excel.Workbook();
-    //     const zip = new AdmZip();
-
-    //     // Adicionar tabelas no Excel
-    //     const tables = ['Pessoa', 'Cartao', 'Fatura', 'Transacao'];
-    //     const camposDeControle = ['createdAt', 'createdBy', 'modifiedAt', 'modifiedBy'];
-
-    //     for (const table of tables) {
-    //         const sheet = workbook.addWorksheet(table);
-
-    //         // Usar SELECT direto com CDS
-    //         const data = await tx.run(SELECT.from(`app.entidades.${table}`));
-
-    //         if (data.length > 0) {
-    //             if (table === 'Pessoa') {
-    //                 for (const oPessoa of data) {
-    //                     try {
-    //                         const oImagemPessoa = await tx.run(
-    //                             SELECT.one.from(Pessoa).columns('Imagem').where({ ID: oPessoa.ID })
-    //                         );
-
-    //                         if (oImagemPessoa && oImagemPessoa.Imagem) {
-
-    //                             const oImagemBuffer = await this.ReadableParaBuffer(oImagemPessoa.Imagem);
-    //                             const oExtensao = oPessoa.TipoImagem.split("/")[1];
-    //                             // Salvar o arquivo binário no zip
-    //                             zip.addFile(`${oPessoa.ID}.${oExtensao}`, oImagemBuffer);
-
-    //                         }
-    //                     } catch (error) {
-    //                     }
-    //                 }
-    //             }
-
-    //             if (table === 'Cartao') {
-    //                 for (const oCartao of data) {
-    //                     try {
-    //                         const oImagemCartao = await tx.run(
-    //                             SELECT.one.from(Cartao).columns('Imagem').where({ ID: oCartao.ID })
-    //                         );
-
-    //                         if (oImagemCartao && oImagemCartao.Imagem) {
-
-    //                             const oImagemBuffer = await this.ReadableParaBuffer(oImagemCartao.Imagem);
-    //                             const oExtensao = oCartao.TipoImagem.split("/")[1];
-    //                             // Salvar o arquivo binário no zip
-    //                             zip.addFile(`${oCartao.ID}.${oExtensao}`, oImagemBuffer);
-
-    //                         }
-
-    //                     } catch (error) {
-    //                     }
-    //                 }
-    //             }
-
-    //             const filteredData = data.map((record) => {
-    //                 const filteredRecord = { ...record };
-    //                 camposDeControle.forEach((campo) => delete filteredRecord[campo]);
-    //                 return filteredRecord;
-    //             });
-
-    //             sheet.columns = Object.keys(filteredData[0]).map((key) => ({ header: key, key }));
-    //             sheet.addRows(filteredData);
-    //         }
-    //     }
-
-    //     const oCaminhoArquivoExcel = path.join(__dirname, 'backup.xlsx');
-    //     await workbook.xlsx.writeFile(oCaminhoArquivoExcel);
-
-    //     // Adicionar o Excel ao ZIP
-    //     zip.addLocalFile(oCaminhoArquivoExcel);
-    //     fs.unlinkSync(oCaminhoArquivoExcel); // Apagar o Excel temporário
-
-    //     // Gerar o ZIP
-    //     const zipBuffer = zip.toBuffer();
-
-    //     return {
-    //         headers: {
-    //             'Content-Type': 'application/zip',
-    //             'Content-Disposition': 'attachment; filename=backup.zip',
-    //         },
-    //         body: zipBuffer,
-    //     };
-    // }
 
     async exportarBackupPrincipal(req, context) {
         const { Pessoa, Categoria, Cartao, Fatura, Transacao, Backup } = this.entities;
@@ -1881,213 +1666,6 @@ class GestaoGastos extends cds.ApplicationService {
 
     }
 
-
-    async inserirCategoriaPrincipal(req, next) {
-
-        try {
-            const { Pessoa, Categoria } = this.entities;
-            const { ID, Pessoa_ID, Nome, Usuario } = req.data;
-
-            if (!Usuario) {
-                req.reject(400, `Campo [Usuario] é necessário`);
-            }
-
-            let oPessoa = await SELECT.one.columns("ID", "createdBy").from(Pessoa).where({ ID: Pessoa_ID });
-
-            // Verifica se a pessoa existe
-            if (!oPessoa) {
-                req.reject(400, `Pessoa não encontrada.`);
-            }
-
-            //Verifica se o usuário está autenticado e se ele é o criador da pessoa
-            if (oPessoa.createdBy !== Usuario) {
-                req.reject(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-            }
-
-            // Cria um novo cartão com os dados fornecidos
-            const novaCategoria = {
-                ID: ID,
-                Pessoa_ID: Pessoa_ID,
-                Nome: Nome,
-            };
-
-            // Insere o novo cartão no banco de dados
-            await INSERT.into(Categoria).entries([novaCategoria]);
-
-            return {
-                sucesso: true
-            }
-
-        } catch (erro) {
-            return {
-                "erro": erro
-            }
-        }
-
-    }
-
-
-    async modificarCategoriaPrincipal(req, next) {
-
-        try {
-            const { Categoria } = this.entities;
-            const { ID, Nome, Usuario } = req.data;
-
-            if (!Usuario) {
-                req.reject(400, `Campo [Usuario] é necessário`);
-            }
-
-            let oCategoria = await SELECT.one.columns("ID", "createdBy").from(Categoria).where({ ID: ID });
-
-            // Verifica se a pessoa existe
-            if (!oCategoria) {
-                // Reject the request with a 400 status code and an error message indicating that the category was not found.
-                req.reject(400, `Categoria não encontrada.`);
-
-            };
-
-            if (oCategoria.createdBy !== Usuario) {
-                req.reject(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-            }
-
-            const ajusteCategoria = {
-                ID: ID,
-                Nome: Nome,
-            };
-
-            // Insere o novo cartão no banco de dados
-            await UPDATE(Categoria, ajusteCategoria.ID).with(ajusteCategoria);
-
-            return {
-                sucesso: true
-            }
-
-        } catch (erro) {
-            return {
-                "erro": erro
-            }
-        }
-
-    }
-
-
-    async inserirCartaoPrincipal(req, next) {
-
-        try {
-            const { Pessoa, Cartao } = this.entities;
-            const { ID, Pessoa_ID, NomeCartao, Limite, Moeda, DiaVencimento, DiaFechamento, Usuario } = req.data;
-
-            if (!Usuario) {
-                req.reject(400, `Campo [Usuario] é necessário`);
-            }
-
-            let oPessoa = await SELECT.one.columns("ID", "createdBy", "Moeda_code").from(Pessoa).where({ ID: Pessoa_ID });
-
-            // Verifica se a pessoa existe
-            if (!oPessoa) {
-                req.reject(400, `Pessoa não encontrada.`);
-            }
-
-            //Verifica se o usuário está autenticado e se ele é o criador da pessoa
-            if (oPessoa.createdBy !== Usuario) {
-                req.reject(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-            }
-
-            // Valida se o limite do cartão é maior que zero
-            if (Limite <= 0) {
-                req.reject(400, `O limite do cartão deve ser maior que zero.`);
-            }
-
-            // Verifica se a moeda do cartão é diferente da moeda fornecida
-            // Se for diferente, rejeita a requisição com um erro informando que a moeda não pode ser modificada
-            if (oPessoa.Moeda_code != Moeda) {
-                req.reject(400, `Moeda não pode ser diferente da moeda definida em pessoa.`);
-            }
-
-            // Cria um novo cartão com os dados fornecidos
-            const novoCartao = {
-                ID: ID,
-                Pessoa_ID: Pessoa_ID,
-                NomeCartao: NomeCartao,
-                Limite: Limite,
-                Moeda_code: Moeda,
-                DiaVencimento: DiaVencimento,
-                DiaFechamento: DiaFechamento,
-            };
-
-            // Insere o novo cartão no banco de dados
-            await INSERT.into(Cartao).entries([novoCartao]);
-
-            return {
-                sucesso: true
-            }
-
-        } catch (erro) {
-            return {
-                "erro": erro
-            }
-        }
-
-    }
-
-    async modificarCartaoPrincipal(req, context) {
-
-        try {
-            // Removed the try block and added error handling directly in the function
-            const { Cartao } = this.entities;
-            const { ID, NomeCartao, Limite, Moeda, DiaVencimento, DiaFechamento, Usuario } = req.data;
-
-            let oCartao = await SELECT.one.columns("ID", "createdBy", "Moeda_code").from(Cartao).where({ ID: ID });
-
-            if (!Usuario) {
-                req.reject(400, `Campo [Usuario] é necessário`);
-            }
-
-            // Verifica se a pessoa existe
-            if (!oCartao) {
-                req.reject(400, `Cartão não encontrada.`);
-            }
-
-            // Verifica se o usuário está autenticado e se ele é o criador da pessoa
-            if (oCartao.createdBy !== Usuario) {
-                req.reject(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-            }
-
-            // Valida se o limite do cartão é maior que zero
-            if (Limite <= 0) {
-                req.reject(400, `O limite do cartão deve ser maior que zero.`);
-            }
-
-            // Verifica se a moeda do cartão é diferente da moeda fornecida
-            // Se for diferente, rejeita a requisição com um erro informando que a moeda não pode ser modificada
-            if (oCartao.Moeda_code != Moeda) {
-                req.reject(400, `Moeda não pode ser modificada.`);
-            }
-
-            // Cria um novo cartão com os dados fornecidos
-            const ajusteCartao = {
-                ID: ID,
-                NomeCartao: NomeCartao,
-                Limite: Limite,
-                Moeda_code: Moeda,
-                DiaVencimento: DiaVencimento,
-                DiaFechamento: DiaFechamento,
-            };
-
-            // Insere o novo cartão no banco de dados
-            await UPDATE(Cartao, ajusteCartao.ID).with(ajusteCartao);
-
-            return {
-                sucesso: true
-            }
-
-        } catch (erro) {
-            return {
-                "erro": erro
-            }
-        }
-
-    }
 
     criarInstanciaEmail() {
 

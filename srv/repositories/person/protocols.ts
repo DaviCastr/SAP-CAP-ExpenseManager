@@ -1,5 +1,5 @@
 import { PersonModel } from "@/models/person";
-import { Person } from "@models/GestorDeGastos";
+import { Person } from "@models/apps/dflc/gestordegastos/entities";
 import { Request } from "@sap/cds";
 import { BaseRepository } from "../base";
 

@@ -1,6 +1,6 @@
 import { Request, User } from '@sap/cds';
 import { AbstractError } from '@/errors';
-import { Category } from '@models/GestorDeGastos';
+import { Category } from '@models/apps/dflc/gestordegastos/entities';
 import { Either, left, right } from '@sweet-monads/either';
 import { CategoryService } from './protocols';
 import { BaseServiceImplementation } from '../base/implementation';
@@ -119,6 +119,11 @@ export class CategoryServiceImplementation extends BaseServiceImplementation<Cat
 
         return 4;
 
+    }
+
+
+    protected parentField(): string | null {
+        return 'Person.ID';
     }
 
 

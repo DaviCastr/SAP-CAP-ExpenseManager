@@ -7,6 +7,7 @@ import { BaseController } from "@/controllers/base";
 import { oTransactionRouteFactory } from "@/factories/routes/transaction";
 import { oShareRouteFactory } from "@/factories/routes/share";
 import { oEntityRouteFactory } from "@/factories/routes/entity";
+import { oInvoiceRouteFactory } from "@/factories/routes/invoice";
 
 export class MainRouteImplementation extends BaseRouteImplementation<any> implements MainRoute {
 
@@ -30,6 +31,8 @@ export class MainRouteImplementation extends BaseRouteImplementation<any> implem
         oEntityRouteFactory.main(Service);
         
         oCategoryRouteFactory.main(Service);
+
+        oInvoiceRouteFactory.main(Service);
 
         oTransactionRouteFactory.main(Service);
 

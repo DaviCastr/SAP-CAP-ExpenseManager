@@ -4,5 +4,5 @@ import { BaseRepository } from "../base";
 import { Request } from "@sap/cds";
 
 export interface InvoiceRepository extends BaseRepository {
-    updateTotalAmountByTransactionId(Id: Transaction['ID'], Request?: Request): Promise<void>;
+    updateTotalAmountByTransactionId(Id: Transaction['ID']): Promise<void>;
 }

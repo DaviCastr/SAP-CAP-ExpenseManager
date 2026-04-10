@@ -14,5 +14,8 @@ using from './routes/entity';
 //Category
 using from './routes/category';
 
+//Invoice
+using from './routes/invoice';
+
 //Transaction
 using from './routes/transaction';

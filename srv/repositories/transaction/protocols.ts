@@ -1,5 +1,5 @@
 import { TransactionModel } from "@/models/transaction";
-import { Transaction } from "@models/GestorDeGastos";
+import { Transaction } from "@models/apps/dflc/gestordegastos/entities";
 import { BaseRepository } from "../base";
 import { Request } from "@sap/cds";
 

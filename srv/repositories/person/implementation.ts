@@ -2,7 +2,7 @@ import cds, { entity, Request } from "@sap/cds";
 import Decimal from "decimal.js";
 
 import { PersonModel } from "@/models/person";
-import { Person, Persons } from "@models/GestorDeGastos";
+import { Person, Persons } from "@models/apps/dflc/gestordegastos/entities";
 import { PersonRepository } from "./protocols";
 import { CurrencyModel } from "@/models/currency";
 import { BaseRepositoryImplementation } from "../base/implementation";

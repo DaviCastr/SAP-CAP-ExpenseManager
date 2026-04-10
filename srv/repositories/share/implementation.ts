@@ -2,7 +2,7 @@ import cds, { entity, Request } from "@sap/cds";
 
 import { ShareModel } from "@/models/share";
 import { ShareRepository } from "./protocols";
-import { Share } from "@models/GestorDeGastos";
+import { Share } from "@models/apps/dflc/gestordegastos/entities";
 import { oShareRouteFactory } from "@/factories/routes/share";
 import { Shares } from "@models/apps/dflc/gestordegastos/entities";
 import { BaseRepositoryImplementation } from "../base/implementation";

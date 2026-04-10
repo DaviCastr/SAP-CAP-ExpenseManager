@@ -1,6 +1,6 @@
 import { User } from '@sap/cds';
 import { AbstractError } from '@/errors';
-import { Entity } from '@models/GestorDeGastos';
+import { Entity } from '@models/apps/dflc/gestordegastos/entities';
 import { Either, left, right } from '@sweet-monads/either';
 import { EntityService } from './protocols';
 import { BaseServiceImplementation } from '../base/implementation';
@@ -144,6 +144,12 @@ export class EntityServiceImplementation extends BaseServiceImplementation<Entit
         return 3;
 
     }
+
+
+    protected parentField(): string | null {
+        return 'Share.ID';
+    }
+
 
     private async checkDuplicityByEntity(Entity: Entity): Promise<Either<DuplicityError, boolean>> {
 

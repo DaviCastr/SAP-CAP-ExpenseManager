@@ -1,5 +1,5 @@
 import { ShareModel } from "@/models/share";
-import { Share } from "@models/GestorDeGastos";
+import { Share } from "@models/apps/dflc/gestordegastos/entities";
 import { BaseRepository } from "../base";
 import { Request } from "@sap/cds";
 

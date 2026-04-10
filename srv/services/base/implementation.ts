@@ -105,6 +105,12 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
             //     ')'
             // ]);
 
+            const parentField = this.parentField();
+
+            if (parentField) {
+                this.ensureParentField(Request, parentField);
+            }
+
 
             Request.query.where([
                 '(',
@@ -151,7 +157,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
     public async beforeDelete(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
         return this.checkPermission(Entity, User, this.getPermissionForDelete());
- 
+
     }
 
 
@@ -177,7 +183,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     public async processBeforeUpdate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
-        const result = await this.checkPermission(Entity, User, this.getPermissionForCreate());
+        const result = await this.checkPermission(Entity, User, this.getPermissionForUpdate());
 
         if (result.isLeft()) {
             return result;
@@ -215,7 +221,11 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     protected abstract personPath(): string[];
 
+    
     protected abstract entityCode(): number;
+
+
+    protected abstract parentField(): string | null;
 
 
     protected getPermissionForRead() { return 1; }
@@ -453,6 +463,31 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
                 }
             ]
         };
+
+    }
+
+
+    protected ensureParentField(Request: Request, parentField: string) {
+
+        const SELECT = Request.query?.SELECT;
+
+        if (!SELECT) return;
+
+        const columns = SELECT.columns;
+
+        if (!columns) return;
+
+        const hasWildcard = columns.some(col => col === '*' as any);
+
+        if (hasWildcard) return;
+
+        const exists = columns.some(col =>
+            col.ref?.join('.') === parentField
+        );
+
+        if (!exists) {
+            columns.push({ ref: parentField.split('.') });
+        }
 
     }
 

@@ -1,0 +1,200 @@
+@server=http://localhost:4004
+@username=beatriz
+@password=123456
+
+
+### Cards
+# @name Cards_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards?$select=Name&$expand=Invoices
+Authorization: Basic {{username}}:{{password}}
+
+
+### Cards Drafts GET
+# @name Cards_Drafts_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
+Authorization: Basic {{username}}:{{password}}
+
+
+### Cards Drafts GET
+# @name Cards_Drafts_and_Actives_merge
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
+Accept-Language:pt-BR
+Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
+Authorization: Basic {{username}}:{{password}}
+
+
+### Cards Draft POST
+# @name Cards_Draft_POST
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Name-19272100",
+  "ImageType": "ImageType-19272100",
+  "Limit": 3.44,
+  "Currency": {
+    "code": "BRL"
+  },
+  "DueDay": 64,
+  "ClosingDay": 34,
+  "Invoices": [
+    {
+      "Year": 91,
+      "Month": 38,
+      "Description": "Description-11968149",
+      "TotalAmount": 73.16,
+      "Currency": {
+        "code": "178"
+      },
+      "InvoiceSent": false,
+      "Transactions": [
+        {
+          "Identifier": "10328977-3587-48dd-8a87-1ce2cf67300b",
+          "Date": "2005-01-29",
+          "TotalAmount": 94.89,
+          "Amount": 85.6,
+          "Currency": {
+            "code": "178"
+          },
+          "TotalInstallments": 28,
+          "Installment": 47,
+          "Description": "Description-10328977",
+          "Category": {
+            "ID": "12808650-9959-4716-9bb2-d0f406bc434b"
+          }
+        },
+        {
+          "Identifier": "10328978-b481-4617-8de4-dc1c1c96da4d",
+          "Date": "2011-10-05",
+          "TotalAmount": 42.68,
+          "Amount": 28.58,
+          "Currency": {
+            "code": "178"
+          },
+          "TotalInstallments": 50,
+          "Installment": 62,
+          "Description": "Description-10328978",
+          "Category": {
+            "ID": "12808650-9959-4716-9bb2-d0f406bc434b"
+          }
+        }
+      ]
+    },
+    {
+      "Year": 2,
+      "Month": 89,
+      "Description": "Description-11968150",
+      "TotalAmount": 83.6,
+      "Currency": {
+        "code": "178"
+      },
+      "InvoiceSent": true,
+      "Transactions": [
+        {
+          "Identifier": "14845353-0f0d-4e26-83ed-f452123b75c7",
+          "Date": "2014-03-20",
+          "TotalAmount": 49.3,
+          "Amount": 16.91,
+          "Currency": {
+            "code": "178"
+          },
+          "TotalInstallments": 54,
+          "Installment": 72,
+          "Description": "Description-14845353",
+          "Category": {
+            "ID": "c5555555-5555-5555-5555-555555555555"
+          }
+        },
+        {
+          "Identifier": "14845354-de0f-453d-9b85-ca6bf980f259",
+          "Date": "2008-05-25",
+          "TotalAmount": 9.47,
+          "Amount": 22.66,
+          "Currency": {
+            "code": "178"
+          },
+          "TotalInstallments": 1,
+          "Installment": 100,
+          "Description": "Description-14845354",
+          "Category": {
+            "ID": "c5555555-5555-5555-5555-555555555555"
+          }
+        }
+      ]
+    }
+  ],
+  "Person": {
+    "ID": "22222222-2222-2222-2222-222222222222"
+  }
+}
+
+
+### Result from POST request above
+@draftID={{Cards_Draft_POST.response.body.$.ID}}
+
+### Cards Draft PATCH
+# @name Cards_Draft_Patch
+PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Name-teste2",
+  "ImageType": "ImageType-19272100",
+  "Limit": 3.44,
+  "Currency": {
+    "code": "178"
+  },
+  "DueDay": 64,
+  "ClosingDay": 34,
+  "Person": {
+    "ID": "22222222-2222-2222-2222-222222222222"
+  }
+}
+
+
+### Cards Draft Prepare
+# @name Cards_Draft_Prepare
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=false)/CardService.draftPrepare
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Cards Draft Activate
+# @name Cards_Draft_Activate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Cards Draft Inactivate
+# @name Cards_Draft_Inactivate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Cards Delete
+# @name Cards_DELETE_Active
+DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=true)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Cards Delete Draft
+# @name Cards_DELETE_draft
+DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}

@@ -14,11 +14,22 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
     public async findById(Id: Person["ID"]): Promise<PersonModel | null> {
 
-        const oPersonEntity = this.getEntity();
+        let oPersonEntity = this.getEntity();
 
-        const oSql = SELECT.from(oPersonEntity).where({ ID: Id });
+        let oSql = SELECT.from(oPersonEntity).where({ ID: Id });
 
-        const oPersons = await cds.run(oSql);
+        let oPersons = await cds.run(oSql);
+
+        if ((oPersonEntity as any)?.isDraft) {
+
+            oPersonEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oPersonEntity).where({ Id: Id });
+
+            const additionalPersons = await cds.run(oSql) || [];
+            oPersons = [...(oPersons || []), ...additionalPersons];
+
+        }
 
         const oPersonsModel = this.mapPersonResult(oPersons);
 
@@ -35,9 +46,43 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
     }
 
 
-    protected getEntity(): entity {
+    public async findByCardId(CardId: Person["ID"]): Promise<PersonModel | null> {
 
-        return ServiceLocator.getEntity('Persons');
+        let oPersonEntity = this.getEntity();
+
+        let oSql = SELECT.from(oPersonEntity).where`Cards.ID = ${CardId} `;
+
+        let oPersons = await cds.run(oSql);
+
+        if ((oPersonEntity as any)?.isDraft) {
+
+            oPersonEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oPersonEntity).where`Cards.ID = ${CardId} `;
+
+            const additionalPersons = await cds.run(oSql) || [];
+            oPersons = [...(oPersons || []), ...additionalPersons];
+
+        }
+
+        const oPersonsModel = this.mapPersonResult(oPersons);
+
+        if (oPersonsModel) {
+
+            return oPersonsModel[0];
+
+        } else {
+
+            return null;
+
+        }
+
+    }
+
+
+    protected getEntity(ignoreDraft?: boolean): entity {
+
+        return ServiceLocator.getEntity('Persons', ignoreDraft);
 
     }
 
@@ -60,7 +105,7 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
         return Persons.map((Person: Person) => {
 
             const oCurrencyModel = CurrencyModel.with({
-                Code: Person.Currency?.code as string,
+                Code: Person.Currency?.code || Person?.Currency_code as string,
                 Name: Person.Currency?.name as string,
                 Description: Person.Currency?.descr as string,
                 Symbol: Person.Currency?.symbol as string,

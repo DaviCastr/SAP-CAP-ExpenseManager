@@ -78,7 +78,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
         return Cards.map((Card: Card) => {
 
             const oCurrencyModel = CurrencyModel.with({
-                Code: Card.Currency?.code as string,
+                Code: Card.Currency?.code || Card?.Currency_code as string,
                 Name: Card.Currency?.name as string,
                 Description: Card.Currency?.descr as string,
                 Symbol: Card.Currency?.symbol as string,
@@ -105,6 +105,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
                     TotalAmount: new Decimal(Invoice.TotalAmount ?? 0),
                     Currency: oCurrencyModel,
                     InvoiceSent: Invoice.InvoiceSent as boolean,
+                    CardId: Invoice?.Card_ID as string,
                     Transactions: Invoice.Transactions?.map((Transaction) => TransactionModel.with({
                         Id: Transaction.ID as string,
                         Identifier: Transaction.Identifier as string,
@@ -119,7 +120,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
                         CreatedBy: Transaction.createdBy as string,
                         ModifiedAt: Transaction.modifiedAt as string,
                         ModifiedBy: Transaction.modifiedBy as string
-                    })) as TransactionModel[],
+                    })) || [] as TransactionModel[],
                     CreatedAt: Invoice.createdAt as string,
                     CreatedBy: Invoice.createdBy as string,
                     ModifiedAt: Invoice.modifiedAt as string,

@@ -145,6 +145,30 @@ export class CardModel {
 
     }
 
+    public set AvailableLimit(availableLimit: Decimal) {
+
+        this.props.AvailableLimit = availableLimit;
+
+    }
+
+    public set OpenInvoiceAmount(openInvoiceAmount: Decimal) {
+
+        this.props.OpenInvoiceAmount = openInvoiceAmount;
+
+    }
+
+    public set InvoiceAmountForPayment(invoiceAmountForPayment: Decimal) {
+
+        this.props.InvoiceAmountForPayment = invoiceAmountForPayment;
+
+    }
+
+    public set ClosingDay(closingDay:number) {
+
+        this.props.ClosingDay = closingDay;
+
+    }
+
     public toObject(): CardProperties {
 
         return this.props;

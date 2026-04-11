@@ -482,7 +482,8 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
         if (hasWildcard) return;
 
         const exists = columns.some(col =>
-            col.ref?.join('.') === parentField
+            col.ref?.join('.') === parentField ||
+            col.ref?.join('.')?.replace('_','.') === parentField
         );
 
         if (!exists) {

@@ -49,7 +49,7 @@ export class InvoiceServiceImplementation extends BaseServiceImplementation<Invo
             for (let Invoice of oInvoicesFiltered) {
 
                 const oCurrencyModel = CurrencyModel.with({
-                    Code: Invoice.Currency?.code as string,
+                    Code: Invoice.Currency?.code || Invoice?.Currency_code as string,
                     Name: Invoice.Currency?.name as string,
                     Description: Invoice.Currency?.descr as string,
                     Symbol: Invoice.Currency?.symbol as string,
@@ -64,6 +64,7 @@ export class InvoiceServiceImplementation extends BaseServiceImplementation<Invo
                     TotalAmount: new Decimal(Invoice.TotalAmount ?? 0),
                     Currency: oCurrencyModel,
                     InvoiceSent: Invoice.InvoiceSent as boolean,
+                    CardId: Invoice?.Card_ID as string,
                     Transactions: Invoice.Transactions?.map((item) => TransactionModel.with({
                         Id: item.ID as string,
                         Identifier: item.Identifier as string,
@@ -78,7 +79,7 @@ export class InvoiceServiceImplementation extends BaseServiceImplementation<Invo
                         CreatedBy: item.createdBy as string,
                         ModifiedAt: item.modifiedAt as string,
                         ModifiedBy: item.modifiedBy as string
-                    })) as TransactionModel[],
+                    })) || [] as TransactionModel[],
                     CreatedAt: Invoice.createdAt as string,
                     CreatedBy: Invoice.createdBy as string,
                     ModifiedAt: Invoice.modifiedAt as string,

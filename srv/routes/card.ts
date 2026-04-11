@@ -1,14 +1,17 @@
+import { oCardRouteFactory } from '@/factories/routes/card';
 import { oInvoiceRouteFactory } from '@/factories/routes/invoice';
 import { oTransactionRouteFactory } from '@/factories/routes/transaction';
 import cds from '@sap/cds';
 
-class Invoice extends cds.ApplicationService {
+class Card extends cds.ApplicationService {
 
     init(): Promise<void> {
 
+        oCardRouteFactory.main(this);
+
         oInvoiceRouteFactory.main(this);
 
-        oTransactionRouteFactory.main(this);
+        oTransactionRouteFactory.main(this); 
 
         return super.init();
 
@@ -16,4 +19,4 @@ class Invoice extends cds.ApplicationService {
 
 }
 
-module.exports = Invoice;
+module.exports = Card;

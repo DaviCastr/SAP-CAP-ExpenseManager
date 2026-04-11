@@ -29,17 +29,7 @@ class GestaoGastos extends cds.ApplicationService {
 
             this.before("UPDATE", Pessoa, this.beforeUpdatePessoa);
 
-            this.before("UPDATE", Cartao.drafts, this.beforeUpdateCartao);
-
-            this.before("CREATE", Cartao.drafts, this.beforeCreateCartao);
-
-            this.before("DELETE", Pessoa, this.beforeDeletePessoa);
-
-            this.before("DELETE", Cartao.drafts, this.beforeDeleteCartao);
-
-            this.after("READ", Cartao, async (req, context) => { return await this.afterReadCartao(req, context) });
-
-            this.after("READ", Fatura, async (req, context) => { return await this.afterReadFatura(req, context) });
+            this.before("DELETE", Pessoa, this.beforeDeletePessoa)
 
             this.before("UPDATE", Backup, this.beforeUpdateBackup);
 
@@ -217,83 +207,6 @@ class GestaoGastos extends cds.ApplicationService {
 
     }
 
-    async beforeUpdateCartao(req) {
-
-        try {
-
-            const { Pessoa, Cartao } = this.entities
-
-            let oCartao = await SELECT.one.from(Cartao).where({ ID: req.data.ID });
-
-            if (oCartao) {
-                if (req.user && req.user.id) {
-                    if (oCartao.createdBy !== req.user.id) {
-                        req.reject(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-                    }
-                }
-            }
-
-            if (oCartao) {
-                let oPessoa = await SELECT.one.from(Pessoa).where({ ID: oCartao.Pessoa_ID });
-
-                if (oPessoa && req.data.Moeda_code) {
-
-                    if (oPessoa.Moeda_code != req.data.Moeda_code) {
-                        req.reject(400, `O valor do campo Moeda não pode ser mudado/diferente da moeda da pessoa.`, 'Moeda_code')
-                    }
-                }
-            }
-
-            if (req.data.Limite) {
-                if (req.data.Limite < 0) {
-                    req.reject(400, `O valor da renda não pode ser negativo.`, 'Limite')
-                }
-            }
-
-            if (req.data.DiaFechamento && req.data.DiaVencimento) {
-                if (req.data.DiaVencimento - req.data.DiaVencimento < 2) {
-                    req.reject(400, `O valor do dia de vencimento tem que ter diferença maior de 1 dia da fatura.`, 'DiaVencimento');
-                }
-            }
-
-        } catch (erro) {
-            console.error("Erro ao filtrar registros:", erro);
-            req.error(400, "Erro ao processar a consulta:" + erro);
-        }
-
-    }
-
-    async beforeCreateCartao(req) {
-
-        try {
-
-            const { Pessoa } = this.entities;
-            const { data } = req;
-
-            if (data) {
-
-                let oPessoa = await SELECT.one.from(Pessoa).where({ ID: data.Pessoa_ID });
-
-                if (oPessoa) {
-                    if (req.user && req.user.id) {
-                        if (oPessoa.createdBy !== req.user.id) {
-
-                            req.reject(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-
-                        }
-                    }
-
-                }
-
-            }
-
-        } catch (erro) {
-            console.error("Erro ao filtrar registros:", erro);
-            req.error(400, "Erro ao processar a consulta:" + erro);
-        }
-
-    }
-
 
     async selecionaGastosPorPessoa(ID) {
 
@@ -387,6 +300,7 @@ class GestaoGastos extends cds.ApplicationService {
 
     }
 
+
     async selecionaFaturasPorCartao(ID, Ano) {
 
         const { Fatura } = this.entities;
@@ -397,216 +311,6 @@ class GestaoGastos extends cds.ApplicationService {
         });
 
         return faturas;
-
-    }
-
-    async afterReadCartao(req, context) {
-
-        try {
-
-            const cartoes = Array.isArray(req) ? req : [req];
-
-            let oDate = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-            oDate = oDate.replaceAll(",", " ");
-            let [oDia, oMes, oAno] = oDate.split(" ")[0].split("/");
-
-            oDia = Number(oDia);
-            oMes = Number(oMes);
-            oAno = Number(oAno);
-
-            for (let cartao of cartoes) {
-
-                let oMesFatura = oMes;
-                let oAnoFatura = oAno;
-
-                if (cartao.DiaFechamento > cartao.DiaVencimento) {
-
-                    if (oMesFatura == 12) {
-                        oMesFatura = 1;
-                        oAnoFatura += 1;
-                    } else {
-                        oMesFatura += 1;
-                    }
-
-                }
-
-                try {
-
-                    if (cartao.DiaFechamento > 28) {
-
-                        if (!this.validarData(`${oAno}-${oMes}-${cartao.DiaFechamento}`)) {
-                            cartao.DiaFechamento = this.ultimoDiaDoMes(oAnoFatura, oMesFatura - 1);
-                        }
-                    }
-
-                } catch (erro) {
-
-                }
-
-                let oMesSeguinte = oMesFatura;
-                let oAnoSeguinte = oAnoFatura;
-
-                if (oMesFatura < 12) {
-                    oMesSeguinte += 1;
-                } else {
-                    oMesSeguinte = 1
-                    oAnoSeguinte += 1
-                }
-
-                let oTotalDeGastos = 0.0;
-                let oTotalDoMes = 0.0;
-                let oTotalDoMesEmAberto = 0.0;
-                let oTotalDoMesFechado = 0.0;
-
-                const faturas = await this.selecionaFaturasPorCartao(cartao.ID, oAno);
-
-                faturas.forEach(fatura => {
-
-                    if (fatura.Ano == oAnoFatura && fatura.Mes >= oMesFatura || fatura.Ano > oAnoFatura) {
-
-                        if (fatura.Mes == oMesFatura && fatura.Ano == oAnoFatura) {
-                            oTotalDoMes += Number(fatura.ValorTotal);
-                            if (cartao.DiaFechamento > oDia) {
-                                oTotalDoMesEmAberto += Number(fatura.ValorTotal)
-                                oTotalDeGastos += Number(fatura.ValorTotal)
-                            } else if (cartao.DiaVencimento >= oDia) {
-                                oTotalDoMesFechado += Number(fatura.ValorTotal)
-                                oTotalDeGastos += Number(fatura.ValorTotal)
-                            }
-                        } else if (fatura.Ano == oAnoSeguinte && fatura.Mes == oMesSeguinte && cartao.DiaFechamento <= oDia) {
-                            oTotalDoMesEmAberto += Number(fatura.ValorTotal)
-                            oTotalDeGastos += Number(fatura.ValorTotal)
-                        } else {
-                            oTotalDeGastos += Number(fatura.ValorTotal)
-                        }
-                    }
-
-                });
-
-                cartao.LimiteDisponivel = (Math.round(((cartao.Limite - oTotalDeGastos) + Number.EPSILON) * 100) / 100);
-                cartao.ValorFaturaEmAberto = oTotalDoMesEmAberto;
-                if (cartao.DiaFechamento > oDia) {
-                    cartao.ValorFaturaParaPagamento = cartao.ValorFaturaEmAberto
-                } else if (cartao.DiaVencimento < oDia) {
-                    cartao.ValorFaturaParaPagamento = cartao.ValorFaturaEmAberto
-                } else {
-                    cartao.ValorFaturaParaPagamento = oTotalDoMesFechado
-                }
-            }
-
-        } catch (erro) {
-            console.error("Erro ao filtrar registros:", erro);
-            context.error(400, "Erro ao processar a consulta:" + erro);
-        }
-
-    }
-
-    async afterReadFatura(req, context) {
-
-        try {
-
-            const faturas = Array.isArray(req) ? req : [req];
-
-            for (let fatura of faturas) {
-
-                if (!fatura.Descricao) {
-
-                    let oDescription = '';
-
-                    switch (fatura.Mes) {
-                        case 1:
-                            oDescription = `Janeiro`
-                            break;
-                        case 2:
-                            oDescription = `Fevereiro`
-                            break;
-                        case 3:
-                            oDescription = `Março`
-                            break;
-                        case 4:
-                            oDescription = `Abril`
-                            break;
-                        case 5:
-                            oDescription = `Maio`
-                            break;
-                        case 6:
-                            oDescription = `Junho`
-                            break;
-                        case 7:
-                            oDescription = `Julho`
-                            break;
-                        case 8:
-                            oDescription = `Agosto`
-                            break;
-                        case 9:
-                            oDescription = `Setembro`
-                            break;
-                        case 10:
-                            oDescription = `Outubro`
-                            break;
-                        case 11:
-                            oDescription = `Novembro`
-                            break;
-                        case 12:
-                            oDescription = `Dezembro`
-                            break;
-                        default:
-                            break;
-                    }
-
-                    fatura.Descricao = oDescription;
-
-                }
-
-            }
-
-        } catch (erro) {
-            console.error("Erro ao filtrar registros:", erro);
-            context.error(400, "Erro ao processar a consulta:" + erro);
-        }
-
-    }
-
-    async afterReadTransacao(req, context) {
-
-        const { Transacao } = this.entities;
-
-        try {
-
-            const transacoes = Array.isArray(req) ? req : [req];
-
-            for (let transacao of transacoes) {
-
-                if (!transacao.ValorTotal || transacao.ValorTotal == 0) {
-
-                    if (transacao.ParcelasTotais > 1) {
-
-                        let oValorTotal = {};
-
-                        if (transacao.Identificador) {
-
-                            oValorTotal = await SELECT.one`coalesce (sum (Valor),0) as ValorTotal`.from(Transacao).where({ Identificador: transacao.Identificador });
-
-                        } else {
-
-                            let oIdentificador = await SELECT.one.columns('Identificador').from(Transacao).where({ ID: transacao.ID });
-                            oValorTotal = await SELECT.one`coalesce (sum (Valor),0) as ValorTotal`.from(Transacao).where({ Identificador: oIdentificador.Identificador });
-
-                        }
-
-                        transacao.ValorTotal = oValorTotal.ValorTotal;
-
-                    } else {
-                        transacao.ValorTotal = transacao.Valor;
-                    }
-                }
-
-            }
-
-        } catch (erro) {
-            console.error("Erro ao filtrar registros:", erro);
-            context.error(400, "Erro ao processar a consulta:" + erro);
-        }
 
     }
 
@@ -656,29 +360,6 @@ class GestaoGastos extends cds.ApplicationService {
 
     }
 
-    async beforeDeleteCartao(data, req) {
-
-        const cartoes = Array.isArray(data.data) ? data.data : [data.data];
-
-        const { Cartao } = this.entities;
-
-        for (const cartao of cartoes) {
-
-            let oCartao = await SELECT.one.columns("createdBy").from(Cartao).where({ ID: cartao.ID });
-
-            if (oCartao) {
-                if (data.user && data.user.id) {
-                    if (oCartao.createdBy !== data.user.id) {
-
-                        data.error(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-
-                    }
-                }
-            }
-
-        }
-
-    }
 
     async simulaPorMesAno(IDPessoa, Mes, Ano) {
 

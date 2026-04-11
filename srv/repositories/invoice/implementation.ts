@@ -43,6 +43,60 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
     }
 
 
+    public async findByCardID(CardId: Invoice["Card_ID"], additionalFilters: {}, Limit?: number): Promise<InvoiceModel[] | null> {
+
+        let oSql = this.getReportBaseSql();
+
+        oSql.where({...additionalFilters, Card_ID: CardId });
+
+        let oTransactions: Invoices = await cds.run(oSql);
+
+        if ((this.getEntity() as any)?.isDraft) {
+
+            oSql = this.getReportBaseSql(true);
+
+            oSql.where({...additionalFilters, Card_ID: CardId });
+
+            const additionalTransactions: Invoices = await cds.run(oSql) || [];
+
+            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+
+        }
+
+        const oTransactionsModel = await this.mapInvoiceResult(oTransactions);
+
+        return oTransactionsModel;
+
+    }
+
+
+    public async findByCardIDs(CardIds: Invoice["Card_ID"][], additionalFilters: {}, Limit?: number): Promise<InvoiceModel[] | null> {
+
+        let oSql = this.getReportBaseSql();
+
+        oSql.where({...additionalFilters, Card_ID: { 'in' : CardIds } });
+
+        let oTransactions: Invoices = await cds.run(oSql);
+
+        if ((this.getEntity() as any)?.isDraft) {
+
+            oSql = this.getReportBaseSql(true);
+
+            oSql.where({...additionalFilters, Card_ID: { 'in' : CardIds } });
+
+            const additionalTransactions: Invoices = await cds.run(oSql) || [];
+
+            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+
+        }
+
+        const oTransactionsModel = await this.mapInvoiceResult(oTransactions);
+
+        return oTransactionsModel;
+
+    }
+
+
     public async updateTotalAmountByTransactionId(Id: Transaction["ID"]): Promise<void> {
 
         let oInvoiceEntity = this.getEntity();
@@ -101,7 +155,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
             Invoices.map((Invoice) => {
 
                 const oCurrencyModel = CurrencyModel.with({
-                    Code: Invoice.Currency?.code as string,
+                    Code: Invoice.Currency?.code || Invoice.Currency_code as string,
                     Name: Invoice.Currency?.name as string,
                     Description: Invoice.Currency?.descr as string,
                     Symbol: Invoice.Currency?.symbol as string,
@@ -116,6 +170,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
                     TotalAmount: new Decimal(Invoice.TotalAmount ?? 0),
                     Currency: oCurrencyModel,
                     InvoiceSent: Invoice.InvoiceSent as boolean,
+                    CardId: Invoice?.Card_ID as string,
                     Transactions: Invoice.Transactions?.map((item) => TransactionModel.with({
                         Id: item.ID as string,
                         Identifier: item.Identifier as string,
@@ -130,7 +185,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
                         CreatedBy: item.createdBy as string,
                         ModifiedAt: item.modifiedAt as string,
                         ModifiedBy: item.modifiedBy as string
-                    })) as TransactionModel[],
+                    })) || [] as TransactionModel[],
                     CreatedAt: Invoice.createdAt as string,
                     CreatedBy: Invoice.createdBy as string,
                     ModifiedAt: Invoice.modifiedAt as string,

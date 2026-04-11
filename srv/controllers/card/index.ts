@@ -1,0 +1,1 @@
+export type { CardController } from './protocols';

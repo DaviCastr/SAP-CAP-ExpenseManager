@@ -69,7 +69,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
             for (let Transaction of oTransactionsFiltered) {
 
                 const oCurrencyModel = CurrencyModel.with({
-                    Code: Transaction.Currency?.code as string,
+                    Code: Transaction.Currency?.code || Transaction?.Currency_code as string,
                     Name: Transaction.Currency?.name as string,
                     Description: Transaction.Currency?.descr as string,
                     Symbol: Transaction.Currency?.symbol as string,

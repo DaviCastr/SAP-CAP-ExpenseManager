@@ -22,6 +22,7 @@ type InvoiceProperties = {
     TotalAmount: Decimal;
     Currency: CurrencyModel;
     InvoiceSent: boolean;
+    CardId: string;
     Transactions: TransactionModel[];
     CreatedAt?: string;
     CreatedBy?: string;
@@ -83,6 +84,12 @@ export class InvoiceModel {
 
     }
 
+    public get CardId() {
+
+        return this.props.CardId;
+
+    }
+
     public get Transactions() {
 
         return this.props.Transactions;
@@ -135,6 +142,7 @@ export class InvoiceModel {
             Description: this.props.Description,
             Currency: this.props.Currency.toEntityObject(),
             InvoiceSent: this.props.InvoiceSent,
+            Card_ID: this.props.CardId,
             Transactions: this.props.Transactions?.map((item) => item.toEntityObject()),
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,

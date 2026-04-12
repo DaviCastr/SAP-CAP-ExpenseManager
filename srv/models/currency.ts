@@ -4,7 +4,7 @@
 //       minorUnit : Int16     @(title : '{i18n>CurrencyMinorUnit}');
 // }
 
-import { Currency } from "@models/apps/dflc/gestordegastos/entities";
+import { Currency } from "@models/sap/common";
 
 export type CurrencyProperties = {
     Code: string;
@@ -21,6 +21,18 @@ export class CurrencyModel {
     public static with(properties: CurrencyProperties): CurrencyModel {
 
         return new CurrencyModel(properties);
+
+    }
+
+    public static singleModel(properties: Currency): CurrencyModel {
+
+        return CurrencyModel.with({
+            Code: properties?.code as string,
+            Name: properties?.name || '' as string,
+            Description: properties?.descr as string,
+            Symbol: properties?.symbol as string,
+            MinorUnit: properties?.minorUnit as number
+        });
 
     }
 
@@ -42,14 +54,14 @@ export class CurrencyModel {
 
     }
 
-    public toEntityObject(): Currency{
+    public toEntityObject(): Currency {
 
         return {
             code: this.props.Code,
-            name: this.props.Name,
-            descr: this.props.Description,
-            minorUnit: this.props.MinorUnit,
-            symbol: this.props.Symbol
+            //name: this.props.Name,
+            //descr: this.props.Description,
+            //minorUnit: this.props.MinorUnit,
+            //symbol: this.props.Symbol
         }
 
     }

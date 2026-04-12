@@ -3,9 +3,12 @@
 //     BackupType : String;
 // }
 
+import { Backup, Backups } from "@models/apps/dflc/gestordegastos/entities";
+import { Readable } from "stream";
+
 type BackupProperties = {
     Id: string;
-    Backup: Buffer;
+    Backup: Readable;
     BackupType: string;
     CreatedAt?: string;
     CreatedBy?: string;
@@ -16,6 +19,34 @@ type BackupProperties = {
 export class BackupModel {
 
     constructor(private props: BackupProperties) { }
+
+    public static with(properties: BackupProperties): BackupModel {
+        return new BackupModel(properties);
+    }
+
+    public static singleModel(properties: Backup): BackupModel {
+
+        return this.mapModel([properties])?.[0];
+
+    }
+
+    public static mapModel(Backups: Backups): BackupModel[] {
+
+        return Backups.map((Backup: Backup) => {
+
+            return BackupModel.with({
+                Id: Backup.ID as string,
+                Backup: Backup.Backup as Readable,
+                BackupType: Backup.BackupType as string,
+                CreatedAt: Backup.createdAt as string,
+                CreatedBy: Backup.createdBy as string,
+                ModifiedAt: Backup.modifiedAt as string,
+                ModifiedBy: Backup.modifiedBy as string
+            });
+
+        });
+
+    }
 
     public get Id() {
 
@@ -56,6 +87,26 @@ export class BackupModel {
     public get ModifiedBy() {
 
         return this.props.ModifiedBy;
+
+    }
+
+    public toObject(): BackupProperties {
+
+        return this.props;
+
+    }
+
+    public toEntityObject(): Backup {
+
+        return {
+            ID: this.props.Id,
+            Backup: this.props.Backup,
+            BackupType: this.props.BackupType,
+            createdAt: this.props.CreatedAt,
+            createdBy: this.props.CreatedBy,
+            modifiedAt: this.props.ModifiedAt,
+            modifiedBy: this.props.ModifiedBy
+        };
 
     }
 

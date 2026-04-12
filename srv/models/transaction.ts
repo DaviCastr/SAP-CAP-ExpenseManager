@@ -13,7 +13,7 @@
 
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
-import { Transaction as TransactionEntityType } from '@models/apps/dflc/gestordegastos/entities';
+import { Transaction, Transactions } from '@models/apps/dflc/gestordegastos/entities';
 
 type TransactionProperties = {
     Id: string;
@@ -31,8 +31,6 @@ type TransactionProperties = {
     ModifiedBy?: string;
 }
 
-type TransactionEntityProperties = TransactionEntityType;
-
 export class TransactionModel {
 
     constructor(private props: TransactionProperties) { }
@@ -40,6 +38,34 @@ export class TransactionModel {
     public static with(properties: TransactionProperties): TransactionModel {
 
         return new TransactionModel(properties);
+
+    }
+
+    public static singleModel(properties: Transaction): TransactionModel {
+
+        return this.mapModel([properties])?.[0];
+
+    }
+
+    public static mapModel(Transactions: Transactions): TransactionModel[] {
+
+        return Transactions.map((Transaction) =>
+            TransactionModel.with({
+                Id: Transaction.ID as string,
+                Identifier: Transaction.Identifier as string,
+                Date: Transaction.Date as string,
+                TotalAmount: new Decimal(Transaction.TotalAmount ?? 0),
+                Amount: new Decimal(Transaction.Amount ?? 0),
+                Currency: Transaction.Currency as CurrencyModel,
+                TotalInstallments: Transaction.TotalInstallments as number,
+                Installment: Transaction.Installment as number,
+                Description: Transaction.Description as string,
+                CreatedAt: Transaction.createdAt as string,
+                CreatedBy: Transaction.createdBy as string,
+                ModifiedAt: Transaction.modifiedAt as string,
+                ModifiedBy: Transaction.modifiedBy as string
+            })
+        ) || [] as TransactionModel[];
 
     }
 
@@ -133,12 +159,12 @@ export class TransactionModel {
 
     }
 
-    public toEntityObject(): TransactionEntityProperties {
+    public toEntityObject(): Transaction {
 
         return {
             ID: this.props.Id,
             Identifier: this.props.Identifier,
-            Date: this.props.Date as TransactionEntityProperties['Date'],
+            Date: this.props.Date as Transaction['Date'],
             TotalAmount: this.props.TotalAmount.toNumber(),
             Amount: this.props.Amount.toNumber(),
             Currency: this.props.Currency.toEntityObject(),

@@ -1,0 +1,1 @@
+export type { PersonService } from './protocols';

@@ -10,25 +10,27 @@ service PersonService {
         {
             grant: 'READ',
             where: `createdBy = $user or 
-                    exists (
-                        select 1 from apps.dflc.gestordegastos.entities.Shares as S
-                        inner join apps.dflc.gestordegastos.entities.Entities as E
-                            on E.Share_ID = S.ID
-                        where 
-                        S.Person_ID = Person.ID and
+                exists (
+                    select 1 from apps.dflc.gestordegastos.entities.Shares as S
+                    where 
+                        S.Person_ID = ID and
                         S.User = $user and
-                        E.Entity = 1 and
-                        E.Permission is not null
-                    )`
+                        exists (
+                            select 1 from apps.dflc.gestordegastos.entities.Entities as E
+                            where 
+                                E.Share_ID = S.ID and
+                                E.Entity = 1 and
+                                E.Permission is not null
+                        )
+                )`
         },
-
         {grant: [
             'CREATE',
             'UPDATE',
             'DELETE'
         ]}
     ]
-    entity Persons as projection on entities.Persons;                                                                                          
+    entity Persons as projection on entities.Persons;
 
 }
 

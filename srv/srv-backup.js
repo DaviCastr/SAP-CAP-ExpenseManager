@@ -17,19 +17,13 @@ class GestaoGastos extends cds.ApplicationService {
 
     init(req) {
 
-        const { Pessoa, Cartao, Fatura, Backup } = this.entities;
+        const { Pessoa, Backup } = this.entities;
 
         try {
-
-            this.after("READ", Pessoa, async (req, context) => { return await this.afterReadPessoa(req, context) });
-
-            this.before("READ", Pessoa, async (req, context) => { return await this.beforeReadPessoa(req, context) });
 
             this.before("UPDATE", Pessoa.drafts, this.beforeUpdatePessoa);
 
             this.before("UPDATE", Pessoa, this.beforeUpdatePessoa);
-
-            this.before("DELETE", Pessoa, this.beforeDeletePessoa)
 
             this.before("UPDATE", Backup, this.beforeUpdateBackup);
 
@@ -62,93 +56,6 @@ class GestaoGastos extends cds.ApplicationService {
 
     async sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async beforeReadPessoa(req, context) {
-        try {
-            // Verifica se o usuário está autenticado
-            if (req.user && req.user.id && req.user.id.includes('@')) {
-                // Se não houver um filtro de where, cria um
-                if (!Array.isArray(req.query.SELECT.where)) {
-                    req.query.SELECT.where = [];
-
-                    // Adiciona o filtro para o ID do usuário autenticado
-                    req.query.SELECT.where.push(
-                        { ref: ['createdBy'] },
-                        '=',
-                        {
-                            //val: req.user.id//attr.logonName
-                            val: req.user.id//attr.logonName
-
-                        }
-                    );
-
-                    req.query.SELECT.where.push(
-                        'OR',
-                        { ref: ['PartilharCom'] },
-                        '=',
-                        {
-                            //val: req.user.id//attr.logonName
-                            val: req.user.id
-                        }
-                    );
-
-                }
-            }
-
-        } catch (error) {
-            console.error("Erro ao filtrar registros:", error);
-            req.error(400, "Erro ao processar a consulta:" + error);
-        }
-    }
-
-
-    async afterReadPessoa(req, context) {
-
-        try {
-
-            const pessoas = Array.isArray(req) ? req : [req];
-
-            for (const pessoa of pessoas) {
-
-                if (!pessoa.Imagem) {
-
-                    const oGastos = await this.selecionaGastosPorPessoa(pessoa.ID);
-                    //pessoa.ImagemUrl = context.headers.origin + Gere
-                    pessoa.TotalDeGastos = oGastos.totalDeGastos;
-                    pessoa.TotalDeGastos = parseFloat((Math.round((pessoa.TotalDeGastos + Number.EPSILON) * 100) / 100));
-                    pessoa.TotalDoMes = oGastos.totalDoMes;
-                    pessoa.TotalDoMes = parseFloat((Math.round((pessoa.TotalDoMes + Number.EPSILON) * 100) / 100));
-                    pessoa.ValorAEconomizar = pessoa.TotalDoMes - pessoa.ObjetivoDeGasto;
-                    pessoa.ValorAEconomizar = parseFloat((Math.round((pessoa.ValorAEconomizar + Number.EPSILON) * 100) / 100));
-                    pessoa.TotalDoMesEmAberto = oGastos.totalDoMesEmAberto;
-                    pessoa.TotalDoMesEmAberto = parseFloat((Math.round((pessoa.TotalDoMesEmAberto + Number.EPSILON) * 100) / 100));
-                    pessoa.TotalDoMesFechado = oGastos.totalDoMesFechado;
-                    pessoa.TotalDoMesFechado = parseFloat((Math.round((pessoa.TotalDoMesFechado + Number.EPSILON) * 100) / 100));
-                    pessoa.TotalDoMesPago = oGastos.totalDoMesPago;
-                    pessoa.TotalDoMesPago = parseFloat((Math.round((pessoa.TotalDoMesPago + Number.EPSILON) * 100) / 100));
-
-                    if (pessoa.TotalDoMes > pessoa.ObjetivoDeGasto) {
-                        pessoa.CriticidadeDoMes = 1;
-                    } else {
-                        pessoa.CriticidadeDoMes = 3;
-                    }
-
-                    if (pessoa.TotalDoMesEmAberto > pessoa.ObjetivoDeGasto) {
-                        pessoa.CriticidadeEmAberto = 1;
-                    } else {
-                        pessoa.CriticidadeEmAberto = 3;
-                    }
-
-                }
-
-            }
-
-        } catch (erro) {
-            console.error("Erro ao filtrar registros:", error);
-            context.error(400, "Erro ao processar a consulta:" + erro);
-        }
-
     }
 
 
@@ -208,99 +115,6 @@ class GestaoGastos extends cds.ApplicationService {
     }
 
 
-    async selecionaGastosPorPessoa(ID) {
-
-        const { Cartao } = this.entities;
-
-        let oTotalDeGastos = 0.0;
-        let oTotalDoMes = 0.0;
-        let oTotalDoMesEmAberto = 0.0;
-        let oTotalDoMesFechado = 0.0;
-        let oTotalDoMesPago = 0.0;
-
-        const dadosCartoes = await SELECT.from(Cartao).where({ Pessoa_ID: ID });
-
-        let oDate = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-        oDate = oDate.replaceAll(",", " ");
-        let [oDia, oMes, oAno] = oDate.split(" ")[0].split("/");
-
-        oDia = Number(oDia);
-        oMes = Number(oMes);
-        oAno = Number(oAno);
-
-        for (let cartao of dadosCartoes) {
-
-            let oMesFatura = oMes;
-            let oAnoFatura = oAno;
-
-            if (cartao.DiaFechamento > cartao.DiaVencimento) {
-
-                if (oMesFatura == 12) {
-                    oMesFatura = 1;
-                    oAnoFatura += 1;
-                } else {
-                    oMesFatura += 1;
-                }
-
-            }
-
-            try {
-
-                if (cartao.DiaFechamento > 28) {
-
-                    if (!this.validarData(`${oAnoFatura}-${oMesFatura}-${cartao.DiaFechamento}`)) {
-                        cartao.DiaFechamento = this.ultimoDiaDoMes(oAnoFatura, oMesFatura - 1);
-                    }
-                }
-
-            } catch (erro) {
-
-            }
-
-            let oMesSeguinte = oMesFatura;
-            let oAnoSeguinte = oAnoFatura;
-
-            if (oMesFatura < 12) {
-                oMesSeguinte += 1;
-            } else {
-                oMesSeguinte = 1
-                oAnoSeguinte += 1
-            }
-
-            const faturas = await this.selecionaFaturasPorCartao(cartao.ID, oAnoFatura);
-
-            faturas.forEach(fatura => {
-
-                if (fatura.Ano == oAnoFatura && fatura.Mes >= oMesFatura || fatura.Ano > oAnoFatura) {
-                    oTotalDeGastos += Number(fatura.ValorTotal)
-                    if (fatura.Mes == oMesFatura && fatura.Ano == oAnoFatura) {
-                        oTotalDoMes += Number(fatura.ValorTotal);
-                        if (cartao.DiaFechamento > oDia)
-                            oTotalDoMesEmAberto += Number(fatura.ValorTotal)
-                        else if (cartao.DiaFechamento <= oDia && cartao.DiaVencimento >= oDia)
-                            oTotalDoMesFechado += Number(fatura.ValorTotal)
-                        else
-                            oTotalDoMesPago += Number(fatura.ValorTotal)
-                    } else if (fatura.Ano == oAnoSeguinte && fatura.Mes == oMesSeguinte && cartao.DiaFechamento <= oDia) {
-                        oTotalDoMesEmAberto += Number(fatura.ValorTotal)
-                    }
-                }
-
-            });
-
-        };
-
-        return {
-            totalDeGastos: oTotalDeGastos,
-            totalDoMes: oTotalDoMes,
-            totalDoMesEmAberto: oTotalDoMesEmAberto,
-            totalDoMesFechado: oTotalDoMesFechado,
-            totalDoMesPago: oTotalDoMesPago
-        };
-
-    }
-
-
     async selecionaFaturasPorCartao(ID, Ano) {
 
         const { Fatura } = this.entities;
@@ -334,32 +148,6 @@ class GestaoGastos extends cds.ApplicationService {
         }
 
     }
-
-    async beforeDeletePessoa(data, req) {
-
-        const pessoas = Array.isArray(data.data) ? data.data : [data.data];
-
-        const { Pessoa } = this.entities;
-
-        for (const pessoa of pessoas) {
-
-            let oPessoa = await SELECT.one.columns("createdBy").from(Pessoa).where({ ID: pessoa.ID });
-
-            if (oPessoa) {
-                if (data.user && data.user.id) {
-                    if (oPessoa.createdBy !== data.user.id) {
-
-                        data.error(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-
-                    }
-
-                }
-            }
-
-        }
-
-    }
-
 
     async simulaPorMesAno(IDPessoa, Mes, Ano) {
 

@@ -11,7 +11,7 @@
 
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
-import { Invoice as InvoiceEntityType } from '@models/apps/dflc/gestordegastos/entities';
+import { Invoice, Invoices } from '@models/apps/dflc/gestordegastos/entities';
 import { TransactionModel } from './transaction';
 
 type InvoiceProperties = {
@@ -30,8 +30,6 @@ type InvoiceProperties = {
     ModifiedBy?: string;
 }
 
-type InvoiceEntityProperties = InvoiceEntityType;
-
 export class InvoiceModel {
 
     constructor(private props: InvoiceProperties) { }
@@ -39,6 +37,45 @@ export class InvoiceModel {
     public static with(properties: InvoiceProperties): InvoiceModel {
 
         return new InvoiceModel(properties);
+
+    }
+
+    public static singleModel(properties: Invoice): InvoiceModel {
+
+        return this.mapModel([properties])?.[0];
+
+    }
+
+    public static mapModel(Invoices: Invoices): InvoiceModel[] {
+
+        const oInvoicesModel: InvoiceModel[] =
+
+            Invoices.map((Invoice) => {
+
+                const oCurrencyModel = CurrencyModel.singleModel({
+                    ...Invoice?.Currency,
+                    code: Invoice?.Currency?.code || Invoice?.Currency_code as string
+                });
+
+                return InvoiceModel.with({
+                    Id: Invoice.ID as string,
+                    Year: Invoice.Year as number,
+                    Month: Invoice.Month as number,
+                    Description: Invoice.Description as string,
+                    TotalAmount: new Decimal(Invoice.TotalAmount ?? 0),
+                    Currency: oCurrencyModel,
+                    InvoiceSent: Invoice.InvoiceSent as boolean,
+                    CardId: Invoice?.Card_ID as string,
+                    Transactions: TransactionModel.mapModel(Invoice?.Transactions || []),
+                    CreatedAt: Invoice.createdAt as string,
+                    CreatedBy: Invoice.createdBy as string,
+                    ModifiedAt: Invoice.modifiedAt as string,
+                    ModifiedBy: Invoice.modifiedBy as string
+                });
+
+            });
+
+        return oInvoicesModel || [] as InvoiceModel[];
 
     }
 
@@ -132,7 +169,7 @@ export class InvoiceModel {
 
     }
 
-    public toEntityObject(): InvoiceEntityProperties {
+    public toEntityObject(): Invoice {
 
         return {
             ID: this.props.Id,

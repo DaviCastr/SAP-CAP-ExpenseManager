@@ -8,7 +8,7 @@
 //         DueDay                  : Integer;
 //         ClosingDay              : Integer;
 // virtual InvoiceAmountForPayment : Decimal;
-// virtual OpenInvoiceAmount       : Decimal;
+// virtual InvoiceAmountToPay       : Decimal;
 //         Invoice                 : Composition of many Invoices on Invoice.Card = $self;
 //         Person                  : Association to Persons @mandatory; // @assert.target
 // }
@@ -16,7 +16,8 @@ import { Readable } from "stream";
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
 import { InvoiceModel } from '@/models/invoice';
-import { Card as CardEntityType } from '@models/apps/dflc/gestordegastos/entities';
+import { Card, Card as CardEntityType, Cards } from '@models/apps/dflc/gestordegastos/entities';
+import { TransactionModel } from "./transaction";
 
 type CardProperties = {
     Id: string;
@@ -29,7 +30,8 @@ type CardProperties = {
     DueDay: number;
     ClosingDay: number;
     InvoiceAmountForPayment: Decimal;
-    OpenInvoiceAmount: Decimal;
+    InvoiceAmountToPay: Decimal;
+    PersonId: string;
     Invoices: InvoiceModel[];
     CreatedAt?: string;
     CreatedBy?: string;
@@ -46,6 +48,45 @@ export class CardModel {
     public static with(properties: CardProperties): CardModel {
 
         return new CardModel(properties);
+
+    }
+
+    public static singleModel(properties: Card): CardModel {
+
+        return this.mapModel([properties])?.[0] as CardModel;
+
+    }
+
+    public static mapModel(Cards: Cards): CardModel[] {
+
+        return Cards.map((Card: Card) => {
+
+            const oCurrencyModel = CurrencyModel.singleModel({
+                ...Card?.Currency,
+                code: Card?.Currency?.code || Card?.Currency_code as string
+            });
+
+            return CardModel.with({
+                Id: Card.ID as string,
+                Name: Card.Name as string,
+                Image: Card.Image as Readable,
+                ImageType: Card.ImageType as string,
+                Limit: new Decimal(Card.Limit ?? 0),
+                Currency: oCurrencyModel,
+                AvailableLimit: new Decimal(Card.AvailableLimit ?? 0),
+                DueDay: Card.DueDay as number,
+                ClosingDay: Card.ClosingDay as number,
+                InvoiceAmountForPayment: new Decimal(Card.InvoiceAmountForPayment ?? 0),
+                InvoiceAmountToPay: new Decimal(Card.InvoiceAmountToPay ?? 0),
+                PersonId: Card?.Person?.ID || Card?.Person_ID as string,
+                Invoices: InvoiceModel.mapModel(Card?.Invoices || []),
+                CreatedAt: Card.createdAt as string,
+                CreatedBy: Card.createdBy as string,
+                ModifiedAt: Card.modifiedAt as string,
+                ModifiedBy: Card.modifiedBy as string
+            });
+
+        });
 
     }
 
@@ -109,9 +150,15 @@ export class CardModel {
 
     }
 
-    public get OpenInvoiceAmount() {
+    public get InvoiceAmountToPay() {
 
-        return this.props.OpenInvoiceAmount;
+        return this.props.InvoiceAmountToPay;
+
+    }
+
+    public get PersonId() {
+
+        return this.props.PersonId;
 
     }
 
@@ -151,9 +198,9 @@ export class CardModel {
 
     }
 
-    public set OpenInvoiceAmount(openInvoiceAmount: Decimal) {
+    public set InvoiceAmountToPay(InvoiceAmountToPay: Decimal) {
 
-        this.props.OpenInvoiceAmount = openInvoiceAmount;
+        this.props.InvoiceAmountToPay = InvoiceAmountToPay;
 
     }
 
@@ -163,7 +210,7 @@ export class CardModel {
 
     }
 
-    public set ClosingDay(closingDay:number) {
+    public set ClosingDay(closingDay: number) {
 
         this.props.ClosingDay = closingDay;
 
@@ -188,8 +235,9 @@ export class CardModel {
             DueDay: this.props.DueDay,
             ClosingDay: this.props.ClosingDay,
             InvoiceAmountForPayment: this.props.InvoiceAmountForPayment?.toNumber(),
-            OpenInvoiceAmount: this.props.OpenInvoiceAmount?.toNumber(),
-            Invoices: this.props.Invoices?.map((item)=> item.toEntityObject()),
+            InvoiceAmountToPay: this.props.InvoiceAmountToPay?.toNumber(),
+            Person_ID: this.props.PersonId,
+            Invoices: this.props.Invoices?.map((item) => item.toEntityObject()),
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,

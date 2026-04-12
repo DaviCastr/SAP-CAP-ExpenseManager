@@ -150,52 +150,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         }
 
-        const oInvoicesModel: InvoiceModel[] =
-
-            Invoices.map((Invoice) => {
-
-                const oCurrencyModel = CurrencyModel.with({
-                    Code: Invoice.Currency?.code || Invoice.Currency_code as string,
-                    Name: Invoice.Currency?.name as string,
-                    Description: Invoice.Currency?.descr as string,
-                    Symbol: Invoice.Currency?.symbol as string,
-                    MinorUnit: Invoice.Currency?.minorUnit as number
-                });
-
-                return InvoiceModel.with({
-                    Id: Invoice.ID as string,
-                    Year: Invoice.Year as number,
-                    Month: Invoice.Month as number,
-                    Description: Invoice.Description as string,
-                    TotalAmount: new Decimal(Invoice.TotalAmount ?? 0),
-                    Currency: oCurrencyModel,
-                    InvoiceSent: Invoice.InvoiceSent as boolean,
-                    CardId: Invoice?.Card_ID as string,
-                    Transactions: Invoice.Transactions?.map((item) => TransactionModel.with({
-                        Id: item.ID as string,
-                        Identifier: item.Identifier as string,
-                        Date: item.Date as string,
-                        TotalAmount: new Decimal(item.TotalAmount ?? 0),
-                        Amount: new Decimal(item.Amount ?? 0),
-                        Currency: oCurrencyModel,
-                        TotalInstallments: item.TotalInstallments as number,
-                        Installment: item.Installment as number,
-                        Description: item.Description as string,
-                        CreatedAt: item.createdAt as string,
-                        CreatedBy: item.createdBy as string,
-                        ModifiedAt: item.modifiedAt as string,
-                        ModifiedBy: item.modifiedBy as string
-                    })) || [] as TransactionModel[],
-                    CreatedAt: Invoice.createdAt as string,
-                    CreatedBy: Invoice.createdBy as string,
-                    ModifiedAt: Invoice.modifiedAt as string,
-                    ModifiedBy: Invoice.modifiedBy as string
-                });
-
-            });
-
-        return oInvoicesModel || [] as InvoiceModel[];
-
+        return InvoiceModel.mapModel(Invoices);
 
     }
 

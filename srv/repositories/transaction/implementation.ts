@@ -129,21 +129,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
             }
 
             oTransactionsModel.push(
-                TransactionModel.with({
-                    Id: Transaction.ID as string,
-                    Identifier: Transaction.Identifier as string,
-                    Date: Transaction.Date as string,
-                    TotalAmount: new Decimal(Transaction.TotalAmount ?? 0),
-                    Amount: new Decimal(Transaction.Amount ?? 0),
-                    Currency: Transaction.Currency as CurrencyModel,
-                    TotalInstallments: Transaction.TotalInstallments as number,
-                    Installment: Transaction.Installment as number,
-                    Description: Transaction.Description as string,
-                    CreatedAt: Transaction.createdAt as string,
-                    CreatedBy: Transaction.createdBy as string,
-                    ModifiedAt: Transaction.modifiedAt as string,
-                    ModifiedBy: Transaction.modifiedBy as string
-                })
+                TransactionModel.singleModel(Transaction)
             );
 
         };
@@ -151,6 +137,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
         return oTransactionsModel;
 
     }
+
 
     private async selectTotalAmount(Transaction: Transaction): Promise<{
         Identifier: Transaction['Identifier'],

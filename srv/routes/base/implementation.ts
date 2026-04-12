@@ -118,7 +118,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         const oResult = await this.Controller.beforeCreate(oEntity, Request.user);
 
         if (oResult.status != 201) {
-
+ 
             return this.returnRejectMessage(Request, oResult);
 
         }

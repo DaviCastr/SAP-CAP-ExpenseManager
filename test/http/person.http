@@ -1,0 +1,365 @@
+@server=http://localhost:4004
+@username=beatriz
+@password=123456
+
+
+### Persons
+# @name Persons_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons
+Authorization: Basic {{username}}:{{password}}
+
+
+### Persons Drafts GET
+# @name Persons_Drafts_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
+Authorization: Basic {{username}}:{{password}}
+
+
+### Persons Drafts GET
+# @name Persons_Drafts_and_Actives_merge
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
+Accept-Language:pt-BR
+Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
+Authorization: Basic {{username}}:{{password}}
+
+
+### Persons Draft POST
+# @name Persons_Draft_POST
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Name-21587452",
+  "ImageType": "ImageType-21587452",
+  "Income": 27.9,
+  "Currency": {
+    "code": "308"
+  },
+  "Email": "Email21587452@bral.com",
+  "Phone": "999999999",
+  "Shares": [
+    {
+      "ID": "17010641-bc6b-446f-a5a8-ce7eadfc7565",
+      "User": "User-17010641",
+      "Entities": [
+        {
+          "ID": "3098783b-774b-4d25-abe9-5a35c76cd692",
+          "Entity": 7,
+          "Permission": 1
+        },
+        {
+          "ID": "30987841-7136-40f1-b48f-f1de8aa9f0fb",
+          "Entity": 1,
+          "Permission": 2
+        }
+      ]
+    },
+    {
+      "ID": "17010642-5e51-4e1d-99ed-e286373b2f1a",
+      "User": "User-17010642",
+      "Entities": [
+        {
+          "ID": "2837156f-619f-4530-a78b-604adb6726e4",
+          "Entity": 7,
+          "Permission": 1
+        },
+        {
+          "ID": "28371575-cccb-404c-815c-4da457c08537",
+          "Entity": 2,
+          "Permission": 1
+        }
+      ]
+    }
+  ],
+  "ExpenseTarget": 95.67,
+  "Categories": [
+    {
+      "ID": "11230884-37fb-4fcf-8c12-d3cc0b14f27f",
+      "Name": "Name-11230884",
+      "ImageType": "ImageType-11230884"
+    },
+    {
+      "ID": "11230885-2eb4-48ee-bc83-83eb0a125ed8",
+      "Name": "Name-11230885",
+      "ImageType": "ImageType-11230885"
+    }
+  ],
+  "Cards": [
+    {
+      "ID": "64049026-83bf-4560-b4fc-ea151463ee53",
+      "Name": "Name-6404902",
+      "ImageType": "ImageType-6404902",
+      "Limit": 89.01,
+      "Currency": {
+        "code": "308"
+      },
+      "DueDay": 27,
+      "ClosingDay": 12,
+      "Invoices": [
+        {
+          "ID": "30151468-7fd2-4c94-8fb8-674926ef9eb5",
+          "Year": 84,
+          "Month": 49,
+          "Description": "Description-30151468",
+          "TotalAmount": 44.35,
+          "Currency": {
+            "code": "308"
+          },
+          "InvoiceSent": true,
+          "Transactions": [
+            {
+              "ID": "34500059-bb5f-4cfb-b1a6-252372961c8d",
+              "Identifier": "3450005b-e4e9-426a-b8ef-6baf99bb2386",
+              "Date": "2022-06-12",
+              "TotalAmount": 82.14,
+              "Amount": 46.46,
+              "Currency": {
+                "code": "308"
+              },
+              "TotalInstallments": 75,
+              "Installment": 90,
+              "Description": "Description-3450005",
+              "Category": {
+                "ID": "4544098f-7c4b-45fb-b5e2-01929b34bc00"
+              }
+            },
+            {
+              "ID": "34500061-8274-4fd1-94e5-c14a1f4c1ee3",
+              "Identifier": "3450006b-14fc-4f7e-8710-e4822c725bcc",
+              "Date": "2002-10-29",
+              "TotalAmount": 66.31,
+              "Amount": 77.72,
+              "Currency": {
+                "code": "308"
+              },
+              "TotalInstallments": 3,
+              "Installment": 82,
+              "Description": "Description-3450006",
+              "Category": {
+                "ID": "4544098f-7c4b-45fb-b5e2-01929b34bc00"
+              }
+            }
+          ]
+        },
+        {
+          "ID": "30151469-6690-4d8e-ad83-c29665401bd4",
+          "Year": 6,
+          "Month": 70,
+          "Description": "Description-30151469",
+          "TotalAmount": 53.52,
+          "Currency": {
+            "code": "308"
+          },
+          "InvoiceSent": false,
+          "Transactions": [
+            {
+              "ID": "21157798-2ad6-41d3-99f6-459ae2f1eb07",
+              "Identifier": "21157798-4733-4b16-bdbc-a3a975745273",
+              "Date": "2009-08-22",
+              "TotalAmount": 41.37,
+              "Amount": 13.39,
+              "Currency": {
+                "code": "308"
+              },
+              "TotalInstallments": 28,
+              "Installment": 48,
+              "Description": "Description-21157798",
+              "Category": {
+                "ID": "4544098f-7c4b-45fb-b5e2-01929b34bc00"
+              }
+            },
+            {
+              "ID": "21157799-f30d-4d9a-b777-37470910d648",
+              "Identifier": "21157799-8caa-4ff6-bd5d-3faacb69f5f0",
+              "Date": "2009-04-09",
+              "TotalAmount": 13.5,
+              "Amount": 21.06,
+              "Currency": {
+                "code": "308"
+              },
+              "TotalInstallments": 50,
+              "Installment": 73,
+              "Description": "Description-21157799",
+              "Category": {
+                "ID": "4544098f-7c4b-45fb-b5e2-01929b34bc00"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ID": "64049030-10b1-40d6-9ff8-6fbb1b46f6f7",
+      "Name": "Name-6404903",
+      "ImageType": "ImageType-6404903",
+      "Limit": 4.19,
+      "Currency": {
+        "code": "308"
+      },
+      "DueDay": 60,
+      "ClosingDay": 27,
+      "Invoices": [
+        {
+          "ID": "29802655-7e71-4e6a-a029-14ebdb41c1b7",
+          "Year": 78,
+          "Month": 1,
+          "Description": "Description-29802655",
+          "TotalAmount": 40.3,
+          "Currency": {
+            "code": "308"
+          },
+          "InvoiceSent": false,
+          "Transactions": [
+            {
+              "ID": "9781776f-70d0-4dee-ba59-5a45955d9203",
+              "Identifier": "97817763-e2ad-4dd6-a05e-0d004f7c45e3",
+              "Date": "2007-07-25",
+              "TotalAmount": 83.09,
+              "Amount": 42.75,
+              "Currency": {
+                "code": "308"
+              },
+              "TotalInstallments": 63,
+              "Installment": 96,
+              "Description": "Description-9781776",
+              "Category": {
+                "ID": "4544098f-7c4b-45fb-b5e2-01929b34bc00"
+              }
+            },
+            {
+              "ID": "97817775-33f6-43c8-a347-80993f84f84e",
+              "Identifier": "97817773-4f98-4dfc-9a72-d4aeb503a74b",
+              "Date": "2007-05-30",
+              "TotalAmount": 18.27,
+              "Amount": 21.43,
+              "Currency": {
+                "code": "308"
+              },
+              "TotalInstallments": 21,
+              "Installment": 28,
+              "Description": "Description-9781777",
+              "Category": {
+                "ID": "4544098f-7c4b-45fb-b5e2-01929b34bc00"
+              }
+            }
+          ]
+        },
+        {
+          "ID": "29802656-4763-4212-a06a-46594fc314c8",
+          "Year": 23,
+          "Month": 99,
+          "Description": "Description-29802656",
+          "TotalAmount": 21.38,
+          "Currency": {
+            "code": "308"
+          },
+          "InvoiceSent": true,
+          "Transactions": [
+            {
+              "ID": "24716270-3413-42f3-94b3-bd1fae3613d9",
+              "Identifier": "24716270-442a-4ce5-ac17-652a32f1a898",
+              "Date": "2007-07-26",
+              "TotalAmount": 94.61,
+              "Amount": 50.05,
+              "Currency": {
+                "code": "308"
+              },
+              "TotalInstallments": 40,
+              "Installment": 87,
+              "Description": "Description-24716270",
+              "Category": {
+                "ID": "4544098f-7c4b-45fb-b5e2-01929b34bc00"
+              }
+            },
+            {
+              "ID": "24716271-72e9-4b3f-8b16-8ab219c96fcf",
+              "Identifier": "24716271-0cfe-4677-b1fb-e40471af7e4c",
+              "Date": "2010-12-02",
+              "TotalAmount": 29.15,
+              "Amount": 34.03,
+              "Currency": {
+                "code": "308"
+              },
+              "TotalInstallments": 96,
+              "Installment": 24,
+              "Description": "Description-24716271",
+              "Category": {
+                "ID": "4544098f-7c4b-45fb-b5e2-01929b34bc00"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+
+
+### Result from POST request above
+@draftID={{Persons_Draft_POST.response.body.$.ID}}
+
+### Persons Draft PATCH
+# @name Persons_Draft_Patch
+PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Name-21587452",
+  "ImageType": "ImageType-21587452",
+  "Income": 27.9,
+  "Currency": {
+    "code": "308"
+  },
+  "Email": "Email21587452@teste.com",
+  "Phone": "Phone-21587452",
+  "ExpenseTarget": 95.67,
+}
+
+
+### Persons Draft Prepare
+# @name Persons_Draft_Prepare
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=false)/PersonService.draftPrepare
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Persons Draft Activate
+# @name Persons_Draft_Activate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Persons Draft Inactivate
+# @name Persons_Draft_Inactivate
+POST {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Persons Delete
+# @name Persons_DELETE_Active
+DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=true)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Persons Delete Draft
+# @name Persons_DELETE_draft
+DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}

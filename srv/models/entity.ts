@@ -1,25 +1,63 @@
 // entity Entities : cuid, managed {
-//     Entity      : Association to Entitys @mandatory;
+//     Share      : Association to Shares @mandatory;
 //     Entity     : EntitiesCodes         @assert.range: true;
 //     Permission : Permissions           @assert.range: true;
 // }
 
+import { Entities, EntitiesCodes, Entity, Permissions } from '@models/apps/dflc/gestordegastos/entities';
+
 type EntityProperties = {
     Id: string;
-    Entity: number;
-    Permission: number;
+    Entity: EntitiesCodes;
+    Permission: Permissions;
+    ShareId: string;
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
     ModifiedBy?: string;
 }
 
+type EntityTypeProperties = Entity;
+
 export class EntityModel {
 
     constructor(private props: EntityProperties) { }
 
     public static with(properties: EntityProperties): EntityModel {
+
         return new EntityModel(properties);
+
+    }
+
+    public static singleModel(properties: Entity): EntityModel {
+
+        return this.mapModel([properties])?.[0] as EntityModel;
+
+    }    
+
+    public static mapModel(Entities: Entities): EntityModel[] | null {
+
+        if (Entities.length === 0) {
+
+            return null;
+
+        }
+
+        return Entities.map((Entity: Entity) => {
+
+            return EntityModel.with({
+                Id: Entity?.ID as string,
+                Entity: Entity?.Entity as EntitiesCodes,
+                Permission: Entity?.Permission as Permissions,
+                ShareId: Entity?.Share_ID as string,
+                CreatedAt: Entity?.createdAt as string,
+                CreatedBy: Entity?.createdBy as string,
+                ModifiedAt: Entity?.modifiedAt as string,
+                ModifiedBy: Entity?.modifiedBy as string
+            });
+
+        });
+
     }
 
     public get Id() {
@@ -37,6 +75,12 @@ export class EntityModel {
     public get Permission() {
 
         return this.props.Permission;
+
+    }
+
+    public get ShareId() {
+
+        return this.props.ShareId;
 
     }
 
@@ -61,6 +105,27 @@ export class EntityModel {
     public get ModifiedBy() {
 
         return this.props.ModifiedBy;
+
+    }
+
+    public toObject(): EntityProperties {
+
+        return this.props;
+
+    }
+
+    public toEntityObject(): EntityTypeProperties {
+
+        return {
+            ID: this.props.Id,
+            Entity: this.props.Entity,
+            Permission: this.props.Permission,
+            Share_ID: this.props.ShareId,
+            createdAt: this.props.CreatedAt,
+            createdBy: this.props.CreatedBy,
+            modifiedAt: this.props.ModifiedAt,
+            modifiedBy: this.props.ModifiedBy
+        };
 
     }
 

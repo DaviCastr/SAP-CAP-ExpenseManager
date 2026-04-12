@@ -111,10 +111,11 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
                 this.ensureParentField(Request, parentField);
             }
 
+            oPersonPath.push('createdBy');
 
             Request.query.where([
                 '(',
-                { ref: [...oPersonPath, 'createdBy'] }, '=', { val: oUserId },
+                { ref: [...oPersonPath] }, '=', { val: oUserId },
                 'or',
                 this.buildPermissionExists(oUserId, oEntityCode as number),
                 ')'
@@ -427,6 +428,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
 
     protected buildPermissionExists(oUserId: string, oEntityCode: number) {
+
 
         return {
             xpr: [

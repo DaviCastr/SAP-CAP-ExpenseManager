@@ -3,14 +3,18 @@
 //     Email  : String(100)            @mandatory;
 // }
 
+import { Share, Shares } from "@models/apps/dflc/gestordegastos/entities";
+import { EntityModel } from "./entity";
+
 type ShareProperties = {
     Id: string;
     User: string;
-    PersonId?: string;
-    CreatedAt?: string;
-    CreatedBy?: string;
-    ModifiedAt?: string;
-    ModifiedBy?: string;
+    PersonId: string;
+    Entities: EntityModel[];
+    CreatedAt: string;
+    CreatedBy: string;
+    ModifiedAt: string;
+    ModifiedBy: string;
 }
 
 export class ShareModel {
@@ -19,6 +23,31 @@ export class ShareModel {
 
     public static with(properties: ShareProperties): ShareModel {
         return new ShareModel(properties);
+    }
+
+    public static singleModel(properties: Share): ShareModel | null {
+
+        return this.mapModel([properties])?.[0] as ShareModel;
+
+    }
+
+    public static mapModel(Shares: Shares): ShareModel[] {
+
+        return Shares.map((Share: Share) => {
+
+            return ShareModel.with({
+                Id: Share.ID as string,
+                User: Share.User as string,
+                PersonId: Share.Person_ID as string,
+                Entities: EntityModel.mapModel(Share?.Entities || []) as EntityModel[],
+                CreatedAt: Share.createdAt as string,
+                CreatedBy: Share.createdBy as string,
+                ModifiedAt: Share.modifiedAt as string,
+                ModifiedBy: Share.modifiedBy as string
+            });
+
+        }) || [] as ShareModel[];
+
     }
 
     public get Id() {
@@ -36,6 +65,12 @@ export class ShareModel {
     public get PersonId() {
 
         return this.props.PersonId;
+
+    }
+
+    public get Entities() {
+
+        return this.props.Entities;
 
     }
 
@@ -60,6 +95,27 @@ export class ShareModel {
     public get ModifiedBy() {
 
         return this.props.ModifiedBy;
+
+    }
+
+    public toObject(): ShareProperties {
+
+        return this.props;
+
+    }
+
+    public toEntityObject(): Share {
+
+        return {
+            ID: this.props.Id,
+            User: this.props.User,
+            Person_ID: this.props.PersonId,
+            Entities: this.props.Entities?.map((Entity)=>Entity.toEntityObject()),
+            createdAt: this.props.CreatedAt,
+            createdBy: this.props.CreatedBy,
+            modifiedAt: this.props.ModifiedAt,
+            modifiedBy: this.props.ModifiedBy
+        };
 
     }
 

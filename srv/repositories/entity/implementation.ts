@@ -2,7 +2,7 @@ import cds, { entity, Request } from "@sap/cds";
 
 import { EntityModel } from "@/models/entity";
 import { EntityRepository } from "./protocols";
-import { Entity } from "@models/apps/dflc/gestordegastos/entities";
+import { EntitiesCodes, Entity, Permissions } from "@models/apps/dflc/gestordegastos/entities";
 import { Entities } from "@models/apps/dflc/gestordegastos/entities";
 import { BaseRepositoryImplementation } from "../base/implementation";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
@@ -45,19 +45,7 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
         }
 
-        return Entities.map((Entity: Entity) => {
-
-            return EntityModel.with({
-                Id: Entity.ID as string,
-                Entity: Entity.Entity as number,
-                Permission: Entity.Permission as number,
-                CreatedAt: Entity.createdAt as string,
-                CreatedBy: Entity.createdBy as string,
-                ModifiedAt: Entity.modifiedAt as string,
-                ModifiedBy: Entity.modifiedBy as string
-            });
-
-        });
+        return EntityModel.mapModel(Entities);
 
     }
 

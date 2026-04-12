@@ -68,29 +68,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
             for (let Transaction of oTransactionsFiltered) {
 
-                const oCurrencyModel = CurrencyModel.with({
-                    Code: Transaction.Currency?.code || Transaction?.Currency_code as string,
-                    Name: Transaction.Currency?.name as string,
-                    Description: Transaction.Currency?.descr as string,
-                    Symbol: Transaction.Currency?.symbol as string,
-                    MinorUnit: Transaction.Currency?.minorUnit as number
-                });
-
-                const oTransactionModel = TransactionModel.with({
-                    Id: Transaction.ID as string,
-                    Identifier: Transaction.Identifier as string,
-                    Date: Transaction.Date as string,
-                    TotalAmount: new Decimal(Transaction.TotalAmount ?? 0),
-                    Amount: new Decimal(Transaction.Amount ?? 0),
-                    Currency: oCurrencyModel,
-                    TotalInstallments: Transaction.TotalInstallments as number,
-                    Installment: Transaction.Installment as number,
-                    Description: Transaction.Description as string,
-                    CreatedAt: Transaction.createdAt as string,
-                    CreatedBy: Transaction.createdBy as string,
-                    ModifiedAt: Transaction.modifiedAt as string,
-                    ModifiedBy: Transaction.modifiedBy as string
-                });
+                const oTransactionModel = TransactionModel.singleModel(Transaction);
 
                 if (oTransactionModel.TotalAmount.isZero() && 'TotalAmount' in Transaction) {
 

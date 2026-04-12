@@ -10,7 +10,6 @@ import { EntityRepository } from '@/repositories/entity';
 import { DuplicityError } from '@/errors/duplicity';
 import { PermissionDenied } from '@/errors/permission-denied';
 import { ServiceLocator } from '@/infrastructure/ServiceLocator';
-import { Share } from '@models/apps/dflc/gestordegastos/entities';
 
 export class EntityServiceImplementation extends BaseServiceImplementation<Entity> implements EntityService {
 

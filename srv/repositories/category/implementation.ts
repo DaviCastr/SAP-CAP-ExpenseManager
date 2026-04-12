@@ -54,19 +54,7 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
         }
 
-        return Categories.map((Category: Category) => {
-
-            return CategoryModel.with({
-                Id: Category.ID as string,
-                Name: Category.Name as string,
-                ImageType: Category.ImageType as string,
-                CreatedAt: Category.createdAt as string,
-                CreatedBy: Category.createdBy as string,
-                ModifiedAt: Category.modifiedAt as string,
-                ModifiedBy: Category.modifiedBy as string
-            });
-
-        });
+        return CategoryModel.mapModel(Categories);
 
     }
 

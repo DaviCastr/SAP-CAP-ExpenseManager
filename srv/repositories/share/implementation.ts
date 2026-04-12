@@ -97,19 +97,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         }
 
-        return Shares.map((Share: Share) => {
-
-            return ShareModel.with({
-                Id: Share.ID as string,
-                User: Share.User as string,
-                PersonId: Share.Person_ID as string,
-                CreatedAt: Share.createdAt as string,
-                CreatedBy: Share.createdBy as string,
-                ModifiedAt: Share.modifiedAt as string,
-                ModifiedBy: Share.modifiedBy as string
-            });
-
-        });
+        return ShareModel.mapModel(Shares);
 
     }
 

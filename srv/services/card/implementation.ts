@@ -3,7 +3,6 @@ import { Cards, Card } from "@models/apps/dflc/gestordegastos/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { CardService } from "./protocols";
 import { CardModel } from "@/models/card";
-import { CurrencyModel } from "@/models/currency";
 import Decimal from "decimal.js";
 import { CardRepository } from "@/repositories/card";
 import { BaseServiceImplementation } from "../base/implementation";
@@ -13,9 +12,6 @@ import { User } from "@sap/cds";
 import { EntityRepository } from '@/repositories/entity';
 import { PermissionDenied } from "@/errors/permission-denied";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
-import { TransactionModel } from "@/models/transaction";
-import { InvoiceModel } from "@/models/invoice";
-import { Readable } from "stream";
 import { InvoiceRepository } from "@/repositories/invoice";
 
 export class CardServiceImplementation extends BaseServiceImplementation<Card> implements CardService {
@@ -113,60 +109,7 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
 
                 }
 
-                const oCurrencyModel = CurrencyModel.with({
-                    Code: Card.Currency?.code || Card?.Currency_code as string,
-                    Name: Card.Currency?.name as string,
-                    Description: Card.Currency?.descr as string,
-                    Symbol: Card.Currency?.symbol as string,
-                    MinorUnit: Card.Currency?.minorUnit as number
-                });
-
-                const oCardModel = CardModel.with({
-                    Id: Card.ID as string,
-                    Name: Card.Name as string,
-                    Image: Card.Image as Readable,
-                    ImageType: Card.ImageType as string,
-                    Limit: new Decimal(Card.Limit ?? 0),
-                    Currency: oCurrencyModel,
-                    AvailableLimit: new Decimal(Card.AvailableLimit ?? 0),
-                    DueDay: Card.DueDay as number,
-                    ClosingDay: Card.ClosingDay as number,
-                    InvoiceAmountForPayment: new Decimal(Card.InvoiceAmountForPayment ?? 0),
-                    OpenInvoiceAmount: new Decimal(Card.OpenInvoiceAmount ?? 0),
-                    Invoices: Card.Invoices?.map((Invoice) => InvoiceModel.with({
-                        Id: Invoice.ID as string,
-                        Year: Invoice.Year as number,
-                        Month: Invoice.Month as number,
-                        Description: Invoice.Description as string,
-                        TotalAmount: new Decimal(Invoice.TotalAmount ?? 0),
-                        Currency: oCurrencyModel,
-                        InvoiceSent: Invoice.InvoiceSent as boolean,
-                        CardId: Invoice?.Card_ID as string,
-                        Transactions: Invoice.Transactions?.map((Transaction) => TransactionModel.with({
-                            Id: Transaction.ID as string,
-                            Identifier: Transaction.Identifier as string,
-                            Date: Transaction.Date as string,
-                            TotalAmount: new Decimal(Transaction.TotalAmount ?? 0),
-                            Amount: new Decimal(Transaction.Amount ?? 0),
-                            Currency: oCurrencyModel,
-                            TotalInstallments: Transaction.TotalInstallments as number,
-                            Installment: Transaction.Installment as number,
-                            Description: Transaction.Description as string,
-                            CreatedAt: Transaction.createdAt as string,
-                            CreatedBy: Transaction.createdBy as string,
-                            ModifiedAt: Transaction.modifiedAt as string,
-                            ModifiedBy: Transaction.modifiedBy as string
-                        })) || [] as TransactionModel[],
-                        CreatedAt: Invoice.createdAt as string,
-                        CreatedBy: Invoice.createdBy as string,
-                        ModifiedAt: Invoice.modifiedAt as string,
-                        ModifiedBy: Invoice.modifiedBy as string
-                    })) || [] as InvoiceModel[],
-                    CreatedAt: Card.createdAt as string,
-                    CreatedBy: Card.createdBy as string,
-                    ModifiedAt: Card.modifiedAt as string,
-                    ModifiedBy: Card.modifiedBy as string
-                });
+                const oCardModel = CardModel.singleModel(Card);
 
                 let oInvoiceMonth = oMonth;
                 let oInvoiceYear = oYear;
@@ -205,10 +148,10 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
                     oNextYear += 1
                 }
 
-                let oTotalExpenses = 0.0;
-                let oMonthExpenses = 0.0;
-                let oMonthExpensesOpen = 0.0;
-                let oMonthExpensesClosed = 0.0;
+                let oTotalExpenses = new Decimal(0);
+                let oMonthExpenses = new Decimal(0);;
+                let oMonthExpensesToPay = new Decimal(0);
+                let oMonthExpensesClosed = new Decimal(0);
 
                 const oInvoices = mapInvoices.get(oCardModel.Id) || [];
 
@@ -217,42 +160,38 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
                     if (oInvoice.Year == oInvoiceYear && oInvoice.Month >= oInvoiceMonth || oInvoice.Year > oInvoiceYear) {
 
                         if (oInvoice.Month == oInvoiceMonth && oInvoice.Year == oInvoiceYear) {
-                            oMonthExpenses += Number(oInvoice.TotalAmount?.toNumber());
+                            oMonthExpenses = oMonthExpenses.plus(oInvoice.TotalAmount);
                             if (oCardModel.ClosingDay > oDia) {
-                                oMonthExpensesOpen += Number(oInvoice.TotalAmount?.toNumber())
-                                oTotalExpenses += Number(oInvoice.TotalAmount?.toNumber())
+                                oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice.TotalAmount)
+                                oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount)
                             } else if (oCardModel.DueDay >= oDia) {
-                                oMonthExpensesClosed += Number(oInvoice.TotalAmount?.toNumber())
-                                oTotalExpenses += Number(oInvoice.TotalAmount?.toNumber())
+                                oMonthExpensesClosed = oMonthExpensesClosed.plus(oInvoice.TotalAmount)
+                                oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount)
                             }
                         } else if (oInvoice.Year == oNextYear && oInvoice.Month == oNextMonth && oCardModel.ClosingDay <= oDia) {
-                            oMonthExpensesOpen += Number(oInvoice.TotalAmount?.toNumber())
-                            oTotalExpenses += Number(oInvoice.TotalAmount?.toNumber())
+                            oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice.TotalAmount)
+                            oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount)
                         } else {
-                            oTotalExpenses += Number(oInvoice.TotalAmount?.toNumber())
+                            oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount?.toNumber())
                         }
                     }
 
                 });
 
-                oCardModel.AvailableLimit = new Decimal((Math.round(((oCardModel.Limit?.toNumber() - oTotalExpenses) + Number.EPSILON) * 100) / 100));
-                oCardModel.OpenInvoiceAmount = new Decimal(oMonthExpensesOpen);
+                oCardModel.AvailableLimit = oCardModel.Limit?.minus(oTotalExpenses).toDecimalPlaces(2);
+                oCardModel.InvoiceAmountToPay = oMonthExpensesToPay?.toDecimalPlaces(2);
                 if (oCardModel.ClosingDay > oDia) {
-                    oCardModel.InvoiceAmountForPayment = oCardModel.OpenInvoiceAmount
+                    oCardModel.InvoiceAmountForPayment = oCardModel.InvoiceAmountToPay
                 } else if (oCardModel.DueDay < oDia) {
-                    oCardModel.InvoiceAmountForPayment = oCardModel.OpenInvoiceAmount
+                    oCardModel.InvoiceAmountForPayment = oCardModel.InvoiceAmountToPay
                 } else {
-                    oCardModel.InvoiceAmountForPayment = new Decimal(oMonthExpensesClosed)
+                    oCardModel.InvoiceAmountForPayment = oMonthExpensesClosed
                 }
 
                 const oCardData = oCardModel.toEntityObject();
 
                 oCardsData.push({
-                    ...Card,
-                    ClosingDay: oCardData?.ClosingDay || Card?.ClosingDay,
-                    AvailableLimit: oCardData?.AvailableLimit || Card?.AvailableLimit,
-                    OpenInvoiceAmount: oCardData?.OpenInvoiceAmount || Card?.OpenInvoiceAmount,
-                    InvoiceAmountForPayment: oCardData?.InvoiceAmountForPayment || Card?.InvoiceAmountForPayment
+                    ...oCardData
                 });
 
             };

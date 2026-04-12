@@ -5,7 +5,7 @@
 
 ### Cards
 # @name Cards_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards?$select=Name&$expand=Invoices
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards?$expand=Invoices
 Authorization: Basic {{username}}:{{password}}
 
 

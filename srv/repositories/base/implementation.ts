@@ -15,6 +15,10 @@ export abstract class BaseRepositoryImplementation implements BaseRepository {
 
             oPath += '.ID';
 
+        }else{
+
+            oPath = 'ID';
+            
         }
 
         let oResult = await cds.run(

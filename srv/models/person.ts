@@ -5,7 +5,7 @@
 //             Income              : Decimal      @mandatory;
 //             Currency            : Currency     @mandatory;
 //             Email               : String(100)  @mandatory;
-//             Phoene              : String(20);
+//             Phone              : String(20);
 //             Share               : Composition of many Shares on Share.Person = $self;
 //             ExpenseTarget       : Decimal      @mandatory;
 //     virtual AmountToSave        : Decimal;
@@ -17,7 +17,7 @@
 //     virtual MonthCriticallity   : Integer;
 //     virtual CriticallityToPay   : Integer;
 //             Category            : Composition of many Categories on Category.Person = $self;
-//             Card                : Composition of many Cards on Card.Person = $self;
+//             Person                : Composition of many Persons on Person.Person = $self;
 // }
 
 import Decimal from 'decimal.js';
@@ -26,6 +26,7 @@ import { CategoryModel } from '@/models/category';
 import { CardModel } from '@/models/card';
 import { Readable } from 'stream';
 import { CurrencyModel } from './currency';
+import { Person, Persons } from '@models/apps/dflc/gestordegastos/entities';
 
 type PersonProperties = {
     Id: string;
@@ -46,8 +47,8 @@ type PersonProperties = {
     MonthCriticallity: number;
     CriticallityToPay: number;
     Shares?: ShareModel[];
-    Category?: CategoryModel[];
-    Card?: CardModel[];  
+    Categories?: CategoryModel[];
+    Cards?: CardModel[];
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
@@ -60,6 +61,51 @@ export class PersonModel {
 
     public static with(properties: PersonProperties): PersonModel {
         return new PersonModel(properties);
+    }
+
+    public static singleModel(properties: Person): PersonModel {
+
+        return this.mapModel([properties])?.[0];
+
+    }
+
+    public static mapModel(Persons: Persons): PersonModel[] {
+
+        return Persons.map((Person: Person) => {
+
+            const oCurrencyModel = CurrencyModel.singleModel({
+                ...Person?.Currency,
+                code: Person?.Currency?.code || Person?.Currency_code as string
+            });
+
+            return PersonModel.with({
+                Id: Person.ID as string,
+                Name: Person.Name as string,
+                ImageType: Person.ImageType as string,
+                Income: new Decimal(Person.Income || 0),
+                Currency: oCurrencyModel,
+                Email: Person.Email as string,
+                Phone: Person.Phone as string,
+                ExpenseTarget: new Decimal(Person.ExpenseTarget || 0),
+                AmountToSave: new Decimal(Person.AmountToSave || 0),
+                TotalExpenses: new Decimal(Person.TotalExpenses || 0),
+                TotalExpensesMonth: new Decimal(Person.TotalExpensesMonth || 0),
+                TotalExpensesPayed: new Decimal(Person.TotalExpensesPayed || 0),
+                TotalExpensesToPay: new Decimal(Person.TotalExpensesToPay || 0),
+                TotalExpensesClosed: new Decimal(Person.TotalExpensesClosed || 0),
+                MonthCriticallity: Person.MonthCriticallity as number,
+                CriticallityToPay: Person.CriticallityToPay as number,
+                Shares: ShareModel.mapModel(Person?.Shares || []),
+                Categories: CategoryModel.mapModel(Person?.Categories || []),
+                Cards: CardModel.mapModel(Person?.Cards || []),
+                CreatedAt: Person.createdAt as string,
+                CreatedBy: Person.createdBy as string,
+                ModifiedAt: Person.modifiedAt as string,
+                ModifiedBy: Person.modifiedBy as string
+            });
+
+        });
+
     }
 
     public get Id() {
@@ -170,15 +216,15 @@ export class PersonModel {
 
     }
 
-    public get Category() {
+    public get Categories() {
 
-        return this.props.Category;
+        return this.props.Categories;
 
     }
 
-    public get Card() {
+    public get Cards() {
 
-        return this.props.Card;
+        return this.props.Cards;
 
     }
 
@@ -206,6 +252,60 @@ export class PersonModel {
 
     }
 
+    public set ExpenseTarget(value: Decimal) {
+
+        this.props.ExpenseTarget = value;
+
+    }
+
+    public set AmountToSave(value: Decimal) {
+
+        this.props.AmountToSave = value;
+
+    }
+
+    public set TotalExpenses(value: Decimal) {
+
+        this.props.TotalExpenses = value;
+
+    }
+
+    public set TotalExpensesMonth(value: Decimal) {
+
+        this.props.TotalExpensesMonth = value;
+
+    }
+
+    public set TotalExpensesPayed(value: Decimal) {
+
+        this.props.TotalExpensesPayed = value;
+
+    }
+
+    public set TotalExpensesToPay(value: Decimal) {
+
+        this.props.TotalExpensesToPay = value;
+
+    }
+
+    public set TotalExpensesClosed(value: Decimal) {
+
+        this.props.TotalExpensesClosed = value;
+
+    }
+
+    public set MonthCriticallity(value: number) {
+
+        this.props.MonthCriticallity = value;
+
+    }
+
+    public set CriticallityToPay(value: number) {
+
+        this.props.CriticallityToPay = value;
+
+    }
+
     public setDefaultEmailDomain() {
 
         if (!this.props.Email?.includes("@")) {
@@ -213,6 +313,42 @@ export class PersonModel {
             this.props.Email = `${this.props.Email}@gmail.com`;
 
         }
+
+    }
+
+    public toObject(): PersonProperties {
+
+        return this.props;
+
+    }
+
+    public toEntityObject(): Person {
+
+        return {
+            ID: this.props.Id,
+            Name: this.props.Name,
+            ImageType: this.props.ImageType,
+            Income: this.props.Income?.toNumber(),
+            Currency: this.props.Currency?.toEntityObject(),
+            Email: this.props.Email,
+            Phone: this.props.Phone,
+            ExpenseTarget: this.props.ExpenseTarget?.toNumber(),
+            AmountToSave: this.props.AmountToSave?.toNumber(),
+            TotalExpenses: this.props.TotalExpenses?.toNumber(),
+            TotalExpensesMonth: this.props.TotalExpensesMonth?.toNumber(),
+            TotalExpensesPayed: this.props.TotalExpensesPayed?.toNumber(),
+            TotalExpensesToPay: this.props.TotalExpensesToPay?.toNumber(),
+            TotalExpensesClosed: this.props.TotalExpensesClosed?.toNumber(),
+            MonthCriticallity: this.props.MonthCriticallity,
+            CriticallityToPay: this.props.CriticallityToPay,
+            Shares: this.props.Shares?.map((Share)=> Share.toEntityObject()),
+            Categories: this.props.Categories?.map((Category)=> Category.toEntityObject()),
+            Cards: this.props.Cards?.map((Card)=> Card.toEntityObject()),
+            createdAt: this.props.CreatedAt,
+            createdBy: this.props.CreatedBy,
+            modifiedAt: this.props.ModifiedAt,
+            modifiedBy: this.props.ModifiedBy
+        };
 
     }
 

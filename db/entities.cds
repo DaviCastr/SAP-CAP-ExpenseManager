@@ -48,11 +48,11 @@ entity Persons : cuid, managed {
 
     virtual CriticallityToPay   : Integer;
 
-    Category                    : Composition of many Categories
-                                      on Category.Person = $self;
+    Categories                  : Composition of many Categories
+                                      on Categories.Person = $self;
 
-    Card                        : Composition of many Cards
-                                      on Card.Person = $self;
+    Cards                       : Composition of many Cards
+                                      on Cards.Person = $self;
 }
 
 entity Categories : cuid, managed {
@@ -107,7 +107,7 @@ entity Cards : cuid, managed {
     virtual InvoiceAmountForPayment : Decimal;
 
     @Semantics.amount.currencyCode: 'Moeda'
-    virtual OpenInvoiceAmount       : Decimal;
+    virtual InvoiceAmountToPay       : Decimal;
 
     Invoices                        : Composition of many Invoices
                                           on Invoices.Card = $self;

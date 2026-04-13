@@ -16,7 +16,7 @@ import { InvoiceRepository } from "@/repositories/invoice";
 
 export class CardServiceImplementation extends BaseServiceImplementation<Card> implements CardService {
 
-    protected Repository: CardRepository;
+    public Repository: CardRepository;
 
     constructor(
         PersonRepository: PersonRepository,

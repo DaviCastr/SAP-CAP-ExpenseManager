@@ -31,7 +31,20 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
     }
 
-    
+
+    public async createEntry(data: Category | Categories): Promise<CategoryModel[] | null> {
+
+        let oCategoryEntity = this.getEntity();
+
+        let oSql = INSERT.into(oCategoryEntity).entries(data);
+
+        await cds.run(oSql);
+
+        return this.mapCategoryResult(Array.isArray(data) ? data : [data]);
+
+    }
+
+
     protected getEntity(): entity {
 
         return ServiceLocator.getEntity('Categories');
@@ -42,7 +55,7 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
     protected personPath(): string {
 
         return 'Person';
-        
+
     }
 
 

@@ -89,6 +89,19 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
     }
 
 
+    public async createEntry(data: Share | Shares): Promise<ShareModel[] | null> {
+
+        let oShareEntity = this.getEntity();
+
+        let oSql = INSERT.into(oShareEntity).entries(data);
+
+        await cds.run(oSql);
+
+        return this.mapShareResult(Array.isArray(data) ? data : [data]);
+
+    }
+
+
     public mapShareResult(Shares: Shares): ShareModel[] | null {
 
         if (Shares.length === 0) {

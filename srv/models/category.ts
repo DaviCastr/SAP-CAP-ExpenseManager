@@ -1,11 +1,3 @@
-// entity Categories : cuid, managed {
-//     Name         : String(20)             @mandatory;
-//     Image        : LargeBinary;
-//     ImageType    : String;
-//     Person       : Association to Persons @mandatory;
-//     Transactions : Association to many Transactions on Transactions.Category = $self;
-// }
-
 import { TransactionModel } from '@/models/transaction';
 import { Categories, Category } from '@models/apps/dflc/gestordegastos/entities';
 import { Readable } from 'stream';

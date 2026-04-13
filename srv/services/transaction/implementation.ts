@@ -17,7 +17,7 @@ import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export class TransactionServiceImplementation extends BaseServiceImplementation<Transaction> implements TransactionService {
 
-    protected Repository: TransactionRepository;
+    public Repository: TransactionRepository;
 
     constructor(
         PersonRepository: PersonRepository,
@@ -74,13 +74,13 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
                     if (!oTransactionReference) {
 
-                        oTransactionReference = await this.Repository.findByID(oTransactionModel.Id);
+                        oTransactionReference = await this.Repository.findById(oTransactionModel.Id);
 
                     } else {
 
                         if (oTransactionModel.Identifier != oTransactionReference.Identifier) {
 
-                            oTransactionReference = await this.Repository.findByID(oTransactionModel.Id);
+                            oTransactionReference = await this.Repository.findById(oTransactionModel.Id);
 
                         }
 

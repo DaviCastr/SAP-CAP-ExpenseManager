@@ -1,16 +1,13 @@
 import { Invoice, Invoices, Transaction } from "@models/apps/dflc/gestordegastos/entities";
 import { InvoiceRepository } from "./protocols";
-import cds, { entity, Request } from "@sap/cds";
+import cds, { entity } from "@sap/cds";
 import { BaseRepositoryImplementation } from "../base/implementation";
 import { InvoiceModel } from "@/models/invoice";
-import { CurrencyModel } from "@/models/currency";
-import Decimal from "decimal.js";
-import { TransactionModel } from "@/models/transaction";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export class InvoiceRepositoryImplementation extends BaseRepositoryImplementation implements InvoiceRepository {
 
-    public async findByID(Id: Invoice["ID"]): Promise<InvoiceModel | null> {
+    public async findById(Id: Invoice["ID"]): Promise<InvoiceModel | null> {
 
         let oSql = this.getReportBaseSql();
 
@@ -47,7 +44,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         let oSql = this.getReportBaseSql();
 
-        oSql.where({...additionalFilters, Card_ID: CardId });
+        oSql.where({ ...additionalFilters, Card_ID: CardId });
 
         let oTransactions: Invoices = await cds.run(oSql);
 
@@ -55,7 +52,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oSql = this.getReportBaseSql(true);
 
-            oSql.where({...additionalFilters, Card_ID: CardId });
+            oSql.where({ ...additionalFilters, Card_ID: CardId });
 
             const additionalTransactions: Invoices = await cds.run(oSql) || [];
 
@@ -74,7 +71,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         let oSql = this.getReportBaseSql();
 
-        oSql.where({...additionalFilters, Card_ID: { 'in' : CardIds } });
+        oSql.where({ ...additionalFilters, Card_ID: { 'in': CardIds } });
 
         let oTransactions: Invoices = await cds.run(oSql);
 
@@ -82,7 +79,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oSql = this.getReportBaseSql(true);
 
-            oSql.where({...additionalFilters, Card_ID: { 'in' : CardIds } });
+            oSql.where({ ...additionalFilters, Card_ID: { 'in': CardIds } });
 
             const additionalTransactions: Invoices = await cds.run(oSql) || [];
 
@@ -97,14 +94,27 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
     }
 
 
-    public async updateTotalAmountByTransactionId(Id: Transaction["ID"]): Promise<void> {
+    public async createEntry(data: Invoice | Invoices): Promise<InvoiceModel[] | null> {
+
+        let oInvoiceEntity = this.getEntity();
+
+        let oSql = INSERT.into(oInvoiceEntity).entries(data);
+
+        await cds.run(oSql);
+
+        return this.mapInvoiceResult(Array.isArray(data) ? data : [data]);
+
+    }
+
+
+    public async updateTotalAmountByTransactionId(TransactionId: Transaction["ID"]): Promise<void> {
 
         let oInvoiceEntity = this.getEntity();
 
         let oInvoice = await cds.run(
             SELECT.one`ID`
                 .from(oInvoiceEntity)
-                .where`Transactions.ID = ${Id}`);
+                .where`Transactions.ID = ${TransactionId}`);
 
         if (!oInvoice && (oInvoiceEntity as any)?.isDraft) {
 
@@ -113,7 +123,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
             oInvoice = await cds.run(
                 SELECT.one`ID`
                     .from(oInvoiceEntity)
-                    .where`Transactions.ID = ${Id}`);
+                    .where`Transactions.ID = ${TransactionId}`);
 
 
         }
@@ -126,9 +136,24 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
                     .where({ ID: oInvoice.ID })
             );
 
-            await cds.update(oInvoiceEntity, Id).with({ TotalAmount: oTotalAmount.TotalAmount });
+            await cds.update(oInvoiceEntity, oInvoice.ID).with({ TotalAmount: oTotalAmount.TotalAmount });
 
         }
+
+    }
+
+
+    public async updateTotalAmountById(Id: Invoice["ID"]): Promise<void> {
+
+        let oInvoiceEntity = this.getEntity();
+
+        const oTotalAmount = await cds.run(
+            SELECT.one`coalesce(sum(Transactions.Amount),0) as TotalAmount`
+                .from(oInvoiceEntity)
+                .where({ ID: Id })
+        );
+
+        await cds.update(oInvoiceEntity, Id).with({ TotalAmount: oTotalAmount.TotalAmount });
 
     }
 

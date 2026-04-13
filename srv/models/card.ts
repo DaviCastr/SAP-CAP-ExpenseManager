@@ -1,17 +1,3 @@
-// entity Cards : cuid, managed {
-//         Name                    : String(50);
-//         Image                   : LargeBinary;
-//         ImageType               : String;
-//         Limit                   : Decimal;
-//         Currency                : Currency;
-// virtual AvailableLimit          : Decimal;
-//         DueDay                  : Integer;
-//         ClosingDay              : Integer;
-// virtual InvoiceAmountForPayment : Decimal;
-// virtual InvoiceAmountToPay       : Decimal;
-//         Invoice                 : Composition of many Invoices on Invoice.Card = $self;
-//         Person                  : Association to Persons @mandatory; // @assert.target
-// }
 import { Readable } from "stream";
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';

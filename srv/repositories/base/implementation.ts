@@ -1,8 +1,10 @@
-import cds, { entity, Request } from "@sap/cds";
+import cds, { entity } from "@sap/cds";
 import { BaseRepository } from "./protocols";
-import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export abstract class BaseRepositoryImplementation implements BaseRepository {
+
+
+    public abstract findById(Id: any): Promise<any | null>;
 
 
     public async findPersonIdById(Id: string): Promise<string | null> {
@@ -53,7 +55,12 @@ export abstract class BaseRepositoryImplementation implements BaseRepository {
 
     }
 
+
+    public abstract createEntry(data: any | any[]): Promise<any[] | null>;
+
+
     protected abstract getEntity(): entity;
+
 
     protected abstract personPath(): string;
 

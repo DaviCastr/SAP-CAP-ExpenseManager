@@ -1,9 +1,3 @@
-// entity Entities : cuid, managed {
-//     Share      : Association to Shares @mandatory;
-//     Entity     : EntitiesCodes         @assert.range: true;
-//     Permission : Permissions           @assert.range: true;
-// }
-
 import { Entities, EntitiesCodes, Entity, Permissions } from '@models/apps/dflc/gestordegastos/entities';
 
 type EntityProperties = {

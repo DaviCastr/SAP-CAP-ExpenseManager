@@ -1,25 +1,3 @@
-// entity Persons : cuid, managed {
-//             Name                : String(100)  @mandatory;
-//             Image               : LargeBinary
-//             ImageType           : String;
-//             Income              : Decimal      @mandatory;
-//             Currency            : Currency     @mandatory;
-//             Email               : String(100)  @mandatory;
-//             Phone              : String(20);
-//             Share               : Composition of many Shares on Share.Person = $self;
-//             ExpenseTarget       : Decimal      @mandatory;
-//     virtual AmountToSave        : Decimal;
-//     virtual TotalExpenses       : Decimal;
-//     virtual TotalExpensesMonth  : Decimal;
-//     virtual TotalExpensesPayed  : Decimal;
-//     virtual TotalExpensesToPay  : Decimal;
-//     virtual TotalExpensesClosed : Decimal;
-//     virtual MonthCriticallity   : Integer;
-//     virtual CriticallityToPay   : Integer;
-//             Category            : Composition of many Categories on Category.Person = $self;
-//             Person                : Composition of many Persons on Person.Person = $self;
-// }
-
 import Decimal from 'decimal.js';
 import { ShareModel } from '@/models/share';
 import { CategoryModel } from '@/models/category';
@@ -31,7 +9,7 @@ import { Person, Persons } from '@models/apps/dflc/gestordegastos/entities';
 type PersonProperties = {
     Id: string;
     Name: string;
-    Image?: Readable;
+    Image: Readable;
     ImageType: string;
     Income: Decimal;
     Currency?: CurrencyModel;
@@ -81,6 +59,7 @@ export class PersonModel {
             return PersonModel.with({
                 Id: Person.ID as string,
                 Name: Person.Name as string,
+                Image: Person?.Image as Readable,
                 ImageType: Person.ImageType as string,
                 Income: new Decimal(Person.Income || 0),
                 Currency: oCurrencyModel,
@@ -327,6 +306,7 @@ export class PersonModel {
         return {
             ID: this.props.Id,
             Name: this.props.Name,
+            Image: this.props.Image,
             ImageType: this.props.ImageType,
             Income: this.props.Income?.toNumber(),
             Currency: this.props.Currency?.toEntityObject(),

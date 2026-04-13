@@ -1,10 +1,8 @@
 import { ApplicationService, entity, Request } from "@sap/cds";
 import { TransactionRoute } from "./protocols";
-import { oTransactionControllerFactory } from "@/factories/controllers/transaction";
 import { Transaction, Transactions } from "@models/apps/dflc/gestordegastos/entities";
 import { TransactionController } from "@/controllers/transaction";
 import { BaseRouteImplementation } from "../base/implementation";
-import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export class TransactionRouteImplementation extends BaseRouteImplementation<Transaction> implements TransactionRoute {
 

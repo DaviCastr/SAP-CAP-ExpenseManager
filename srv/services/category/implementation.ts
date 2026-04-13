@@ -14,7 +14,7 @@ import { ServiceLocator } from '@/infrastructure/ServiceLocator';
 
 export class CategoryServiceImplementation extends BaseServiceImplementation<Category> implements CategoryService {
 
-    protected Repository: CategoryRepository;
+    public Repository: CategoryRepository;
 
     constructor(
         PersonRepository: PersonRepository,

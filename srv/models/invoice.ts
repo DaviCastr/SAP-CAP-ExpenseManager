@@ -1,14 +1,3 @@
-// entity Invoices : cuid, managed {
-//     Year         : Integer;
-//     Month        : Integer;
-//     Description  : String(255);
-//     TotalAmount  : Decimal;
-//     Currency     : Currency;
-//     InvoiceSent  : Boolean;
-//     Card         : Association to Cards;
-//     Transactions : Composition of many Transactions on Transactions.Invoice = $self
-// }
-
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
 import { Invoice, Invoices } from '@models/apps/dflc/gestordegastos/entities';

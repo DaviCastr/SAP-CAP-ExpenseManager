@@ -14,7 +14,7 @@ import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export abstract class BaseServiceImplementation<Entity> implements BaseService<Entity> {
 
-    protected abstract Repository: BaseRepository;
+    public abstract Repository: BaseRepository;
 
     constructor(
         protected readonly PersonRepository: PersonRepository,
@@ -493,5 +493,15 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
         }
 
     }
+
+
+    protected readableToBuffer(readableStream) {
+        return new Promise((resolve, reject) => {
+            const chunks = [];
+            readableStream.on('data', chunk => chunks.push(chunk as never));
+            readableStream.on('end', (ok) => resolve(Buffer.concat(chunks)));
+            readableStream.on('error', error => reject(error));
+        });
+    };
 
 }

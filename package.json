@@ -7,7 +7,9 @@
         "@sap/cds": "^9.2.0",
         "@sap/xssec": "^4.9.1",
         "@sweet-monads/either": "^3.3.1",
+        "adm-zip": "^0.5.17",
         "decimal.js": "^10.6.0",
+        "exceljs": "^4.4.0",
         "express": "^4.21.2",
         "git-commit-msg-linter": "^5.0.8",
         "passport": "^0.7.0"
@@ -17,6 +19,8 @@
         "@cap-js/cds-types": "^0.15.0",
         "@cap-js/sqlite": "^2",
         "@sap/dev-cap-tools": "^1.31.0",
+        "@types/adm-zip": "^0.5.8",
+        "@types/exceljs": "^0.5.3",
         "@types/node": "^25.2.1",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3"

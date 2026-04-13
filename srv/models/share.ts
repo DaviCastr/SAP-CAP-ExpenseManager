@@ -1,8 +1,3 @@
-// entity Shares : cuid, managed {
-//     Share : Association to Shares @mandatory;
-//     Email  : String(100)            @mandatory;
-// }
-
 import { Share, Shares } from "@models/apps/dflc/gestordegastos/entities";
 import { EntityModel } from "./entity";
 

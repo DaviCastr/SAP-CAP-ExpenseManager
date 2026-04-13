@@ -12,7 +12,7 @@ import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 export class TransactionRepositoryImplementation extends BaseRepositoryImplementation implements TransactionRepository {
 
 
-    public async findByID(Id: Transaction["ID"]): Promise<TransactionModel | null> {
+    public async findById(Id: Transaction["ID"]): Promise<TransactionModel | null> {
 
         let oSql = this.getReportBaseSql();
 
@@ -84,6 +84,19 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
     }
 
 
+    public async createEntry(data: Transaction | Transactions): Promise<TransactionModel[] | null> {
+
+        let oTransactionEntity = this.getEntity();
+
+        let oSql = INSERT.into(oTransactionEntity).entries(data);
+
+        await cds.run(oSql);
+
+        return this.mapTransactionResult(Array.isArray(data) ? data : [data]);
+
+    }
+
+
     private getReportBaseSql(ignoreDraft?: boolean): cds.ql.SELECT<unknown, unknown> {
 
         const oTransactionEntity = this.getEntity(ignoreDraft);
@@ -102,7 +115,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
     protected personPath(): string {
 
-        return 'Invoice.Card.Person';
+        return 'Invoice.Transaction.Person';
 
     }
 

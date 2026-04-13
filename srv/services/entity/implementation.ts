@@ -13,17 +13,17 @@ import { ServiceLocator } from '@/infrastructure/ServiceLocator';
 
 export class EntityServiceImplementation extends BaseServiceImplementation<Entity> implements EntityService {
 
-    protected Repository: EntityRepository;
+    public Repository: EntityRepository;
 
     constructor(
         PersonRepository: PersonRepository,
         ShareRepository: ShareRepository,
-        EntityRepository: EntityRepository,
+        Repository: EntityRepository,
     ) {
 
-        super(PersonRepository, ShareRepository, EntityRepository);
+        super(PersonRepository, ShareRepository, Repository);
 
-        this.Repository = EntityRepository;
+        this.Repository = Repository;
 
     }
 

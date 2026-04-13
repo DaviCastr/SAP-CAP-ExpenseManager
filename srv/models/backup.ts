@@ -1,8 +1,3 @@
-// entity Backups : cuid, managed {
-//     Backup     : LargeBinary
-//     BackupType : String;
-// }
-
 import { Backup, Backups } from "@models/apps/dflc/gestordegastos/entities";
 import { Readable } from "stream";
 

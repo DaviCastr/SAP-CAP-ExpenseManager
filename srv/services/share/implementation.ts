@@ -14,7 +14,7 @@ import { ServiceLocator } from '@/infrastructure/ServiceLocator';
 
 export class ShareServiceImplementation extends BaseServiceImplementation<Share> implements ShareService {
 
-    protected Repository: ShareRepository;
+    public Repository: ShareRepository;
 
     constructor(
         PersonRepository: PersonRepository,

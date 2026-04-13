@@ -1,16 +1,3 @@
-// entity Transactions : cuid, managed {
-//     Identifier       : UUID;
-//     Date              : Date;
-//     TotalAmount       : Decimal;
-//     Amount            : Decimal;
-//     Currency          : Currency;
-//     TotalInstallments : Integer;
-//     Installment       : Integer;
-//     Description       : String(255);
-//     Invoice           : Association to Invoices @mandatory; //@assert.target
-//     Category          : Association to Categories
-// }
-
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
 import { Transaction, Transactions } from '@models/apps/dflc/gestordegastos/entities';

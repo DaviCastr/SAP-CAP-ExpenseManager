@@ -21,10 +21,6 @@ class GestaoGastos extends cds.ApplicationService {
 
         try {
 
-            this.before("UPDATE", Pessoa.drafts, this.beforeUpdatePessoa);
-
-            this.before("UPDATE", Pessoa, this.beforeUpdatePessoa);
-
             this.before("UPDATE", Backup, this.beforeUpdateBackup);
 
             //Ações utilizados no ui5/fiori
@@ -56,62 +52,6 @@ class GestaoGastos extends cds.ApplicationService {
 
     async sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-
-    async beforeUpdatePessoa(req, context) {
-
-        const { Pessoa } = this.entities
-
-        let oPessoa = await SELECT.one.from(Pessoa).where({ ID: req.data.ID });
-
-        if (oPessoa) {
-            if (req.user && req.user.id) {
-                if (oPessoa.createdBy !== req.user.id) {
-                    req.reject(400, `Não é possível editar algo que você tem acesso apenas compartilhado`);
-                }
-            }
-        }
-
-        if (oPessoa && req.data.Moeda_code) {
-
-            if (oPessoa.Moeda_code != req.data.Moeda_code) {
-                req.reject(400, `O valor do campo Moeda não pode ser mudado, pois o mesmo é usado para converter valores de gastos`, 'Moeda_code')
-            }
-        }
-
-        if (req.data.Email) {
-
-            const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-            if (!regex.test(req.data.Email)) {
-                req.reject(400, `Email inválido.`, 'Email');
-            }
-
-        }
-
-        if (req.data.Telefone) {
-
-            const regexTelefone = /^\d{9}$/;
-
-            if (!regexTelefone.test(req.data.Telefone)) {
-                req.reject(400, `Telefone inválido: ${req.data.Telefone}`, 'Telefone');
-            }
-
-        }
-
-        if (req.data.Renda) {
-            if (req.data.Renda < 0) {
-                req.reject(400, `O valor da renda não pode ser negativo.`, 'Renda')
-            }
-        }
-
-        if (req.data.ObjetivoDeGasto) {
-            if (req.data.ObjetivoDeGasto < 0) {
-                req.reject(400, `O valor do objetivo não pode ser negativo.`, 'ObjetivoDeGasto')
-            }
-        }
-
     }
 
 

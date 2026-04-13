@@ -3,8 +3,6 @@ import { Invoices, Invoice } from "@models/apps/dflc/gestordegastos/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { InvoiceService } from "./protocols";
 import { InvoiceModel } from "@/models/invoice";
-import { CurrencyModel } from "@/models/currency";
-import Decimal from "decimal.js";
 import { InvoiceRepository } from "@/repositories/invoice";
 import { BaseServiceImplementation } from "../base/implementation";
 import { PersonRepository } from "@/repositories/person";
@@ -13,12 +11,11 @@ import { User } from "@sap/cds";
 import { EntityRepository } from '@/repositories/entity';
 import { PermissionDenied } from "@/errors/permission-denied";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
-import { TransactionModel } from "@/models/transaction";
 import { CardRepository } from "@/repositories/card";
 
 export class InvoiceServiceImplementation extends BaseServiceImplementation<Invoice> implements InvoiceService {
 
-    protected Repository: InvoiceRepository;
+    public Repository: InvoiceRepository;
 
     constructor(
         PersonRepository: PersonRepository,

@@ -62,12 +62,11 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
     }
 
 
-
     public async findByPersonIds(PersonIds: Card['Person_ID'][]): Promise<CardModel[] | null> {
 
         let oCardEntity = this.getEntity();
 
-        let oSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds }});
+        let oSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds } });
 
         let oCards = await cds.run(oSql);
 
@@ -85,6 +84,19 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
         const oCardsModel = this.mapCardResult(oCards);
 
         return oCardsModel;
+
+    }
+
+
+    public async createEntry(data: Card | Cards): Promise<CardModel[] | null> {
+
+        let oCardEntity = this.getEntity();
+
+        let oSql = INSERT.into(oCardEntity).entries(data);
+
+        await cds.run(oSql);
+
+        return this.mapCardResult(Array.isArray(data) ? data : [data]);
 
     }
 

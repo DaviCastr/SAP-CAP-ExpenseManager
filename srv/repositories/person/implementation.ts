@@ -80,6 +80,19 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
     }
 
 
+    public async createEntry(data: Person | Persons): Promise<PersonModel[] | null> {
+
+        let oPersonEntity = this.getEntity();
+
+        let oSql = INSERT.into(oPersonEntity).entries(data);
+
+        await cds.run(oSql);
+
+        return this.mapPersonResult(Array.isArray(data) ? data : [data]);
+
+    }
+
+
     protected getEntity(ignoreDraft?: boolean): entity {
 
         return ServiceLocator.getEntity('Persons', ignoreDraft);

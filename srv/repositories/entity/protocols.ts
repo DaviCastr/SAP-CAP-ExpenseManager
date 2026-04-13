@@ -1,8 +1,9 @@
 import { EntityModel } from "@/models/entity";
-import { Entity } from "@models/apps/dflc/gestordegastos/entities";
+import { Entities, Entity } from "@models/apps/dflc/gestordegastos/entities";
 import { BaseRepository } from "../base";
-import { Request } from "@sap/cds";
 
-export interface EntityRepository extends BaseRepository{
-    findByShareId(PersonId: Entity['Share_ID']): Promise<EntityModel[] | null>;
+export interface EntityRepository extends BaseRepository {
+    findById(Id: Entity['ID']): Promise<EntityModel | null>;
+    findByShareId(ShareId: Entity['Share_ID']): Promise<EntityModel[] | null>;
+    createEntry(data: Entity | Entities): Promise<EntityModel[] | null>;
 }

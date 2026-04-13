@@ -17,7 +17,7 @@ import { CardRepository } from "@/repositories/card";
 
 export class PersonServiceImplementation extends BaseServiceImplementation<Person> implements PersonService {
 
-    protected Repository: PersonRepository;
+    public Repository: PersonRepository;
 
     constructor(
         ShareRepository: ShareRepository,
@@ -386,7 +386,9 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             if (oPerson && Person.Currency?.code) {
 
-                if (oPerson.Currency?.Code != Person.Currency?.code) {
+                let oCards = await this.CardRepository.findByPersonId(Person?.ID);
+
+                if (oPerson.Currency?.Code != Person.Currency?.code && oCards?.length) {
 
                     const oStack = new Error().stack as string;
 
@@ -414,21 +416,21 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         }
 
-        // if (Person.Phone) {
+        if (Person.Phone) {
 
-        //     const regexTelefone = /^\d{9}$/;
+            const regexPhone = /^\d{2}\d{2}9\d{8}$/;
 
-        //     if (!regexTelefone.test(Person.Phone)) {
+            if (!regexPhone.test(Person.Phone)) {
 
-        //         const oStack = new Error().stack as string;
+                const oStack = new Error().stack as string;
 
-        //         const message = this.getMessage('error.invalidPhone', ServiceLocator.getRequest());
+                const message = this.getMessage('error.invalidPhone', ServiceLocator.getRequest());
 
-        //         return left(new PermissionDenied(message, 403, oStack));
+                return left(new PermissionDenied(message, 403, oStack));
 
-        //     }
+            }
 
-        // }
+        }
 
         if (Person.Income) {
 

@@ -5,42 +5,41 @@ using {apps.dflc.gestordegastos.entities as entities} from '../../db/entities';
 
 service GestorDeGastos {
 
-    @cds.redirection.target
-
     @odata.draft.enabled: true
-    //@odata.draft.bypass
     entity Persons      as projection on entities.Persons;
 
-    entity Shares      as projection on entities.Shares;
+    @cds.redirection.target
+    entity Shares       as projection on entities.Shares;
 
-    entity Entities      as projection on entities.Entities;
+    @cds.redirection.target
+    entity Entities     as projection on entities.Entities;
 
-    @odata.draft.bypass
+    @cds.redirection.target
     entity Categories   as projection on entities.Categories;
 
-    @odata.draft.bypass
+    @cds.redirection.target
     entity Cards        as projection on entities.Cards;
 
     @readonly
+    @cds.redirection.target
     entity Invoices     as projection on entities.Invoices;
 
-    @readonly
+    @cds.redirection.target
     entity Transactions as projection on entities.Transactions;
 
-    @odata.draft.enabled: false
     entity Backups      as projection on entities.Backups;
 
     //Ações utilizadas no fiori/ui5
-    action   SimulatePerMonthYear(Person: UUID, mes: Integer, ano: Integer)                                                                                                             returns entities.SimulationReturn;
+    action   SimulatePerMonthYear(Person: UUID, mes: Integer, ano: Integer)                                                                                            returns entities.SimulationReturn;
     action   AddExpense(Person: UUID, descricao: String, valor: Decimal, moeda: String, data: Date, parcelas: Integer, gastofixo: Boolean, Category: UUID, Card: UUID) returns entities.BooleanReturn;
-    action   ExportBackup(ID: UUID)                                                                                                                                              returns String;
+    action   ExportBackup()                                                                                                                                            returns String;
     action   SendInvoice();
     action   SendForecastInvoiceDetailed(Person: UUID, mes: Integer, ano: Integer);
 
-    function RecoverCategoriesTotalExpense(Person: UUID, Month: Integer, Year: Integer)                                                                                             returns entities.BooleanReturn;
-    function RecoverCategories(Person: UUID, Card: UUID, Invoice: UUID, Month: Integer, Year: Integer)                                                                                returns entities.CategoriesReturn;
-    function RecoverTransactionsPerCategory(Person: UUID, Category: UUID, Total: Boolean, Month: Integer, Year: Integer)                                                               returns entities.TransactionsReturn;
-    function RecoverCompleteInvoice(Person: UUID, Month: Integer, Year: Integer)                                                                                                     returns entities.CompleteInvoiceReturn;
+    function RecoverCategoriesTotalExpense(Person: UUID, Month: Integer, Year: Integer)                                                                                returns entities.BooleanReturn;
+    function RecoverCategories(Person: UUID, Card: UUID, Invoice: UUID, Month: Integer, Year: Integer)                                                                 returns entities.CategoriesReturn;
+    function RecoverTransactionsPerCategory(Person: UUID, Category: UUID, Total: Boolean, Month: Integer, Year: Integer)                                               returns entities.TransactionsReturn;
+    function RecoverCompleteInvoice(Person: UUID, Month: Integer, Year: Integer)                                                                                       returns entities.CompleteInvoiceReturn;
 
 }
 

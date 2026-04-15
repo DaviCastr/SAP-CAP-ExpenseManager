@@ -63,6 +63,32 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
     }
 
 
+    public async findByIds(Ids: Entity['ID'][]): Promise<EntityModel[] | null> {
+
+        let oEntityEntity = this.getEntity();
+
+        let oSql = SELECT.from(oEntityEntity).where({ ID: { in: Ids } });
+
+        let oEntitys = await cds.run(oSql);
+
+        if ((oEntityEntity as any)?.isDraft) {
+
+            oEntityEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oEntityEntity).where({ ID: { in: Ids } });
+
+            const additionalEntityts = await cds.run(oSql) || [];
+            oEntitys = [...(oEntitys || []), ...additionalEntityts];
+
+        }
+
+        const oEntitysModel = this.mapEntityResult(oEntitys);
+
+        return oEntitysModel;
+
+    }
+
+
     public async createEntry(data: Entity | Entities): Promise<EntityModel[] | null> {
 
         let oEntityEntity = this.getEntity();

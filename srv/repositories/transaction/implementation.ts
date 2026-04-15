@@ -45,6 +45,32 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
     }
 
 
+    public async findByIds(Ids: Transaction['ID'][]): Promise<TransactionModel[] | null> {
+
+        let oTransactionEntity = this.getEntity();
+
+        let oSql = SELECT.from(oTransactionEntity).where({ ID: { in: Ids } });
+
+        let oTransactions = await cds.run(oSql);
+
+        if ((oTransactionEntity as any)?.isDraft) {
+
+            oTransactionEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oTransactionEntity).where({ ID: { in: Ids } });
+
+            const additionalTransactionts = await cds.run(oSql) || [];
+            oTransactions = [...(oTransactions || []), ...additionalTransactionts];
+
+        }
+
+        const oTransactionsModel = this.mapTransactionResult(oTransactions);
+
+        return oTransactionsModel;
+
+    }
+
+
     public async findByCategoryID(CategoryID: Transaction["Category_ID"], Limit: number): Promise<TransactionModel[] | null> {
 
         let oSql = this.getReportBaseSql();

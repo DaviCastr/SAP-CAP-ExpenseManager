@@ -8,7 +8,7 @@ export type BaseControllerResponse = {
 };
 
 export interface BaseController<Entity> {
-    beforeRead(Entity: Request): BaseControllerResponse;
+    beforeRead(Request: Request): BaseControllerResponse;
     beforeCreate(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse>;
     beforeUpdate(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse>;
     beforeEdit(Entity: Entity, LoggedUser: User): Promise<BaseControllerResponse>;

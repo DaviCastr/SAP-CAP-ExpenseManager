@@ -29,9 +29,35 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         }
 
-        const oCardsModel = this.mapCardResult(oCards)?.[0];
+        const oCardsModel = this.mapCardResult(oCards);
 
-        return oCardsModel?.[0];
+        return oCardsModel?.[0] as CardModel;
+
+    }
+
+
+    public async findByIds(Ids: Card['ID'][]): Promise<CardModel[] | null> {
+
+        let oCardEntity = this.getEntity();
+
+        let oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids } });
+
+        let oCards = await cds.run(oSql);
+
+        if ((oCardEntity as any)?.isDraft) {
+
+            oCardEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids } });
+
+            const additionalCardts = await cds.run(oSql) || [];
+            oCards = [...(oCards || []), ...additionalCardts];
+
+        }
+
+        const oCardsModel = this.mapCardResult(oCards);
+
+        return oCardsModel;
 
     }
 

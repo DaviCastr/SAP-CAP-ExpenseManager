@@ -40,6 +40,32 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
     }
 
 
+    public async findByIds(Ids: Invoice['ID'][]): Promise<InvoiceModel[] | null> {
+
+        let oInvoiceEntity = this.getEntity();
+
+        let oSql = SELECT.from(oInvoiceEntity).where({ ID: { in: Ids } });
+
+        let oInvoices = await cds.run(oSql);
+
+        if ((oInvoiceEntity as any)?.isDraft) {
+
+            oInvoiceEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oInvoiceEntity).where({ ID: { in: Ids } });
+
+            const additionalInvoicets = await cds.run(oSql) || [];
+            oInvoices = [...(oInvoices || []), ...additionalInvoicets];
+
+        }
+
+        const oInvoicesModel = this.mapInvoiceResult(oInvoices);
+
+        return oInvoicesModel;
+
+    }
+
+
     public async findByCardID(CardId: Invoice["Card_ID"], additionalFilters: {}, Limit?: number): Promise<InvoiceModel[] | null> {
 
         let oSql = this.getReportBaseSql();

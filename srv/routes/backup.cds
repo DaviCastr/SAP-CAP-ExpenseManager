@@ -18,7 +18,7 @@ service BackupService {
             'DELETE'
         ]}
     ]
-    entity Entities as projection on entities.Entities;
+    entity Backups as projection on entities.Backups;
 
 }
 

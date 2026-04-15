@@ -7,6 +7,9 @@ export abstract class BaseRepositoryImplementation implements BaseRepository {
     public abstract findById(Id: any): Promise<any | null>;
 
 
+    public abstract findByIds(Ids: any[]): Promise<any[] | null>;
+
+
     public async findPersonIdById(Id: string): Promise<string | null> {
 
         const Entity = this.getEntity();

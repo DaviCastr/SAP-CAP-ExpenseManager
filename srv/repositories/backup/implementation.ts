@@ -37,6 +37,32 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
     }
 
 
+    public async findByIds(Ids: Backup['ID'][]): Promise<BackupModel[] | null> {
+
+        let oBackupEntity = this.getEntity();
+
+        let oSql = SELECT.from(oBackupEntity).where({ ID: { in: Ids } });
+
+        let oBackups = await cds.run(oSql);
+
+        if ((oBackupEntity as any)?.isDraft) {
+
+            oBackupEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oBackupEntity).where({ ID: { in: Ids } });
+
+            const additionalBackupts = await cds.run(oSql) || [];
+            oBackups = [...(oBackups || []), ...additionalBackupts];
+
+        }
+
+        const oBackupsModel = this.mapBackupResult(oBackups);
+
+        return oBackupsModel;
+
+    }
+
+
     public async createEntry(data: Backup | Backups): Promise<BackupModel[] | null> {
 
         let oBackupEntity = this.getEntity();
@@ -46,6 +72,25 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
         await cds.run(oSql);
 
         return this.mapBackupResult(Array.isArray(data) ? data : [data]);
+
+    }
+
+
+    public async deleteEntry(id: Backup['ID'] | Backup['ID'][]): Promise<boolean> {
+
+        let oBackupEntity = this.getEntity();
+
+        const ids = Array.isArray(id) ? id : [id];
+
+        for (const backupId of ids) {
+
+            let oSql = DELETE.from(oBackupEntity).where({ ID: backupId });
+
+            await cds.run(oSql);
+
+        }
+
+        return true;
 
     }
 
@@ -65,7 +110,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
     protected getEntity(ignoreDraft = false): entity {
 
-        return ServiceLocator.getEntity('Entities', ignoreDraft);
+        return ServiceLocator.getEntity('Backups', ignoreDraft);
 
     }
 

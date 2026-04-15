@@ -111,13 +111,11 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
                 this.ensureParentField(Request, parentField);
             }
 
-            oPersonPath.push('createdBy');
-
             Request.query.where([
                 '(',
-                { ref: [...oPersonPath] }, '=', { val: oUserId },
+                { ref: [...oPersonPath, 'createdBy'] }, '=', { val: oUserId },
                 'or',
-                this.buildPermissionExists(oUserId, oEntityCode as number),
+                { ref: [...oPersonPath, 'ID'] }, 'in', this.buildPermissionExists(oUserId, oEntityCode as number),
                 ')'
             ]);
 
@@ -222,7 +220,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     protected abstract personPath(): string[];
 
-    
+
     protected abstract entityCode(): number;
 
 
@@ -429,41 +427,33 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     protected buildPermissionExists(oUserId: string, oEntityCode: number) {
 
-
         return {
-            xpr: [
-                'exists',
-                {
-                    SELECT: {
-                        from: { ref: ['apps.dflc.gestordegastos.entities.Shares'], as: 'S' },
-                        columns: [{ val: 1 }],
-                        where: [
-                            { ref: ['S', 'User'] }, '=', { val: oUserId },
-                            'and',
-                            { ref: ['S', 'Person_ID'] }, '=', { ref: ['Person', 'ID'] },
-                            'and',
+            SELECT: {
+                from: { ref: ['apps.dflc.gestordegastos.entities.Shares'], as: 'S' },
+                columns: [{ ref: ['S', 'Person_ID'] }],
+                where: [
+                    { ref: ['S', 'User'] }, '=', { val: oUserId },
+                    'and',
+                    {
+                        xpr: [
+                            'exists',
                             {
-                                xpr: [
-                                    'exists',
-                                    {
-                                        SELECT: {
-                                            from: { ref: ['apps.dflc.gestordegastos.entities.Entities'], as: 'E' },
-                                            columns: [{ val: 1 }],
-                                            where: [
-                                                { ref: ['E', 'Share_ID'] }, '=', { ref: ['S', 'ID'] },
-                                                'and',
-                                                { ref: ['E', 'Entity'] }, '=', { val: oEntityCode },
-                                                'and',
-                                                { ref: ['E', 'Permission'] }, 'is not', { val: null }
-                                            ]
-                                        }
-                                    }
-                                ]
+                                SELECT: {
+                                    from: { ref: ['apps.dflc.gestordegastos.entities.Entities'], as: 'E' },
+                                    columns: [{ val: 1 }],
+                                    where: [
+                                        { ref: ['E', 'Share_ID'] }, '=', { ref: ['S', 'ID'] },
+                                        'and',
+                                        { ref: ['E', 'Entity'] }, '=', { val: oEntityCode },
+                                        'and',
+                                        { ref: ['E', 'Permission'] }, 'is not', { val: null }
+                                    ]
+                                }
                             }
                         ]
                     }
-                }
-            ]
+                ]
+            }
         };
 
     }
@@ -485,7 +475,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
         const exists = columns.some(col =>
             col.ref?.join('.') === parentField ||
-            col.ref?.join('.')?.replace('_','.') === parentField
+            col.ref?.join('.')?.replace('_', '.') === parentField
         );
 
         if (!exists) {

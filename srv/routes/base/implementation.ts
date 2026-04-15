@@ -60,7 +60,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
         }
 
-        return Request.reject(Result.status, oLocalizedMessage as string);
+        return Request?.reject(Result.status, oLocalizedMessage as string);
 
     }
 
@@ -80,7 +80,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
         }
 
-        return Request.error(Result.status, oLocalizedMessage as string);
+        return Request?.error(Result.status, oLocalizedMessage as string);
 
     }
 

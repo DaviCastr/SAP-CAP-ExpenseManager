@@ -70,7 +70,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             const result = await this.processAfterRead(Persons, User);
             let oPersonsFiltered: Persons = [];
             if (result.isRight()) oPersonsFiltered = result.value;
-            else oPersonsFiltered = []
+            else oPersonsFiltered = [];
 
             const oPersonsData: Persons = [];
 

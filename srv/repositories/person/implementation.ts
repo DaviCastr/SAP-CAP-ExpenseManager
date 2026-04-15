@@ -79,6 +79,31 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
     }
 
+    public async findByIds(Ids: Person['ID'][]): Promise<PersonModel[] | null> {
+
+        let oPersonEntity = this.getEntity();
+
+        let oSql = SELECT.from(oPersonEntity).where({ ID: { in: Ids } });
+
+        let oPersons = await cds.run(oSql);
+
+        if ((oPersonEntity as any)?.isDraft) {
+
+            oPersonEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oPersonEntity).where({ ID: { in: Ids } });
+
+            const additionalPersonts = await cds.run(oSql) || [];
+            oPersons = [...(oPersons || []), ...additionalPersonts];
+
+        }
+
+        const oPersonsModel = this.mapPersonResult(oPersons);
+
+        return oPersonsModel;
+
+    }
+
 
     public async createEntry(data: Person | Persons): Promise<PersonModel[] | null> {
 

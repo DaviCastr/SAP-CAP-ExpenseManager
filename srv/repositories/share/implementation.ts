@@ -63,6 +63,32 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
     }
 
 
+    public async findByIds(Ids: Share['ID'][]): Promise<ShareModel[] | null> {
+
+        let oShareEntity = this.getEntity();
+
+        let oSql = SELECT.from(oShareEntity).where({ ID: { in: Ids } });
+
+        let oShares = await cds.run(oSql);
+
+        if ((oShareEntity as any)?.isDraft) {
+
+            oShareEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oShareEntity).where({ ID: { in: Ids } });
+
+            const additionalSharets = await cds.run(oSql) || [];
+            oShares = [...(oShares || []), ...additionalSharets];
+
+        }
+
+        const oSharesModel = this.mapShareResult(oShares);
+
+        return oSharesModel;
+
+    }
+
+
     public async findByUser(User: Share["User"]): Promise<ShareModel[] | null> {
 
         let oShareEntity = this.getEntity();

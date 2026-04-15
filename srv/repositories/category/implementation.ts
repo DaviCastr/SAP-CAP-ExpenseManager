@@ -11,11 +11,22 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
     public async findById(Id: CategoryProperties["Id"]): Promise<CategoryModel | null> {
 
-        const oCategoriesEntity = this.getEntity();
+        let oCategoryEntity = this.getEntity();
 
-        const oSql = SELECT.from(oCategoriesEntity).where({ ID: Id });
+        let oSql = SELECT.from(oCategoryEntity).where({ ID: Id });
 
-        const oCategories = await cds.run(oSql);
+        let oCategories = await cds.run(oSql);
+
+        if ((oCategoryEntity as any)?.isDraft) {
+
+            oCategoryEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oCategoryEntity).where({ ID: Id });
+
+            const additionalCategories = await cds.run(oSql) || [];
+            oCategories = [...(oCategories || []), ...additionalCategories];
+
+        }
 
         const oCategoriesModel = this.mapCategoryResult(oCategories);
 
@@ -28,6 +39,32 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
             return null;
 
         }
+
+    }
+
+
+    public async findByIds(Ids: Category['ID'][]): Promise<CategoryModel[] | null> {
+
+        let oCategoryEntity = this.getEntity();
+
+        let oSql = SELECT.from(oCategoryEntity).where({ ID: { in: Ids } });
+
+        let oCategorys = await cds.run(oSql);
+
+        if ((oCategoryEntity as any)?.isDraft) {
+
+            oCategoryEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oCategoryEntity).where({ ID: { in: Ids } });
+
+            const additionalCategoryts = await cds.run(oSql) || [];
+            oCategorys = [...(oCategorys || []), ...additionalCategoryts];
+
+        }
+
+        const oCategorysModel = this.mapCategoryResult(oCategorys);
+
+        return oCategorysModel;
 
     }
 
@@ -45,9 +82,9 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
     }
 
 
-    protected getEntity(): entity {
+    protected getEntity(ignoreDraft?: boolean): entity {
 
-        return ServiceLocator.getEntity('Categories');
+        return ServiceLocator.getEntity('Categories', ignoreDraft);
 
     }
 

@@ -1,12 +1,13 @@
 import { TransactionModel } from '@/models/transaction';
-import { Categories, Category } from '@models/apps/dflc/gestordegastos/entities';
+import { Categories, Category, Transactions } from '@models/apps/dflc/gestordegastos/entities';
 import { Readable } from 'stream';
 
 export type CategoryProperties = {
     Id: string;
     Name: string;
-    Image?: Readable;
+    Image: Readable;
     ImageType: string;
+    PersonId: string;
     Transactions?: TransactionModel[];
     CreatedAt: string;
     CreatedBy: string;
@@ -35,7 +36,10 @@ export class CategoryModel {
             return CategoryModel.with({
                 Id: Category.ID as string,
                 Name: Category.Name as string,
+                Image: Category?.Image as Readable,
                 ImageType: Category.ImageType as string,
+                PersonId: Category.Person_ID || Category?.Person?.ID as string,
+                Transactions: TransactionModel.mapModel(Category?.Transactions as Transactions),
                 CreatedAt: Category.createdAt as string,
                 CreatedBy: Category.createdBy as string,
                 ModifiedAt: Category.modifiedAt as string,
@@ -60,7 +64,7 @@ export class CategoryModel {
 
     public get Image() {
 
-        return this.properties.Image;
+        return this.properties.Image as Readable;
 
     }
 
@@ -100,6 +104,12 @@ export class CategoryModel {
 
     }
 
+    public set Image(value: Readable) {
+
+        this.properties.Image = value;
+
+    }
+
     public toObject(): CategoryProperties {
 
         return this.properties;
@@ -113,6 +123,7 @@ export class CategoryModel {
             Name: this.properties.Name,
             Image: this.properties.Image,
             ImageType: this.properties.ImageType,
+            Person_ID: this.properties.PersonId,
             Transactions: this.properties.Transactions?.map((Transaction)=> Transaction.toEntityObject()),
             createdAt: this.properties.CreatedAt,
             createdBy: this.properties.CreatedBy,

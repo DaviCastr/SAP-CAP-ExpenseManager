@@ -494,4 +494,9 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
         });
     };
 
+    
+    protected generateUUID(): string {
+        return cds.utils.uuid();
+    }
+
 }

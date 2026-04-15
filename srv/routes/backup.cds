@@ -20,6 +20,8 @@ service BackupService {
     ]
     entity Backups as projection on entities.Backups;
 
+    action ExportBackup() returns String;
+
 }
 
 annotate BackupService with @requires: [

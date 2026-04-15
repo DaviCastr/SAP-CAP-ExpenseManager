@@ -48,7 +48,7 @@ export class BackupRouteImplementation extends BaseRouteImplementation<Backup> i
             this.serviceInstance?.emit('ProcessBackupDelete', { ...oBackup, oldRequest: Request });
             return this.returnRejectMessage(Request, oResult);
 
-        }
+        } 
 
         this.serviceInstance?.emit('ProcessBackupDelete', { ...oBackup, oldRequest: Request });
 
@@ -85,12 +85,12 @@ export class BackupRouteImplementation extends BaseRouteImplementation<Backup> i
 
         await this.beforeAll(Request.data?.oldRequest);
 
-        setTimeout(async () => {
+         setTimeout(async () => {
 
             await this.Controller.processBackupDelete(oBackup);
 
-        }, 1000);
-
+         }, 500);
+ 
     }
 
 

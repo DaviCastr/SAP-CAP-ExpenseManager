@@ -17,7 +17,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oBackupEntity).where({ ID: Id });
 
-        let oBackups = await cds.run(oSql);
+        let oBackups = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oBackupEntity as any)?.isDraft) {
 
@@ -25,7 +25,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oBackupEntity).where({ ID: Id });
 
-            const additionalBackupts = await cds.run(oSql) || [];
+            const additionalBackupts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oBackups = [...(oBackups || []), ...additionalBackupts];
 
         }
@@ -43,7 +43,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oBackupEntity).where({ ID: { in: Ids } });
 
-        let oBackups = await cds.run(oSql);
+        let oBackups = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oBackupEntity as any)?.isDraft) {
 
@@ -51,7 +51,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oBackupEntity).where({ ID: { in: Ids } });
 
-            const additionalBackupts = await cds.run(oSql) || [];
+            const additionalBackupts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oBackups = [...(oBackups || []), ...additionalBackupts];
 
         }
@@ -69,7 +69,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = INSERT.into(oBackupEntity).entries(data);
 
-        await cds.run(oSql);
+        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         return this.mapBackupResult(Array.isArray(data) ? data : [data]);
 
@@ -79,14 +79,14 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
     public async deleteEntry(id: Backup['ID'] | Backup['ID'][]): Promise<boolean> {
 
         let oBackupEntity = this.getEntity();
-
+ 
         const ids = Array.isArray(id) ? id : [id];
 
-        for (const backupId of ids) {
+        for (const backupId of ids) { 
 
             let oSql = DELETE.from(oBackupEntity).where({ ID: backupId });
 
-            await cds.run(oSql);
+            await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         }
 

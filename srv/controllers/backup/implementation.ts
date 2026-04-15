@@ -15,7 +15,8 @@ export class BackupControllerImplementation extends BaseControllerImplementation
         this.Service = Service;
 
     }
-
+ 
+    
     public async processBackupDelete(Backup: Backup): Promise<BaseControllerResponse> {
         
         const result = await this.Service.processBackupDelete(Backup);

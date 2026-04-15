@@ -17,7 +17,7 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oEntityEntity).where({ ID: Id });
 
-        let oEntities = await cds.run(oSql);
+        let oEntities = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oEntityEntity as any)?.isDraft) {
 
@@ -25,7 +25,7 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oEntityEntity).where({ ID: Id });
 
-            const additionalEntities = await cds.run(oSql) || [];
+            const additionalEntities = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oEntities = [...(oEntities || []), ...additionalEntities];
 
         }
@@ -43,7 +43,7 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oEntityEntity).where({ Share_ID: ShareId });
 
-        let oEntities = await cds.run(oSql);
+        let oEntities = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oEntityEntity as any)?.isDraft) {
 
@@ -51,7 +51,7 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oEntityEntity).where({ Share_ID: ShareId });
 
-            const additionalEntities = await cds.run(oSql) || [];
+            const additionalEntities = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oEntities = [...(oEntities || []), ...additionalEntities];
 
         }
@@ -69,7 +69,7 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oEntityEntity).where({ ID: { in: Ids } });
 
-        let oEntitys = await cds.run(oSql);
+        let oEntitys = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oEntityEntity as any)?.isDraft) {
 
@@ -77,7 +77,7 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oEntityEntity).where({ ID: { in: Ids } });
 
-            const additionalEntityts = await cds.run(oSql) || [];
+            const additionalEntityts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oEntitys = [...(oEntitys || []), ...additionalEntityts];
 
         }
@@ -95,7 +95,7 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = INSERT.into(oEntityEntity).entries(data);
 
-        await cds.run(oSql);
+        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         return this.mapEntityResult(Array.isArray(data) ? data : [data]);
 

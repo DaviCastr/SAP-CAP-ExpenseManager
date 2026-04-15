@@ -231,6 +231,12 @@ export class PersonModel {
 
     }
 
+    public set Image(value: Readable) {
+
+        this.props.Image = value;
+
+    }
+
     public set ExpenseTarget(value: Decimal) {
 
         this.props.ExpenseTarget = value;

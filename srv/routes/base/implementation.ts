@@ -33,7 +33,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         //         active = [active];
         //     }
 
-        //     const draftsOnly = await cds.run(
+        //     const draftsOnly = await cds.transaction(ServiceLocator.getRequest()).run(
         //         SELECT.from(Categories.drafts!) 
         //             .where({ HasActiveEntity: false })
         //     );

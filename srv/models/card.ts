@@ -3,7 +3,6 @@ import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
 import { InvoiceModel } from '@/models/invoice';
 import { Card, Card as CardEntityType, Cards } from '@models/apps/dflc/gestordegastos/entities';
-import { TransactionModel } from "./transaction";
 
 type CardProperties = {
     Id: string;
@@ -175,6 +174,12 @@ export class CardModel {
     public get ModifiedBy() {
 
         return this.props.ModifiedBy;
+
+    }
+
+    public set Image(value: Readable) {
+
+        this.props.Image = value;
 
     }
 

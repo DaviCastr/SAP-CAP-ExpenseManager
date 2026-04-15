@@ -5,5 +5,6 @@ import { BaseRepository } from "../base";
 export interface TransactionRepository extends BaseRepository {
     findById(Id: Transaction['ID']): Promise<TransactionModel | null>;
     findByCategoryID(CategoryID: Transaction['Category_ID'], Limit?: number): Promise<TransactionModel[] | null>;
+    findByInvoiceIds(InvoiceIds: Transaction['Invoice_ID'] | Transaction['Invoice_ID'][], Limit?: number): Promise<TransactionModel[] | null>;
     createEntry(data: Transaction | Transactions): Promise<TransactionModel[] | null>;
 }

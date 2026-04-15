@@ -6,5 +6,5 @@ import { User } from "@sap/cds";
 
 export interface BackupService extends BaseService<Backup> {
     processBackupDelete(Backup: Backup): Promise<Either<AbstractError, boolean>>
-    exportBackup(User: User): Promise<Either<AbstractError, boolean>>
+    exportBackup(User: User): Promise<Either<AbstractError, string>>
 }

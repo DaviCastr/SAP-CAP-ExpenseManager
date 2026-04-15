@@ -18,7 +18,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         oSql.where({ ID: Id });
 
-        let oTransactions: Transactions = await cds.run(oSql);
+        let oTransactions: Transactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -26,7 +26,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             oSql.where({ ID: Id });
 
-            const additionalTransactions: Transactions = await cds.run(oSql) || [];
+            const additionalTransactions: Transactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
 
             oTransactions = [...(oTransactions || []), ...additionalTransactions];
 
@@ -51,7 +51,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         let oSql = SELECT.from(oTransactionEntity).where({ ID: { in: Ids } });
 
-        let oTransactions = await cds.run(oSql);
+        let oTransactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oTransactionEntity as any)?.isDraft) {
 
@@ -59,7 +59,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             oSql = SELECT.from(oTransactionEntity).where({ ID: { in: Ids } });
 
-            const additionalTransactionts = await cds.run(oSql) || [];
+            const additionalTransactionts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oTransactions = [...(oTransactions || []), ...additionalTransactionts];
 
         }
@@ -83,7 +83,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         }
 
-        let oTransactions = await cds.run(oSql);
+        let oTransactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -97,7 +97,48 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             }
 
-            const additionalTransactions: Transactions = await cds.run(oSql) || [];
+            const additionalTransactions: Transactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+
+            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+
+        }
+
+        const oTransactionsModel = await this.mapTransactionResult(oTransactions);
+
+        return oTransactionsModel;
+
+    }
+
+
+    public async findByInvoiceIds(InvoiceIds: Transaction["Invoice_ID"] | Transaction["Invoice_ID"][], Limit?: number): Promise<TransactionModel[] | null> {
+
+        let oSql = this.getReportBaseSql();
+
+        const invoiceIds = Array.isArray(InvoiceIds) ? InvoiceIds : [InvoiceIds];
+
+        oSql.where({ Invoice_ID: { in: invoiceIds } });
+
+        if (Limit != 0 && Limit) {
+
+            oSql.limit(Limit);
+
+        }
+
+        let oTransactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+
+        if ((this.getEntity() as any)?.isDraft) {
+
+            oSql = this.getReportBaseSql(true);
+
+            oSql.where({ Invoice_ID: { in: invoiceIds } });
+
+            if (Limit != 0 && Limit) {
+
+                oSql.limit(Limit);
+
+            }
+
+            const additionalTransactions: Transactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
 
             oTransactions = [...(oTransactions || []), ...additionalTransactions];
 
@@ -116,11 +157,11 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         let oSql = INSERT.into(oTransactionEntity).entries(data);
 
-        await cds.run(oSql);
+        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
-        return this.mapTransactionResult(Array.isArray(data) ? data : [data]);
+        return this.mapTransactionResult(Array.isArray(data) ? data : [data], true);
 
-    }
+    } 
 
 
     private getReportBaseSql(ignoreDraft?: boolean): cds.ql.SELECT<unknown, unknown> {
@@ -146,24 +187,37 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
     }
 
 
-    private async mapTransactionResult(Transactions: Transactions): Promise<TransactionModel[] | null> {
+    private async mapTransactionResult(Transactions: Transactions, ignoreTotalAmount?: boolean): Promise<TransactionModel[] | null> {
 
         if (Transactions.length === 0) {
 
             return null;
-
-        }
+ 
+        } 
 
         const oTransactionsModel: TransactionModel[] = [];
+        let totalAmounts = new Map;
 
         for (let Transaction of Transactions) {
+ 
+            if (!ignoreTotalAmount && (!Transaction.TotalAmount || Transaction.TotalAmount == 0) && Transaction?.Identifier) {
 
-            if (!Transaction.TotalAmount || Transaction.TotalAmount == 0) {
+                const totalAmount = totalAmounts.get(Transaction?.Identifier);
 
-                const oTotalAmountData = await this.selectTotalAmount(Transaction);
+                if (totalAmount != null) {
 
-                Transaction.Identifier = oTotalAmountData.Identifier;
-                Transaction.TotalAmount = oTotalAmountData.TotalAmount;
+                    Transaction.TotalAmount = totalAmount;
+
+                } else {
+
+                    const oTotalAmountData = await this.selectTotalAmount(Transaction);
+
+                    Transaction.Identifier = oTotalAmountData.Identifier;
+                    Transaction.TotalAmount = oTotalAmountData.TotalAmount;
+
+                    totalAmounts.set(Transaction.Identifier, Transaction.TotalAmount);
+
+                }
 
             }
 
@@ -187,11 +241,11 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         const returnTotalAmount = async (Identifier: Transaction['Identifier']) => {
 
-            const oTotalAmount = await cds.run(
-                SELECT.one`coalesce(sum(TotalAmount),0) as TotalAmount`
+            const oTotalAmount = await cds.transaction(ServiceLocator.getRequest()).run(
+                SELECT.one`Identifier, coalesce(sum(TotalAmount),0) as TotalAmount`
                     .from(oTransactionEntity)
                     .where({ Identifier: Identifier })
-            );
+            ); 
 
             return {
                 Identifier: Identifier,

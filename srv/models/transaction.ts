@@ -12,6 +12,7 @@ type TransactionProperties = {
     TotalInstallments: number;
     Installment: number;
     Description: string;
+    InvoiceId: string;
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
@@ -47,6 +48,7 @@ export class TransactionModel {
                 TotalInstallments: Transaction.TotalInstallments as number,
                 Installment: Transaction.Installment as number,
                 Description: Transaction.Description as string,
+                InvoiceId: Transaction.Invoice_ID || Transaction?.Invoice?.ID as string,
                 CreatedAt: Transaction.createdAt as string,
                 CreatedBy: Transaction.createdBy as string,
                 ModifiedAt: Transaction.modifiedAt as string,
@@ -158,6 +160,7 @@ export class TransactionModel {
             TotalInstallments: this.props.TotalInstallments,
             Installment: this.props.Installment,
             Description: this.props.Description,
+            Invoice_ID: this.props.InvoiceId,
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,

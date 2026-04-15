@@ -13,7 +13,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         oSql.where({ ID: Id });
 
-        let oTransactions: Invoices = await cds.run(oSql);
+        let oTransactions: Invoices = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -21,7 +21,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oSql.where({ ID: Id });
 
-            const additionalTransactions: Invoices = await cds.run(oSql) || [];
+            const additionalTransactions: Invoices = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
 
             oTransactions = [...(oTransactions || []), ...additionalTransactions];
 
@@ -46,7 +46,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         let oSql = SELECT.from(oInvoiceEntity).where({ ID: { in: Ids } });
 
-        let oInvoices = await cds.run(oSql);
+        let oInvoices = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oInvoiceEntity as any)?.isDraft) {
 
@@ -54,7 +54,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oSql = SELECT.from(oInvoiceEntity).where({ ID: { in: Ids } });
 
-            const additionalInvoicets = await cds.run(oSql) || [];
+            const additionalInvoicets = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oInvoices = [...(oInvoices || []), ...additionalInvoicets];
 
         }
@@ -72,7 +72,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         oSql.where({ ...additionalFilters, Card_ID: CardId });
 
-        let oTransactions: Invoices = await cds.run(oSql);
+        let oTransactions: Invoices = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -80,7 +80,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oSql.where({ ...additionalFilters, Card_ID: CardId });
 
-            const additionalTransactions: Invoices = await cds.run(oSql) || [];
+            const additionalTransactions: Invoices = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
 
             oTransactions = [...(oTransactions || []), ...additionalTransactions];
 
@@ -93,13 +93,13 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
     }
 
 
-    public async findByCardIDs(CardIds: Invoice["Card_ID"][], additionalFilters: {}, Limit?: number): Promise<InvoiceModel[] | null> {
+    public async findByCardIDs(CardIds: Invoice["Card_ID"][], additionalFilters?: {}, Limit?: number): Promise<InvoiceModel[] | null> {
 
         let oSql = this.getReportBaseSql();
 
         oSql.where({ ...additionalFilters, Card_ID: { 'in': CardIds } });
 
-        let oTransactions: Invoices = await cds.run(oSql);
+        let oTransactions: Invoices = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -107,7 +107,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oSql.where({ ...additionalFilters, Card_ID: { 'in': CardIds } });
 
-            const additionalTransactions: Invoices = await cds.run(oSql) || [];
+            const additionalTransactions: Invoices = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
 
             oTransactions = [...(oTransactions || []), ...additionalTransactions];
 
@@ -126,7 +126,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         let oSql = INSERT.into(oInvoiceEntity).entries(data);
 
-        await cds.run(oSql);
+        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         return this.mapInvoiceResult(Array.isArray(data) ? data : [data]);
 
@@ -137,7 +137,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         let oInvoiceEntity = this.getEntity();
 
-        let oInvoice = await cds.run(
+        let oInvoice = await cds.transaction(ServiceLocator.getRequest()).run(
             SELECT.one`ID`
                 .from(oInvoiceEntity)
                 .where`Transactions.ID = ${TransactionId}`);
@@ -146,7 +146,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oInvoiceEntity = this.getEntity(true);
 
-            oInvoice = await cds.run(
+            oInvoice = await cds.transaction(ServiceLocator.getRequest()).run(
                 SELECT.one`ID`
                     .from(oInvoiceEntity)
                     .where`Transactions.ID = ${TransactionId}`);
@@ -156,7 +156,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         if (oInvoice.ID) {
 
-            const oTotalAmount = await cds.run(
+            const oTotalAmount = await cds.transaction(ServiceLocator.getRequest()).run(
                 SELECT.one`coalesce(sum(Transactions.Amount),0) as TotalAmount`
                     .from(oInvoiceEntity)
                     .where({ ID: oInvoice.ID })
@@ -173,7 +173,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         let oInvoiceEntity = this.getEntity();
 
-        const oTotalAmount = await cds.run(
+        const oTotalAmount = await cds.transaction(ServiceLocator.getRequest()).run(
             SELECT.one`coalesce(sum(Transactions.Amount),0) as TotalAmount`
                 .from(oInvoiceEntity)
                 .where({ ID: Id })

@@ -18,7 +18,7 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oPersonEntity).where({ ID: Id });
 
-        let oPersons = await cds.run(oSql);
+        let oPersons = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oPersonEntity as any)?.isDraft) {
 
@@ -26,7 +26,7 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oPersonEntity).where({ ID: Id });
 
-            const additionalPersons = await cds.run(oSql) || [];
+            const additionalPersons = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oPersons = [...(oPersons || []), ...additionalPersons];
 
         }
@@ -52,7 +52,7 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oPersonEntity).where`Cards.ID = ${CardId} `;
 
-        let oPersons = await cds.run(oSql);
+        let oPersons = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oPersonEntity as any)?.isDraft) {
 
@@ -60,7 +60,7 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oPersonEntity).where`Cards.ID = ${CardId} `;
 
-            const additionalPersons = await cds.run(oSql) || [];
+            const additionalPersons = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oPersons = [...(oPersons || []), ...additionalPersons];
 
         }
@@ -85,7 +85,7 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oPersonEntity).where({ ID: { in: Ids } });
 
-        let oPersons = await cds.run(oSql);
+        let oPersons = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         if ((oPersonEntity as any)?.isDraft) {
 
@@ -93,7 +93,33 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oPersonEntity).where({ ID: { in: Ids } });
 
-            const additionalPersonts = await cds.run(oSql) || [];
+            const additionalPersonts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            oPersons = [...(oPersons || []), ...additionalPersonts];
+
+        }
+
+        const oPersonsModel = this.mapPersonResult(oPersons);
+
+        return oPersonsModel;
+
+    }
+
+
+    public async findByUser(createdBy: Person["createdBy"]): Promise<PersonModel[] | null> {
+
+        let oPersonEntity = this.getEntity();
+
+        let oSql = SELECT.from(oPersonEntity).where({ createdBy: createdBy });
+
+        let oPersons = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+
+        if ((oPersonEntity as any)?.isDraft) {
+
+            oPersonEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oPersonEntity).where({ createdBy: createdBy });
+
+            const additionalPersonts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
             oPersons = [...(oPersons || []), ...additionalPersonts];
 
         }
@@ -111,7 +137,7 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = INSERT.into(oPersonEntity).entries(data);
 
-        await cds.run(oSql);
+        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
 
         return this.mapPersonResult(Array.isArray(data) ? data : [data]);
 

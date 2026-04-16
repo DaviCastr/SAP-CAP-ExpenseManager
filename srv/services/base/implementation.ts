@@ -111,6 +111,10 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
                 this.ensureParentField(Request, parentField);
             }
 
+            if (oEntityCode == 8) {
+                right(true);
+            }
+
             Request.query.where([
                 '(',
                 { ref: [...oPersonPath, 'createdBy'] }, '=', { val: oUserId },
@@ -161,6 +165,10 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
 
     public async afterRead(Entities: Entity[], User: User): Promise<Either<AbstractError, Entity[]>> {
+
+        if (this.entityCode() == 8) {
+            return right(Entities);
+        }
 
         return this.processAfterRead(Entities, User);
 
@@ -494,9 +502,29 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
         });
     };
 
-    
+
     protected generateUUID(): string {
         return cds.utils.uuid();
+    }
+
+
+    protected cleanEntity(obj: any): any {
+
+        if (Array.isArray(obj)) {
+            if (obj.length == 0) return;
+            return obj.map((item) => this.cleanEntity(item));
+        }
+
+        if (obj && typeof obj === 'object') {
+            return Object.fromEntries(
+                Object.entries(obj)
+                    .filter(([_, v]) => v !== undefined && v !== null && (v as any)?.length !== 0)
+                    .map(([k, v]) => [k, this.cleanEntity(v)])
+            );
+        }
+
+        return obj;
+
     }
 
 }

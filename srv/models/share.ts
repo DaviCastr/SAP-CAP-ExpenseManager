@@ -1,5 +1,6 @@
 import { Share, Shares } from "@models/apps/dflc/gestordegastos/entities";
 import { EntityModel } from "./entity";
+import { BaseModel } from "./base";
 
 type ShareProperties = {
     Id: string;
@@ -12,9 +13,9 @@ type ShareProperties = {
     ModifiedBy: string;
 }
 
-export class ShareModel {
+export class ShareModel extends BaseModel {
 
-    constructor(private props: ShareProperties) { }
+    constructor(private props: ShareProperties) { super() }
 
     public static with(properties: ShareProperties): ShareModel {
         return new ShareModel(properties);
@@ -28,7 +29,7 @@ export class ShareModel {
 
     public static mapModel(Shares: Shares): ShareModel[] {
 
-        return Shares.map((Share: Share) => {
+        return Shares?.map((Share: Share) => {
 
             return ShareModel.with({
                 Id: Share.ID as string,
@@ -101,16 +102,16 @@ export class ShareModel {
 
     public toEntityObject(): Share {
 
-        return {
+        return this.cleanEntity({
             ID: this.props.Id,
             User: this.props.User,
-            Person_ID: this.props.PersonId,
+            Person: { ID: this.props.PersonId },
             Entities: this.props.Entities?.map((Entity)=>Entity.toEntityObject()),
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,
             modifiedBy: this.props.ModifiedBy
-        };
+        });
 
     }
 

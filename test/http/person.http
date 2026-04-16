@@ -5,7 +5,13 @@
 
 ### Persons
 # @name Persons_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons?$expand=Cards($expand=Invoices($expand=Transactions))
+Authorization: Basic {{username}}:{{password}}
+
+
+### Persons
+# @name Persons_GET
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID=370cadc8-2305-4ec7-8fe2-ddf4b7214a0e, IsActiveEntity=true)/Image
 Authorization: Basic {{username}}:{{password}}
 
 

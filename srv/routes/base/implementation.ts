@@ -33,7 +33,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         //         active = [active];
         //     }
 
-        //     const draftsOnly = await cds.transaction(ServiceLocator.getRequest()).run(
+        //     const draftsOnly = await cds.run(
         //         SELECT.from(Categories.drafts!) 
         //             .where({ HasActiveEntity: false })
         //     );
@@ -118,7 +118,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         const oResult = await this.Controller.beforeCreate(oEntity, Request.user);
 
         if (oResult.status != 201) {
- 
+
             return this.returnRejectMessage(Request, oResult);
 
         }
@@ -191,11 +191,13 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         if (oResult.status >= 400) {
             return this.returnRejectMessage(Request, oResult);
         }
-
+ 
         const oResultData = oResult.data as Entity[];
 
-        oEntities.length = 0;
-        oEntities.push(...oResultData);
+        if (oEntities != oResultData) {
+            oEntities.length = 0;
+            oEntities.push(...oResultData);
+        }
 
     }
 

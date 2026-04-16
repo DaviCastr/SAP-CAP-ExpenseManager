@@ -17,7 +17,7 @@ export abstract class BaseRepositoryImplementation implements BaseRepository {
 
         let oSql = SELECT.columns('ID', 'Image', 'ImageType').from(oEntity).where({ ID: { in: Ids } });
 
-        let oEntities = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oEntities = await cds.run(oSql);
 
         if ((oEntity as any)?.isDraft) {
 
@@ -25,7 +25,7 @@ export abstract class BaseRepositoryImplementation implements BaseRepository {
 
             oSql = SELECT.from(oEntity).where({ ID: { in: Ids } });
 
-            const additionalEntities = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalEntities = await cds.run(oSql) || [];
             oEntities = [...(oEntities || []), ...additionalEntities];
 
         }
@@ -51,7 +51,7 @@ export abstract class BaseRepositoryImplementation implements BaseRepository {
 
         }
 
-        let oResult = await cds.transaction(ServiceLocator.getRequest()).run(
+        let oResult = await cds.run(
             SELECT.one(`${oPath} as PersonID`)
                 .from(Entity)
                 .where({ ID: Id })
@@ -65,7 +65,7 @@ export abstract class BaseRepositoryImplementation implements BaseRepository {
 
         if ((Entity as any).drafts) {
 
-            oResult = await cds.transaction(ServiceLocator.getRequest()).run(
+            oResult = await cds.run(
                 SELECT.one(`${oPath} as PersonID`)
                     .from((Entity as any).drafts)
                     .where({ ID: Id })

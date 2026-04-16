@@ -15,7 +15,7 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
         let oSql = SELECT.from(oCategoryEntity).where({ ID: Id });
 
-        let oCategories = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oCategories = await cds.run(oSql);
 
         if ((oCategoryEntity as any)?.isDraft) {
 
@@ -23,7 +23,7 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
             oSql = SELECT.from(oCategoryEntity).where({ ID: Id });
 
-            const additionalCategories = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalCategories = await cds.run(oSql) || [];
             oCategories = [...(oCategories || []), ...additionalCategories];
 
         }
@@ -49,7 +49,7 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
         let oSql = SELECT.from(oCategoryEntity).where({ ID: { in: Ids } });
 
-        let oCategorys = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oCategorys = await cds.run(oSql);
 
         if ((oCategoryEntity as any)?.isDraft) {
 
@@ -57,7 +57,7 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
             oSql = SELECT.from(oCategoryEntity).where({ ID: { in: Ids } });
 
-            const additionalCategoryts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalCategoryts = await cds.run(oSql) || [];
             oCategorys = [...(oCategorys || []), ...additionalCategoryts];
 
         }
@@ -77,7 +77,7 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
         let oSql = SELECT.from(oCategoryEntity).where({ Person_ID: { in: personIds } });
 
-        let oCategorys = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oCategorys = await cds.run(oSql);
 
         if ((oCategoryEntity as any)?.isDraft) {
 
@@ -85,7 +85,7 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
             oSql = SELECT.from(oCategoryEntity).where({ Person_ID: { in: personIds } });
 
-            const additionalCategoryts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalCategoryts = await cds.run(oSql) || [];
             oCategorys = [...(oCategorys || []), ...additionalCategoryts];
 
         }
@@ -103,7 +103,7 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
         let oSql = INSERT.into(oCategoryEntity).entries(data);
 
-        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        await cds.run(oSql);
 
         return this.mapCategoryResult(Array.isArray(data) ? data : [data]);
 

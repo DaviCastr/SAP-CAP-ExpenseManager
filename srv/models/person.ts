@@ -5,6 +5,7 @@ import { CardModel } from '@/models/card';
 import { Readable } from 'stream';
 import { CurrencyModel } from './currency';
 import { Person, Persons } from '@models/apps/dflc/gestordegastos/entities';
+import { BaseModel } from './base';
 
 type PersonProperties = {
     Id: string;
@@ -33,9 +34,9 @@ type PersonProperties = {
     ModifiedBy?: string;
 }
 
-export class PersonModel {
+export class PersonModel extends BaseModel {
 
-    constructor(private props: PersonProperties) { }
+    constructor(private props: PersonProperties) { super() }
 
     public static with(properties: PersonProperties): PersonModel {
         return new PersonModel(properties);
@@ -49,7 +50,7 @@ export class PersonModel {
 
     public static mapModel(Persons: Persons): PersonModel[] {
 
-        return Persons.map((Person: Person) => {
+        return Persons?.map((Person: Person) => {
 
             const oCurrencyModel = CurrencyModel.singleModel({
                 ...Person?.Currency,
@@ -74,9 +75,9 @@ export class PersonModel {
                 TotalExpensesClosed: new Decimal(Person.TotalExpensesClosed || 0),
                 MonthCriticallity: Person.MonthCriticallity as number,
                 CriticallityToPay: Person.CriticallityToPay as number,
-                Shares: ShareModel.mapModel(Person?.Shares || []),
-                Categories: CategoryModel.mapModel(Person?.Categories || []),
-                Cards: CardModel.mapModel(Person?.Cards || []),
+                Shares: ShareModel?.mapModel(Person?.Shares || []),
+                Categories: CategoryModel?.mapModel(Person?.Categories || []),
+                Cards: CardModel?.mapModel(Person?.Cards || []),
                 CreatedAt: Person.createdAt as string,
                 CreatedBy: Person.createdBy as string,
                 ModifiedAt: Person.modifiedAt as string,
@@ -309,7 +310,7 @@ export class PersonModel {
 
     public toEntityObject(): Person {
 
-        return {
+        return this.cleanEntity({
             ID: this.props.Id,
             Name: this.props.Name,
             Image: this.props.Image,
@@ -334,7 +335,7 @@ export class PersonModel {
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,
             modifiedBy: this.props.ModifiedBy
-        };
+        });
 
     }
 

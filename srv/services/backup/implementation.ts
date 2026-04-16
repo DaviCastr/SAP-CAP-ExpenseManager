@@ -1,6 +1,6 @@
-import { User } from '@sap/cds';
+import cds, { User } from '@sap/cds';
 import { AbstractError } from '@/errors';
-import { Backup, Card, Category, Invoice, Person, Share, Transaction } from '@models/apps/dflc/gestordegastos/entities';
+import { Backup, Card, Category, Entity, Invoice, Person, Share, Transaction } from '@models/apps/dflc/gestordegastos/entities';
 import { Either, left, right } from '@sweet-monads/either';
 import { BackupService } from './protocols';
 import { BaseServiceImplementation } from '../base/implementation';
@@ -24,6 +24,10 @@ import { InvoiceServiceImplementation } from '../invoice/implementation';
 import { InvoiceModel } from '@/models/invoice';
 import { TransactionServiceImplementation } from '../transaction/implementation';
 import { TransactionModel } from '@/models/transaction';
+import { ShareServiceImplementation } from '../share/implementation';
+import { ShareModel } from '@/models/share';
+import { EntityServiceImplementation } from '../entity/implementation';
+import { EntityModel } from '@/models/entity';
 
 export class BackupServiceImplementation extends BaseServiceImplementation<Backup> implements BackupService {
 
@@ -78,11 +82,224 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
         } catch (error) {
 
             const errorInstance: Error = error as Error;
-            return left(new AbstractError('dataToGenerateBackupNotFound', 403, errorInstance.stack as string));
+            return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
 
         }
 
     }
+
+
+    // public async exportBackup(User: User): Promise<Either<AbstractError, string>> {
+
+    // const zip = new AdmZip();
+
+    // try {
+
+    //     // Buscar todas as persons
+    //     const personService = ServiceRegistry.get('Persons') as PersonServiceImplementation;
+
+    //     const persons = await personService?.Repository?.findByUser(User?.id) || [] as PersonModel[];
+
+    //     if (!persons?.length) {
+
+    //         const errorInstance: Error = new Error;
+    //         return left(new AbstractError('error.dataToGenerateBackupNotFound', 403, errorInstance.stack as string));
+
+    //     }
+
+    //     for (const person of persons) {
+    //         const personZip = new AdmZip(); // Cria um ZIP específico para a person
+    //         const workbook = new excel.Workbook();
+
+    //         // 1. Adicionar dados da person ao Excel
+    //         const personSheet = workbook.addWorksheet('Persons');
+    //         personSheet.columns = Object.keys(person?.toEntityObject()).map((key) => ({ header: key, key })) as any;
+    //         personSheet.addRow(person.toEntityObject());
+
+    //         if (person?.ImageType) {
+
+    //             const oPersonImage = await this.PersonRepository.findImageByIds([person?.Id]);
+
+    //             const oImage = oPersonImage?.[0];
+
+    //             person.Image = oImage?.Image as Readable;
+
+    //             // 2. Exportar imagem da person (se existir)
+    //             if (person.Image) {
+    //                 const personImageBuffer = await this.readableToBuffer(person.Image) as Buffer;
+    //                 const personImageExtension = person.ImageType?.split("/")?.[1];
+    //                 personZip.addFile(`${person.Id}.${personImageExtension}`, personImageBuffer);
+    //             }
+
+    //         }
+
+    //         const shareService = ServiceRegistry.get('Shares') as ShareServiceImplementation;
+    //         const shares = await shareService?.Repository?.findByPersonIds([person?.Id]) as ShareModel[];
+
+    //         if (shares?.length > 0) {
+
+    //             const shareSheet = workbook.addWorksheet('Shares');
+    //             shareSheet.columns = Object.keys(shares[0]?.toEntityObject()).map((key) => ({ header: key, key })) as any;
+    //             shareSheet.addRows(shares.map((item) => item.toEntityObject()));
+
+    //             for (const share of shares) {
+
+    //                 const entityService = ServiceRegistry.get('Entities') as EntityServiceImplementation;
+    //                 const entities = await entityService?.Repository?.findByShareIds([share?.Id]) as EntityModel[];
+
+    //                 if (entities?.length > 0) {
+
+    //                     const entitySheet = workbook.addWorksheet('Entities');
+    //                     entitySheet.columns = Object.keys(entities[0]?.toEntityObject()).map((key) => ({ header: key, key })) as any;
+    //                     entitySheet.addRows(entities.map((item) => item.toEntityObject()));
+
+    //                 }
+
+    //             }
+
+    //         }
+
+    //         const categoryService = ServiceRegistry.get('Categories') as CategoryServiceImplementation;
+    //         const categories = await categoryService?.Repository?.findByPersonIds([person?.Id]) as CategoryModel[];
+
+    //         if (categories?.length > 0) {
+
+    //             const categorySheet = workbook.addWorksheet('Categories');
+    //             categorySheet.columns = Object.keys(categories[0]?.toEntityObject()).map((key) => ({ header: key, key })) as any;
+    //             categorySheet.addRows(categories.map((item) => item.toEntityObject()));
+
+    //             for (const category of categories) {
+
+    //                 if (category?.ImageType) {
+
+    //                     const oCategoryImage = await categoryService.Repository.findImageByIds([category?.Id]);
+
+    //                     const oImage = oCategoryImage?.[0];
+
+    //                     category.Image = oImage?.Image as Readable;
+
+    //                     if (category.Image) {
+    //                         const categoryImageBuffer = await this.readableToBuffer(category.Image) as any;
+    //                         const categoryImageExtension = category?.ImageType?.split("/")?.[1];
+    //                         personZip.addFile(`${category.Id}.${categoryImageExtension}`, categoryImageBuffer);
+    //                     }
+
+    //                 }
+
+    //             }
+
+    //         }
+
+
+    //         const cardService = ServiceRegistry.get('Cards') as CardServiceImplementation;
+    //         const cards = await cardService?.Repository?.findByPersonIds([person?.Id]) as CardModel[];
+
+    //         if (cards?.length > 0) {
+
+    //             const cardSheet = workbook.addWorksheet('Cards');
+    //             cardSheet.columns = Object.keys(cards[0].toEntityObject()).map((key) => ({ header: key, key })) as any;
+    //             cardSheet.addRows(cards?.map((item) => item.toEntityObject()));
+
+    //             const invoiceSheet = workbook.addWorksheet('Invoices');
+    //             const transactionSheet = workbook.addWorksheet('Transactions');
+
+    //             let oFirstInvoice = true;
+    //             let oFirstTransaction = true;
+
+    //             for (const card of cards) {
+
+    //                 if (card?.ImageType) {
+
+    //                     const oCardImage = await cardService.Repository.findImageByIds([card?.Id]);
+
+    //                     const oImage = oCardImage?.[0];
+
+    //                     card.Image = oImage?.Image as Readable;
+
+    //                     if (card.Image) {
+
+    //                         const cardImageBuffer = await this.readableToBuffer(card.Image) as any;
+    //                         const cardImageExtension = card.ImageType?.split("/")?.[1];
+    //                         personZip.addFile(`${card.Id}.${cardImageExtension}`, cardImageBuffer);
+
+    //                     }
+
+    //                 }
+
+    //                 // 4. Buscar invoices relacionadas ao card
+    //                 const invoiceService = ServiceRegistry.get('Invoices') as InvoiceServiceImplementation;
+    //                 const invoices = await invoiceService?.Repository?.findByCardIDs([card?.Id]) as InvoiceModel[];
+
+    //                 if (invoices?.length > 0) {
+
+    //                     if (oFirstInvoice) {
+    //                         invoiceSheet.columns = Object.keys(invoices[0].toEntityObject()).map((key) => ({ header: key, key })) as any;
+    //                         oFirstInvoice = false;
+    //                     }
+    //                     invoiceSheet.addRows(invoices?.map((item) => item.toEntityObject()));
+
+    //                     for (const invoice of invoices) {
+
+    //                         // 5. Buscar transactions relacionadas à invoice
+    //                         const transactionService = ServiceRegistry.get('Transactions') as TransactionServiceImplementation;
+    //                         const transactions = await transactionService?.Repository?.findByInvoiceIds([invoice?.Id]) as TransactionModel[];
+
+    //                         if (transactions?.length > 0) {
+    //                             if (oFirstTransaction) {
+    //                                 transactionSheet.columns = Object.keys(transactions[0].toEntityObject()).map((key) => ({ header: key, key })) as any;
+    //                                 oFirstTransaction = false;
+    //                             }
+    //                             transactionSheet.addRows(transactions?.map((item) => item.toEntityObject()));
+    //                         }
+
+    //                     }
+
+    //                 }
+
+    //             }
+
+    //         }
+
+    //         // 6. Salvar o Excel em memória e adicionar ao ZIP da person
+    //         const excelBuffer = await workbook.xlsx.writeBuffer() as any;
+    //         personZip.addFile(`Dados_${person.Id}.xlsx`, excelBuffer);
+
+    //         // 7. Adicionar o ZIP da person ao ZIP principal
+    //         zip.addFile(`${person.Name}_backup.zip`, personZip.toBuffer());
+    //     }
+
+    // } catch (error) {
+
+    //     const errorInstance: Error = error as Error;
+    //     return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
+
+    // }
+
+    // // Gerar o ZIP final com todos os arquivos de persons
+    // const zipBuffer = zip.toBuffer();
+
+    // if (zipBuffer) {
+
+    //     let oId = this.generateUUID();
+
+    //     let newBackup: Backup = {
+    //         ID: oId,
+    //         Backup: zipBuffer as any,
+    //         BackupType: "application/x-zip-compressed"
+    //     }
+
+    //     await this.Repository.createEntry(newBackup);
+
+    //     return right(oId);
+
+    // } else {
+
+    //     const errorInstance: Error = new Error;
+    //     return left(new AbstractError('error.generateZipFile', 403, errorInstance.stack as string));
+
+    // }
+
+    // }
 
 
     public async exportBackup(User: User): Promise<Either<AbstractError, string>> {
@@ -91,184 +308,196 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
         try {
 
-            // Buscar todas as persons
             const personService = ServiceRegistry.get('Persons') as PersonServiceImplementation;
 
             const persons = await personService?.Repository?.findByUser(User?.id) || [] as PersonModel[];
 
             if (!persons.length) {
-
-                const errorInstance: Error = new Error;
-                return left(new AbstractError('dataToGenerateBackupNotFound', 403, errorInstance.stack as string));
-
+                return left(new AbstractError('error.dataToGenerateBackupNotFound', 403, new Error().stack as string));
             }
 
-            for (const person of persons) {
-                const personZip = new AdmZip(); // Cria um ZIP específico para a person
+            const personIds = persons.map(p => p.Id);
+
+            const shareRepo = (ServiceRegistry.get('Shares') as ShareServiceImplementation).Repository;
+            const categoryRepo = (ServiceRegistry.get('Categories') as CategoryServiceImplementation).Repository;
+            const cardRepo = (ServiceRegistry.get('Cards') as CardServiceImplementation).Repository;
+            const entityRepo = (ServiceRegistry.get('Entities') as EntityServiceImplementation).Repository;
+            const invoiceRepo = (ServiceRegistry.get('Invoices') as InvoiceServiceImplementation).Repository;
+            const transactionRepo = (ServiceRegistry.get('Transactions') as TransactionServiceImplementation).Repository;
+
+            const [
+                shares,
+                categories,
+                cards
+            ] = await Promise.all([
+                shareRepo.findByPersonIds(personIds),
+                categoryRepo.findByPersonIds(personIds),
+                cardRepo.findByPersonIds(personIds)
+            ]);
+
+            const shareIds = shares?.map(s => s.Id);
+            const cardIds = cards?.map(c => c.Id);
+
+            const [
+                entities,
+                invoices
+            ] = await Promise.all([
+                entityRepo.findByShareIds(shareIds || []),
+                invoiceRepo.findByCardIDs(cardIds || [])
+            ]);
+
+            const invoiceIds = invoices?.map(i => i.Id);
+
+            const transactions = await transactionRepo.findByInvoiceIds(invoiceIds);
+
+            const [
+                personImages, 
+                categoryImages,
+                cardImages
+            ] = await Promise.all([
+                this.PersonRepository.findImageByIds(personIds),
+                categoryRepo.findImageByIds(categories?.map(c => c.Id) || []),
+                cardRepo.findImageByIds(cards?.map(c => c.Id) || [])
+            ]);
+
+            const groupBy = <T>(arr: T[], key: keyof T) =>
+                arr.reduce((acc, item) => {
+                    const k = item[key] as any;
+                    if (!acc[k]) acc[k] = [];
+                    acc[k].push(item);
+                    return acc;
+                }, {} as Record<string, T[]>);
+
+            const sharesByPerson = groupBy(shares || [], 'PersonId');
+            const categoriesByPerson = groupBy(categories || [], 'PersonId');
+            const cardsByPerson = groupBy(cards || [], 'PersonId');
+            const entitiesByShare = groupBy(entities || [], 'ShareId');
+            const invoicesByCard = groupBy(invoices || [], 'CardId');
+            const transactionsByInvoice = groupBy(transactions || [], 'InvoiceId');
+
+            const mapById = <T extends { ID: string, Image: Readable }>(arr: T[]) =>
+                arr?.reduce((acc, item) => {
+                    acc[item.ID] = item;
+                    return acc;
+                }, {} as Record<string, T>);
+
+            const personImageMap = mapById(personImages as any);
+            const categoryImageMap = mapById(categoryImages as any);
+            const cardImageMap = mapById(cardImages as any);
+
+            await Promise.all(persons.map(async (person) => {
+
+                const personZip = new AdmZip();
                 const workbook = new excel.Workbook();
 
-                // 1. Adicionar dados da person ao Excel
                 const personSheet = workbook.addWorksheet('Persons');
-                personSheet.columns = Object.keys(person.toEntityObject()).map((key) => { if (key) return ({ header: key, key }) }) as any;
-                personSheet.addRow(person.toEntityObject());
+                const personData = person.toEntityObject();
 
-                if (person?.ImageType) {
+                personSheet.columns = Object.keys(personData).map(key => ({ header: key, key })) as any;
+                personSheet.addRow(personData);
 
-                    const oPersonImage = await this.PersonRepository.findImageByIds([person?.Id]);
-
-                    const oImage = oPersonImage?.[0];
-
-                    person.Image = oImage?.Image as Readable;
-
-                    // 2. Exportar imagem da person (se existir)
-                    if (person.Image) {
-                        const personImageBuffer = await this.readableToBuffer(person.Image) as Buffer;
-                        const personImageExtension = person.ImageType?.split("/")?.[1];
-                        personZip.addFile(`${person.Id}.${personImageExtension}`, personImageBuffer);
-                    }
-
+                const pImg = personImageMap[person.Id];
+                if (pImg?.Image) {
+                    const buffer = await this.readableToBuffer(pImg.Image as Readable) as Buffer;
+                    const ext = person.ImageType?.split("/")[1];
+                    personZip.addFile(`${person.Id}.${ext}`, buffer);
                 }
 
-                const categoryService = ServiceRegistry.get('Categories') as CategoryServiceImplementation;
-                const categories = await categoryService?.Repository?.findByPersonIds([person?.Id]) as CategoryModel[];
+                const personShares = sharesByPerson[person.Id] || [];
 
-                if (categories.length > 0) {
+                if (personShares.length) {
+
+                    const shareSheet = workbook.addWorksheet('Shares');
+                    shareSheet.columns = Object.keys(personShares[0].toEntityObject()).map(k => ({ header: k, key: k })) as any;
+                    shareSheet.addRows(personShares.map(s => s.toEntityObject()));
+
+                    const allEntities = personShares.flatMap(s => entitiesByShare[s.Id] || []);
+
+                    if (allEntities.length) {
+                        const entitySheet = workbook.addWorksheet('Entities');
+                        entitySheet.columns = Object.keys(allEntities[0].toEntityObject()).map(k => ({ header: k, key: k })) as any;
+                        entitySheet.addRows(allEntities.map(e => e.toEntityObject()));
+                    }
+                }
+
+                const personCategories = categoriesByPerson[person.Id] || [];
+
+                if (personCategories.length) {
 
                     const categorySheet = workbook.addWorksheet('Categories');
-                    categorySheet.columns = Object.keys(categories[0]?.toEntityObject()).map((key) => { if (key) return ({ header: key, key }) }) as any;
-                    categorySheet.addRows(categories);
+                    categorySheet.columns = Object.keys(personCategories[0].toEntityObject()).map(k => ({ header: k, key: k })) as any;
+                    categorySheet.addRows(personCategories.map(c => c.toEntityObject()));
 
-                    for (const category of categories) {
-
-                        if (category?.ImageType) {
-
-                            const oCategoryImage = await categoryService.Repository.findImageByIds([category?.Id]);
-
-                            const oImage = oCategoryImage?.[0];
-
-                            category.Image = oImage?.Image as Readable;
-
-                            if (category.Image) {
-                                const categoryImageBuffer = await this.readableToBuffer(category.Image) as any;
-                                const categoryImageExtension = category?.ImageType?.split("/")?.[1];
-                                personZip.addFile(`${category.Id}.${categoryImageExtension}`, categoryImageBuffer);
-                            }
-
+                    await Promise.all(personCategories.map(async (category) => {
+                        const img = categoryImageMap[category.Id];
+                        if (img?.Image) {
+                            const buffer = await this.readableToBuffer(img.Image as Readable) as Buffer;
+                            const ext = category.ImageType?.split("/")[1];
+                            personZip.addFile(`${category.Id}.${ext}`, buffer);
                         }
-
-                    }
-
+                    }));
                 }
 
+                const personCards = cardsByPerson[person.Id] || [];
 
-                const cardService = ServiceRegistry.get('Cards') as CardServiceImplementation;
-                const cards = await cardService?.Repository?.findByPersonIds([person?.Id]) as CardModel[];
-
-                if (cards.length > 0) {
+                if (personCards.length) {
 
                     const cardSheet = workbook.addWorksheet('Cards');
-                    cardSheet.columns = Object.keys(cards[0]).map((key) => { if (key) return ({ header: key, key }) }) as any;
-                    cardSheet.addRows(cards);
+                    cardSheet.columns = Object.keys(personCards[0].toEntityObject()).map(k => ({ header: k, key: k })) as any;
+                    cardSheet.addRows(personCards.map(c => c.toEntityObject()));
 
-                    const invoiceSheet = workbook.addWorksheet('Invoices');
-                    const transactionSheet = workbook.addWorksheet('Transactions');
+                    const allInvoices = personCards.flatMap(c => invoicesByCard[c.Id] || []);
 
-                    let oFirstInvoice = true;
-                    let oFirstTransaction = true;
+                    if (allInvoices.length) {
 
-                    for (const card of cards) {
+                        const invoiceSheet = workbook.addWorksheet('Invoices');
+                        invoiceSheet.columns = Object.keys(allInvoices[0].toEntityObject()).map(k => ({ header: k, key: k })) as any;
+                        invoiceSheet.addRows(allInvoices.map(i => i.toEntityObject()));
 
-                        if (card?.ImageType) {
+                        const allTransactions = allInvoices.flatMap(i => transactionsByInvoice[i.Id] || []);
 
-                            const oCardImage = await cardService.Repository.findImageByIds([card?.Id]);
-
-                            const oImage = oCardImage?.[0];
-
-                            card.Image = oImage?.Image as Readable;
-
-                            if (card.Image) {
-
-                                const cardImageBuffer = await this.readableToBuffer(card.Image) as any;
-                                const cardImageExtension = card.ImageType?.split("/")?.[1];
-                                personZip.addFile(`${card.Id}.${cardImageExtension}`, cardImageBuffer);
-
-                            }
-
+                        if (allTransactions.length) {
+                            const transactionSheet = workbook.addWorksheet('Transactions');
+                            transactionSheet.columns = Object.keys(allTransactions[0].toEntityObject()).map(k => ({ header: k, key: k })) as any;
+                            transactionSheet.addRows(allTransactions.map(t => t.toEntityObject()));
                         }
-
-                        // 4. Buscar invoices relacionadas ao card
-                        const invoiceService = ServiceRegistry.get('Invoices') as InvoiceServiceImplementation;
-                        const invoices = await invoiceService?.Repository?.findByCardIDs([card?.Id]) as InvoiceModel[];
-
-                        if (invoices.length > 0) {
-
-                            if (oFirstInvoice) {
-                                invoiceSheet.columns = Object.keys(invoices[0].toEntityObject()).map((key) => { if (key) return ({ header: key, key }) }) as any;
-                                oFirstInvoice = false;
-                            }
-                            invoiceSheet.addRows(invoices);
-
-                            for (const invoice of invoices) {
-
-                                // 5. Buscar transactions relacionadas à invoice
-                                const transactionService = ServiceRegistry.get('Transactions') as TransactionServiceImplementation;
-                                const transactions = await transactionService?.Repository?.findByInvoiceIds([invoice?.Id]) as TransactionModel[];
-
-                                if (transactions.length > 0) {
-                                    if (oFirstTransaction) {
-                                        transactionSheet.columns = Object.keys(transactions[0].toEntityObject).map((key) => { if (key) return ({ header: key, key }) }) as any;
-                                        oFirstTransaction = false;
-                                    }
-                                    transactionSheet.addRows(transactions);
-                                }
-
-                            }
-
-                        }
-
                     }
 
+                    await Promise.all(personCards.map(async (card) => {
+                        const img = cardImageMap[card.Id];
+                        if (img?.Image) {
+                            const buffer = await this.readableToBuffer(img.Image as Readable) as Buffer;
+                            const ext = card.ImageType?.split("/")[1];
+                            personZip.addFile(`${card.Id}.${ext}`, buffer);
+                        }
+                    }));
                 }
 
-                // 6. Salvar o Excel em memória e adicionar ao ZIP da person
                 const excelBuffer = await workbook.xlsx.writeBuffer() as any;
                 personZip.addFile(`Dados_${person.Id}.xlsx`, excelBuffer);
 
-                // 7. Adicionar o ZIP da person ao ZIP principal
                 zip.addFile(`${person.Name}_backup.zip`, personZip.toBuffer());
-            }
+
+            }));
+
+            const zipBuffer = zip.toBuffer();
+
+            const id = this.generateUUID();
+
+            await this.Repository.createEntry({
+                ID: id,
+                Backup: zipBuffer as any,
+                BackupType: "application/x-zip-compressed"
+            });
+
+            return right(id);
 
         } catch (error) {
 
-            const errorInstance: Error = error as Error;
-            return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
+            const err = error as Error;
+            return left(new AbstractError(err.message, 403, err.stack as string));
 
         }
-
-        // Gerar o ZIP final com todos os arquivos de persons
-        const zipBuffer = zip.toBuffer();
-
-        if (zipBuffer) {
-
-            let oId = this.generateUUID();
-
-            let newBackup: Backup = {
-                ID: oId,
-                Backup: zipBuffer as any,
-                BackupType: "application/x-zip-compressed"
-            }
-
-            await this.Repository.createEntry(newBackup);
-
-            return right(oId);
-
-        } else {
-
-            const errorInstance: Error = new Error;
-            return left(new AbstractError('generateZipFile', 403, errorInstance.stack as string));
-
-        }
-
     }
 
 
@@ -329,12 +558,12 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
             const tables = ['Persons', 'Shares', 'Entities', 'Categories', 'Cards', 'Invoices', 'Transactions'];
 
-            const promises:Promise<any>[] = [];
+            const promises: Promise<any>[] = [];
 
             for (const table of tables) {
 
                 promises.push(this.processTable(table, workbook, binaryFiles));
-                
+
             }
 
             await Promise.all(
@@ -392,7 +621,7 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
     private async processTable(table: string, workbook: excel.Workbook, binaryFiles: any) {
 
         const sheet = this.getWorksheet(workbook, table);
-        if (!sheet || sheet?.name != table) return;
+        if (!sheet) return;
 
         const rows = this.extractRows(sheet);
         if (!rows.length) return;
@@ -457,8 +686,11 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
             Transactions: 'Transacao'
         };
 
-        return workbook.getWorksheet(table) || workbook.getWorksheet(map[table]);
+        const sheet = workbook.getWorksheet(table) || workbook.getWorksheet(map[table]);
 
+        if (sheet?.name != table && sheet?.name != map[table]) return null;
+
+        return sheet;
     }
 
 
@@ -466,7 +698,7 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
         if (!inserts.length) return;
 
-        const chunkSize = 500;
+        const chunkSize = 1;
 
         for (let i = 0; i < inserts.length; i += chunkSize) {
 
@@ -481,7 +713,15 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
     private mapRowToEntity(table: string, row: any, binaryFiles: any[]) {
 
-        const get = (a: any, b: any) => a ?? b;
+        const get = (a: any, b?: any) => {
+
+            if (Array.isArray(a)) {
+                return a.length == 0 ? b : a;
+            }
+
+            return a ?? b;
+
+        };
 
         switch (table) {
 
@@ -492,8 +732,7 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
                     Name: get(row.Name, row.Nome),
                     ImageType: get(row.ImageType, row.TipoImagem),
                     Income: get(row.Income, row.Renda),
-                    Currency: get(row.Currency, row.Moeda),
-                    Currency_code: get(row.Currency_code, row.Moeda_code),
+                    Currency: get(JSON.parse(row.Currency || '[]'), { code: row.Moeda_code }),
                     Email: row.Email,
                     Phone: get(row.Phone, row.Telefone),
                     ExpenseTarget: get(row.ExpenseTarget, row.ObjetivoDeGasto),
@@ -505,11 +744,46 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
                 if (resultPerson?.ImageType) {
 
-                    resultPerson.Image = binaryFiles[`${resultPerson?.ID}.${resultPerson.ImageType?.split("/")?.[1]}`]
+                    const file = binaryFiles[`${resultPerson?.ID}.${resultPerson.ImageType?.split("/")?.[1]}`];
+
+                    if (file) {
+                        resultPerson.Image = Buffer.isBuffer(file)
+                            ? file.toString('base64')
+                            : Buffer.from(file).toString('base64') as any;
+                    }
 
                 }
 
-                return resultPerson;
+                return this.cleanEntity(resultPerson);
+
+            case 'Shares':
+
+                const resultShare: Share = {
+                    ID: row.ID,
+                    User: row.User,
+                    Person: JSON.parse(row.Person || '[]'),
+                    createdAt: row.createdAt,
+                    createdBy: row.createdBy,
+                    modifiedAt: row.modifiedAt,
+                    modifiedBy: row.modifiedBy
+                };
+
+                return this.cleanEntity(resultShare);
+
+            case 'Entities':
+
+                const resultEntity: Entity = {
+                    ID: row.ID,
+                    Entity: row.Entity,
+                    Permission: row.Permission,
+                    Share: JSON.parse(row.Share || '[]'),
+                    createdAt: row.createdAt,
+                    createdBy: row.createdBy,
+                    modifiedAt: row.modifiedAt,
+                    modifiedBy: row.modifiedBy
+                };
+
+                return this.cleanEntity(resultEntity);
 
             case 'Categories':
 
@@ -517,7 +791,7 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
                     ID: row.ID,
                     Name: get(row.Name, row.Nome),
                     ImageType: get(row.ImageType, row.TipoImagem),
-                    Person_ID: get(row.Person_ID, row.Pessoa_ID),
+                    Person: get(JSON.parse(row.Person || '[]'), { ID: row.Pessoa_ID }),
                     createdAt: row.createdAt,
                     createdBy: row.createdBy,
                     modifiedAt: row.modifiedAt,
@@ -526,24 +800,29 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
                 if (resultCategory?.ImageType) {
 
-                    resultCategory.Image = binaryFiles[`${resultCategory?.ID}.${resultCategory.ImageType?.split("/")?.[1]}`]
+                    const file = binaryFiles[`${resultCategory?.ID}.${resultCategory.ImageType?.split("/")?.[1]}`];
+
+                    if (file) {
+                        resultCategory.Image = Buffer.isBuffer(file)
+                            ? file.toString('base64')
+                            : Buffer.from(file).toString('base64') as any;
+                    }
 
                 }
 
-                return resultCategory;
+                return this.cleanEntity(resultCategory);
 
             case 'Cards':
 
                 const resultCard: Card = {
                     ID: row.ID,
-                    Name: get(row.Name, row.Nome),
+                    Name: get(row.Name, row.NomeCartao),
                     ImageType: get(row.ImageType, row.TipoImagem),
                     Limit: get(row.Limit, row.Limite),
-                    Currency: get(row.Currency, row.Moeda),
-                    Currency_code: get(row.Currency_code, row.Moeda_code),
+                    Currency: get(JSON.parse(row.Currency || '[]'), { code: row.Moeda_code }),
                     DueDay: get(row.DueDay, row.DiaVencimento),
                     ClosingDay: get(row.ClosingDay, row.DiaFechamento),
-                    Person_ID: get(row.Person_ID, row.Pessoa_ID),
+                    Person: get(JSON.parse(row.Person || '[]'), { ID: row.Pessoa_ID }),
                     createdAt: row.createdAt,
                     createdBy: row.createdBy,
                     modifiedAt: row.modifiedAt,
@@ -552,11 +831,17 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
                 if (resultCard?.ImageType) {
 
-                    resultCard.Image = binaryFiles[`${resultCard?.ID}.${resultCard.ImageType?.split("/")?.[1]}`]
+                    const file = binaryFiles[`${resultCard?.ID}.${resultCard.ImageType?.split("/")?.[1]}`];
+
+                    if (file) {
+                        resultCard.Image = Buffer.isBuffer(file)
+                            ? file.toString('base64')
+                            : Buffer.from(file).toString('base64') as any;
+                    }
 
                 }
 
-                return resultCard;
+                return this.cleanEntity(resultCard);
 
             case 'Invoices':
 
@@ -566,17 +851,16 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
                     Month: row?.Month || row?.Mes,
                     TotalAmount: row?.TotalAmount || row?.ValorTotal,
                     Description: row?.Description || row?.Descricao,
-                    Currency: row?.Currency || row?.Moeda,
-                    Currency_code: row?.Currency_code || row?.Moeda_code,
-                    InvoiceSent: row?.InvoiceSent || row?.AvisoEnviado,
-                    Card_ID: row?.Card_ID || row?.Cartao_ID,
+                    Currency: get(JSON.parse(row.Currency || '[]'), { code: row?.Moeda_code }),
+                    InvoiceSent: row?.InvoiceSient || row?.AvisoEnviado,
+                    Card: get(JSON.parse(row?.Card || '[]'), { ID: row?.Cartao_ID }),
                     createdAt: row?.createdAt,
                     createdBy: row?.createdBy,
                     modifiedAt: row?.modifiedAt,
                     modifiedBy: row?.modifiedBy
                 };
 
-                return resultInvoice;
+                return this.cleanEntity(resultInvoice);
 
             case 'Transactions':
 
@@ -586,44 +870,25 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
                     Date: get(row.Date, row.Data),
                     TotalAmount: get(row.TotalAmount, row.ValorTotal),
                     Amount: get(row.Amount, row.Valor),
-                    Currency: get(row.Currency, row.Moeda),
-                    Currency_code: get(row.Currency_code, row.Moeda_code),
+                    Currency: get(JSON.parse(row.Currency || '[]'), { code: row.Moeda_code }),
                     TotalInstallments: get(row.TotalInstallments, row.ParcelasTotais),
                     Installment: get(row.Installment, row.Parcela),
                     Description: get(row.Description, row.Descricao),
-                    Invoice_ID: get(row.Invoice_ID, row.Fatura_ID),
+                    Invoice: get(JSON.parse(row.Invoice || '[]'), { ID: row.Fatura_ID }),
                     createdAt: row.createdAt,
                     createdBy: row.createdBy,
                     modifiedAt: row.modifiedAt,
                     modifiedBy: row.modifiedBy
                 };
 
-                return resultTransaction;
+                return this.cleanEntity(resultTransaction);
 
             default:
-                return row;
+                return this.cleanEntity(row);
 
         }
 
     }
 
-
-    private cleanEntity(obj: any): any {
-
-        if (Array.isArray(obj)) {
-            return obj.map(this.cleanEntity);
-        }
-
-        if (obj && typeof obj === 'object') {
-            return Object.fromEntries(
-                Object.entries(obj)
-                    .filter(([_, v]) => v !== undefined)
-                    .map(([k, v]) => [k, this.cleanEntity(v)])
-            );
-        }
-
-        return obj;
-
-    }
 
 }

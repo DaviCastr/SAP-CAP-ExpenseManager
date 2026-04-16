@@ -1,5 +1,6 @@
 import { Backup, Backups } from "@models/apps/dflc/gestordegastos/entities";
 import { Readable } from "stream";
+import { BaseModel } from "./base";
 
 type BackupProperties = {
     Id: string;
@@ -11,9 +12,9 @@ type BackupProperties = {
     ModifiedBy?: string;
 }
 
-export class BackupModel {
+export class BackupModel extends BaseModel {
 
-    constructor(private props: BackupProperties) { }
+    constructor(private props: BackupProperties) { super() }
 
     public static with(properties: BackupProperties): BackupModel {
         return new BackupModel(properties);
@@ -27,7 +28,7 @@ export class BackupModel {
 
     public static mapModel(Backups: Backups): BackupModel[] {
 
-        return Backups.map((Backup: Backup) => {
+        return Backups?.map((Backup: Backup) => {
 
             return BackupModel.with({
                 Id: Backup.ID as string,
@@ -93,7 +94,7 @@ export class BackupModel {
 
     public toEntityObject(): Backup {
 
-        return {
+        return this.cleanEntity({
             ID: this.props.Id,
             Backup: this.props.Backup,
             BackupType: this.props.BackupType,
@@ -101,7 +102,7 @@ export class BackupModel {
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,
             modifiedBy: this.props.ModifiedBy
-        };
+        });
 
     }
 

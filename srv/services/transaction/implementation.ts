@@ -95,9 +95,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
                 const oTransactionData = oTransactionModel.toEntityObject();
 
                 oTransactionsData.push({
-                    ...Transaction,
-                    Identifier: 'Identifier' in Transaction ? oTransactionData.Identifier : undefined,
-                    TotalAmount: 'TotalAmount' in Transaction ? oTransactionData.TotalAmount : undefined
+                    ...oTransactionData
                 });
 
             };

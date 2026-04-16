@@ -16,7 +16,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         let oSql = SELECT.from(oCardEntity).where({ ID: Id });
 
-        let oCards = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oCards = await cds.run(oSql);
 
         if ((oCardEntity as any)?.isDraft) {
 
@@ -24,7 +24,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
             oSql = SELECT.from(oCardEntity).where({ Id: Id });
 
-            const additionalCards = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalCards = await cds.run(oSql) || [];
             oCards = [...(oCards || []), ...additionalCards];
 
         }
@@ -42,7 +42,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         let oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids } });
 
-        let oCards = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oCards = await cds.run(oSql);
 
         if ((oCardEntity as any)?.isDraft) {
 
@@ -50,7 +50,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
             oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids } });
 
-            const additionalCardts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalCardts = await cds.run(oSql) || [];
             oCards = [...(oCards || []), ...additionalCardts];
 
         }
@@ -68,7 +68,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         let oSql = SELECT.from(oCardEntity).where({ Person_ID: PersonId });
 
-        let oCards = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oCards = await cds.run(oSql);
 
         if ((oCardEntity as any)?.isDraft) {
 
@@ -76,7 +76,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
             oSql = SELECT.from(oCardEntity).where({ Person_ID: PersonId });
 
-            const additionalCards = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalCards = await cds.run(oSql) || [];
             oCards = [...(oCards || []), ...additionalCards];
 
         }
@@ -94,7 +94,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         let oSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds } });
 
-        let oCards = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oCards = await cds.run(oSql);
 
         if ((oCardEntity as any)?.isDraft) {
 
@@ -102,7 +102,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
             oSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds } });
 
-            const additionalCards = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalCards = await cds.run(oSql) || [];
             oCards = [...(oCards || []), ...additionalCards];
 
         }
@@ -120,7 +120,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         let oSql = INSERT.into(oCardEntity).entries(data);
 
-        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        await cds.run(oSql);
 
         return this.mapCardResult(Array.isArray(data) ? data : [data]);
 

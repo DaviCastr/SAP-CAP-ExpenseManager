@@ -3,6 +3,7 @@ import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
 import { InvoiceModel } from '@/models/invoice';
 import { Card, Card as CardEntityType, Cards } from '@models/apps/dflc/gestordegastos/entities';
+import { BaseModel } from "./base";
 
 type CardProperties = {
     Id: string;
@@ -26,9 +27,9 @@ type CardProperties = {
 
 type CardEntityProperties = CardEntityType;
 
-export class CardModel {
+export class CardModel extends BaseModel {
 
-    constructor(private props: CardProperties) { }
+    constructor(private props: CardProperties) { super() }
 
     public static with(properties: CardProperties): CardModel {
 
@@ -44,7 +45,7 @@ export class CardModel {
 
     public static mapModel(Cards: Cards): CardModel[] {
 
-        return Cards.map((Card: Card) => {
+        return Cards?.map((Card: Card) => {
 
             const oCurrencyModel = CurrencyModel.singleModel({
                 ...Card?.Currency,
@@ -215,7 +216,7 @@ export class CardModel {
 
     public toEntityObject(): CardEntityProperties {
 
-        return {
+        return this.cleanEntity({
             ID: this.props.Id,
             Name: this.props.Name,
             Image: this.props.Image as Readable,
@@ -227,13 +228,13 @@ export class CardModel {
             ClosingDay: this.props.ClosingDay,
             InvoiceAmountForPayment: this.props.InvoiceAmountForPayment?.toNumber(),
             InvoiceAmountToPay: this.props.InvoiceAmountToPay?.toNumber(),
-            Person_ID: this.props.PersonId,
-            Invoices: this.props.Invoices?.map((item) => item.toEntityObject()),
+            Person: { ID: this.props.PersonId },
+            Invoices: this.props.Invoices?.map((item) => item?.toEntityObject()),
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,
             modifiedBy: this.props.ModifiedBy
-        };
+        });
 
     }
 

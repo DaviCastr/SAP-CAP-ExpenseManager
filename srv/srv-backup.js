@@ -405,7 +405,7 @@ class GestaoGastos extends cds.ApplicationService {
     async exportarBackupPrincipal(req, context) {
         const { Pessoa, Categoria, Cartao, Fatura, Transacao, Backup } = this.entities;
         const { ID } = req.data;
-        const tx = cds.transaction();
+        const tx = cds.tx();
         const zip = new AdmZip();
 
         try {
@@ -639,7 +639,7 @@ class GestaoGastos extends cds.ApplicationService {
 
                                     if (!oPessoa.Imagem) {
 
-                                        const tx = cds.transaction();
+                                        const tx = cds.tx();
 
                                         let oImagemPessoa = await tx.run(SELECT.one.from(Pessoa).columns('Imagem', 'TipoImagem').where({
                                             ID: oPessoa.ID
@@ -671,7 +671,7 @@ class GestaoGastos extends cds.ApplicationService {
 
                                 try {
 
-                                    const tx = cds.transaction();
+                                    const tx = cds.tx();
 
                                     let oImagemCartao = await tx.run(SELECT.one.from(Cartao).columns('Imagem', 'TipoImagem').where({
                                         ID: oCartao.ID
@@ -773,7 +773,7 @@ class GestaoGastos extends cds.ApplicationService {
 
                             if (!oPessoa.Imagem) {
 
-                                const tx = cds.transaction();
+                                const tx = cds.tx();
 
                                 let oImagemPessoa = await tx.run(SELECT.one.from(Pessoa).columns('Imagem', 'TipoImagem').where({
                                     ID: oPessoa.ID
@@ -798,7 +798,7 @@ class GestaoGastos extends cds.ApplicationService {
 
                         try {
 
-                            const tx = cds.transaction();
+                            const tx = cds.tx();
 
                             let oImagemCartao = await tx.run(SELECT.one.from(Cartao).columns('Imagem', 'TipoImagem').where({
                                 ID: oCartao.ID

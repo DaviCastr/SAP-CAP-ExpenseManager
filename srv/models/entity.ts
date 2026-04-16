@@ -1,4 +1,5 @@
 import { Entities, EntitiesCodes, Entity, Permissions } from '@models/apps/dflc/gestordegastos/entities';
+import { BaseModel } from './base';
 
 type EntityProperties = {
     Id: string;
@@ -13,9 +14,9 @@ type EntityProperties = {
 
 type EntityTypeProperties = Entity;
 
-export class EntityModel {
+export class EntityModel extends BaseModel {
 
-    constructor(private props: EntityProperties) { }
+    constructor(private props: EntityProperties) { super() }
 
     public static with(properties: EntityProperties): EntityModel {
 
@@ -37,7 +38,7 @@ export class EntityModel {
 
         }
 
-        return Entities.map((Entity: Entity) => {
+        return Entities?.map((Entity: Entity) => {
 
             return EntityModel.with({
                 Id: Entity?.ID as string,
@@ -110,16 +111,16 @@ export class EntityModel {
 
     public toEntityObject(): EntityTypeProperties {
 
-        return {
+        return this.cleanEntity({
             ID: this.props.Id,
             Entity: this.props.Entity,
             Permission: this.props.Permission,
-            Share_ID: this.props.ShareId,
+            Share: { ID: this.props.ShareId },
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,
             modifiedBy: this.props.ModifiedBy
-        };
+        });
 
     }
 

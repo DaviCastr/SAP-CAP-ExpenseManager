@@ -89,7 +89,7 @@ export class BackupRouteImplementation extends BaseRouteImplementation<Backup> i
 
             await this.Controller.processBackupDelete(oBackup);
 
-         }, 500);
+         }, 1000);
  
     }
 

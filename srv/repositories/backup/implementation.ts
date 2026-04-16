@@ -17,7 +17,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oBackupEntity).where({ ID: Id });
 
-        let oBackups = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oBackups = await cds.run(oSql);
 
         if ((oBackupEntity as any)?.isDraft) {
 
@@ -25,7 +25,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oBackupEntity).where({ ID: Id });
 
-            const additionalBackupts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalBackupts = await cds.run(oSql) || [];
             oBackups = [...(oBackups || []), ...additionalBackupts];
 
         }
@@ -43,7 +43,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = SELECT.from(oBackupEntity).where({ ID: { in: Ids } });
 
-        let oBackups = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oBackups = await cds.run(oSql);
 
         if ((oBackupEntity as any)?.isDraft) {
 
@@ -51,7 +51,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oBackupEntity).where({ ID: { in: Ids } });
 
-            const additionalBackupts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalBackupts = await cds.run(oSql) || [];
             oBackups = [...(oBackups || []), ...additionalBackupts];
 
         }
@@ -69,7 +69,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
         let oSql = INSERT.into(oBackupEntity).entries(data);
 
-        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        await cds.run(oSql);
 
         return this.mapBackupResult(Array.isArray(data) ? data : [data]);
 
@@ -86,7 +86,7 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
             let oSql = DELETE.from(oBackupEntity).where({ ID: backupId });
 
-            await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+            await cds.run(oSql);
 
         }
 

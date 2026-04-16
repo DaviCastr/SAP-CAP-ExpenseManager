@@ -18,7 +18,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         oSql.where({ ID: Id });
 
-        let oTransactions: Transactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oTransactions: Transactions = await cds.run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -26,7 +26,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             oSql.where({ ID: Id });
 
-            const additionalTransactions: Transactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalTransactions: Transactions = await cds.run(oSql) || [];
 
             oTransactions = [...(oTransactions || []), ...additionalTransactions];
 
@@ -51,7 +51,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         let oSql = SELECT.from(oTransactionEntity).where({ ID: { in: Ids } });
 
-        let oTransactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oTransactions = await cds.run(oSql);
 
         if ((oTransactionEntity as any)?.isDraft) {
 
@@ -59,7 +59,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             oSql = SELECT.from(oTransactionEntity).where({ ID: { in: Ids } });
 
-            const additionalTransactionts = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalTransactionts = await cds.run(oSql) || [];
             oTransactions = [...(oTransactions || []), ...additionalTransactionts];
 
         }
@@ -83,7 +83,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         }
 
-        let oTransactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oTransactions = await cds.run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -97,7 +97,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             }
 
-            const additionalTransactions: Transactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalTransactions: Transactions = await cds.run(oSql) || [];
 
             oTransactions = [...(oTransactions || []), ...additionalTransactions];
 
@@ -124,7 +124,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         }
 
-        let oTransactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oTransactions = await cds.run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -138,7 +138,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             }
 
-            const additionalTransactions: Transactions = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalTransactions: Transactions = await cds.run(oSql) || [];
 
             oTransactions = [...(oTransactions || []), ...additionalTransactions];
 
@@ -157,7 +157,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         let oSql = INSERT.into(oTransactionEntity).entries(data);
 
-        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        await cds.run(oSql);
 
         return this.mapTransactionResult(Array.isArray(data) ? data : [data], true);
 
@@ -241,7 +241,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         const returnTotalAmount = async (Identifier: Transaction['Identifier']) => {
 
-            const oTotalAmount = await cds.transaction(ServiceLocator.getRequest()).run(
+            const oTotalAmount = await cds.run(
                 SELECT.one`Identifier, coalesce(sum(TotalAmount),0) as TotalAmount`
                     .from(oTransactionEntity)
                     .where({ Identifier: Identifier })

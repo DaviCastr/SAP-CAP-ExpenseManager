@@ -1,6 +1,7 @@
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
 import { Transaction, Transactions } from '@models/apps/dflc/gestordegastos/entities';
+import { BaseModel } from './base';
 
 type TransactionProperties = {
     Id: string;
@@ -19,9 +20,9 @@ type TransactionProperties = {
     ModifiedBy?: string;
 }
 
-export class TransactionModel {
+export class TransactionModel extends BaseModel {
 
-    constructor(private props: TransactionProperties) { }
+    constructor(private props: TransactionProperties) { super() }
 
     public static with(properties: TransactionProperties): TransactionModel {
 
@@ -37,14 +38,20 @@ export class TransactionModel {
 
     public static mapModel(Transactions: Transactions): TransactionModel[] {
 
-        return Transactions.map((Transaction) =>
-            TransactionModel.with({
+        return Transactions?.map((Transaction) => {
+
+            const oCurrencyModel = CurrencyModel.singleModel({
+                ...Transaction?.Currency,
+                code: Transaction?.Currency?.code || Transaction?.Currency_code as string
+            });
+
+            return TransactionModel.with({
                 Id: Transaction.ID as string,
                 Identifier: Transaction.Identifier as string,
                 Date: Transaction.Date as string,
                 TotalAmount: new Decimal(Transaction.TotalAmount ?? 0),
                 Amount: new Decimal(Transaction.Amount ?? 0),
-                Currency: Transaction.Currency as CurrencyModel,
+                Currency: oCurrencyModel,
                 TotalInstallments: Transaction.TotalInstallments as number,
                 Installment: Transaction.Installment as number,
                 Description: Transaction.Description as string,
@@ -53,8 +60,9 @@ export class TransactionModel {
                 CreatedBy: Transaction.createdBy as string,
                 ModifiedAt: Transaction.modifiedAt as string,
                 ModifiedBy: Transaction.modifiedBy as string
-            })
-        ) || [] as TransactionModel[];
+            }) as TransactionModel;
+
+        }) as TransactionModel[];
 
     }
 
@@ -112,6 +120,12 @@ export class TransactionModel {
 
     }
 
+    public get InvoiceId() {
+
+        return this.props.InvoiceId;
+
+    }
+
     public get CreatedAt() {
 
         return this.props.CreatedAt;
@@ -150,23 +164,23 @@ export class TransactionModel {
 
     public toEntityObject(): Transaction {
 
-        return {
+        return this.cleanEntity({
             ID: this.props.Id,
             Identifier: this.props.Identifier,
             Date: this.props.Date as Transaction['Date'],
             TotalAmount: this.props.TotalAmount.toNumber(),
             Amount: this.props.Amount.toNumber(),
-            Currency: this.props.Currency.toEntityObject(),
+            Currency: this.props.Currency?.toEntityObject(),
             TotalInstallments: this.props.TotalInstallments,
             Installment: this.props.Installment,
             Description: this.props.Description,
-            Invoice_ID: this.props.InvoiceId,
+            Invoice: { ID: this.props.InvoiceId },
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,
             modifiedBy: this.props.ModifiedBy
-        };
-
+        });
+ 
     }
 
 }

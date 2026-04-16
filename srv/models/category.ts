@@ -1,6 +1,7 @@
 import { TransactionModel } from '@/models/transaction';
 import { Categories, Category, Transactions } from '@models/apps/dflc/gestordegastos/entities';
 import { Readable } from 'stream';
+import { BaseModel } from './base';
 
 export type CategoryProperties = {
     Id: string;
@@ -15,9 +16,9 @@ export type CategoryProperties = {
     ModifiedBy: string;
 }
 
-export class CategoryModel {
+export class CategoryModel extends BaseModel {
 
-    constructor(private properties: CategoryProperties) { }
+    constructor(private properties: CategoryProperties) { super() }
 
     public static with(properties: CategoryProperties): CategoryModel {
         return new CategoryModel(properties);
@@ -31,7 +32,7 @@ export class CategoryModel {
 
     public static mapModel(Categories: Categories): CategoryModel[] {
 
-        return Categories.map((Category: Category) => {
+        return Categories?.map((Category: Category) => {
 
             return CategoryModel.with({
                 Id: Category.ID as string,
@@ -71,6 +72,12 @@ export class CategoryModel {
     public get ImageType() {
 
         return this.properties.ImageType;
+
+    }
+
+    public get PersonId() {
+
+        return this.properties.PersonId;
 
     }
 
@@ -118,18 +125,18 @@ export class CategoryModel {
 
     public toEntityObject(): Category {
 
-        return {
+        return this.cleanEntity({
             ID: this.properties.Id,
             Name: this.properties.Name,
             Image: this.properties.Image,
             ImageType: this.properties.ImageType,
-            Person_ID: this.properties.PersonId,
+            Person: { ID: this.properties.PersonId },
             Transactions: this.properties.Transactions?.map((Transaction)=> Transaction.toEntityObject()),
             createdAt: this.properties.CreatedAt,
             createdBy: this.properties.CreatedBy,
             modifiedAt: this.properties.ModifiedAt,
             modifiedBy: this.properties.ModifiedBy
-        };
+        });
 
     }
 

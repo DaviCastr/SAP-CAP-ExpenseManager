@@ -17,7 +17,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         let oSql = SELECT.from(oShareEntity).where({ ID: Id });
 
-        let oShares = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oShares = await cds.run(oSql);
 
         if ((oShareEntity as any)?.isDraft) {
 
@@ -25,7 +25,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
             oSql = SELECT.from(oShareEntity).where({ Id: Id });
 
-            const additionalShares = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalShares = await cds.run(oSql) || [];
             oShares = [...(oShares || []), ...additionalShares];
 
         }
@@ -43,7 +43,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         let oSql = SELECT.from(oShareEntity).where({ Person_ID: PersonId });
 
-        let oShares = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oShares = await cds.run(oSql);
 
         if ((oShareEntity as any)?.isDraft) {
 
@@ -51,7 +51,35 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
             oSql = SELECT.from(oShareEntity).where({ Person_ID: PersonId });
 
-            const additionalShares = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalShares = await cds.run(oSql) || [];
+            oShares = [...(oShares || []), ...additionalShares];
+
+        }
+
+        const oSharesModel = this.mapShareResult(oShares);
+
+        return oSharesModel;
+
+    }
+
+
+    public async findByPersonIds(PersonIds: Share["Person_ID"][]): Promise<ShareModel[] | null> {
+        
+        let oShareEntity = this.getEntity();
+
+        const personIds = Array.isArray(PersonIds) ? PersonIds : [PersonIds];
+
+        let oSql = SELECT.from(oShareEntity).where({ Person_ID: { in: personIds } });
+
+        let oShares = await cds.run(oSql);
+
+        if ((oShareEntity as any)?.isDraft) {
+
+            oShareEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oShareEntity).where({ Person_ID: { in: personIds } });
+
+            const additionalShares = await cds.run(oSql) || [];
             oShares = [...(oShares || []), ...additionalShares];
 
         }
@@ -69,7 +97,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         let oSql = SELECT.from(oShareEntity).where({ ID: { in: Ids } });
 
-        let oShares = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oShares = await cds.run(oSql);
 
         if ((oShareEntity as any)?.isDraft) {
 
@@ -77,7 +105,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
             oSql = SELECT.from(oShareEntity).where({ ID: { in: Ids } });
 
-            const additionalSharets = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalSharets = await cds.run(oSql) || [];
             oShares = [...(oShares || []), ...additionalSharets];
 
         }
@@ -95,7 +123,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         let oSql = SELECT.from(oShareEntity).where({ User: User });
 
-        let oShares = await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        let oShares = await cds.run(oSql);
 
         if ((oShareEntity as any)?.isDraft) {
 
@@ -103,7 +131,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
             oSql = SELECT.from(oShareEntity).where({ User: User });
 
-            const additionalShares = await cds.transaction(ServiceLocator.getRequest()).run(oSql) || [];
+            const additionalShares = await cds.run(oSql) || [];
             oShares = [...(oShares || []), ...additionalShares];
 
         }
@@ -121,7 +149,7 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         let oSql = INSERT.into(oShareEntity).entries(data);
 
-        await cds.transaction(ServiceLocator.getRequest()).run(oSql);
+        await cds.run(oSql);
 
         return this.mapShareResult(Array.isArray(data) ? data : [data]);
 

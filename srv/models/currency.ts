@@ -1,4 +1,5 @@
 import { Currency } from "@models/sap/common";
+import { BaseModel } from "./base";
 
 export type CurrencyProperties = {
     Code: string;
@@ -8,9 +9,9 @@ export type CurrencyProperties = {
     MinorUnit: number;
 }
 
-export class CurrencyModel {
+export class CurrencyModel extends BaseModel {
 
-    constructor(private props: CurrencyProperties) { }
+    constructor(private props: CurrencyProperties) { super() }
 
     public static with(properties: CurrencyProperties): CurrencyModel {
 
@@ -50,13 +51,13 @@ export class CurrencyModel {
 
     public toEntityObject(): Currency {
 
-        return {
+        return this.cleanEntity({
             code: this.props.Code,
             //name: this.props.Name,
             //descr: this.props.Description,
             //minorUnit: this.props.MinorUnit,
             //symbol: this.props.Symbol
-        }
+        });
 
     }
 

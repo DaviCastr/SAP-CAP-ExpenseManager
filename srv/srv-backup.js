@@ -1,5 +1,4 @@
 const cds = require('@sap/cds');
-const excel = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -7,7 +6,6 @@ const nodemailer = require("nodemailer");
 const handlebars = require("handlebars");
 const PDFDocument = require("pdfkit");
 const { PassThrough } = require('stream');
-const AdmZip = require('adm-zip');
 const { Readable } = require('stream');
 
 // Ajuste o limite de tamanho de arquivo permitido (por exemplo, para 50MB)
@@ -23,8 +21,6 @@ class GestaoGastos extends cds.ApplicationService {
             this.on("simulaPorMesAno", this.simulaPorMesAno);
 
             this.on("adicionarGasto", async (req, context) => { return await this.adicionarGastoPrincipal(req, context) });
-
-            this.on("exportarBackup", async (req, context) => { return await this.exportarBackupPrincipal(req, context) });
 
             this.on("enviarAviso", this.enviarAviso);
 
@@ -400,169 +396,6 @@ class GestaoGastos extends cds.ApplicationService {
 
         await UPDATE(Fatura, Fatura_ID).with({ ValorTotal: oValorTotal })
 
-    }
-
-    async exportarBackupPrincipal(req, context) {
-        const { Pessoa, Categoria, Cartao, Fatura, Transacao, Backup } = this.entities;
-        const { ID } = req.data;
-        const tx = cds.tx();
-        const zip = new AdmZip();
-
-        try {
-
-            const oCriador = await SELECT.one.columns("createdBy").from(Pessoa).where({ ID: ID });
-
-            // Buscar todas as pessoas
-            const pessoas = await tx.run(SELECT.from(Pessoa).columns('ID', 'Nome', 'Renda', 'Moeda_code', 'Email', 'Telefone', 'ObjetivoDeGasto', 'TipoImagem', 'PartilharCom').where({ createdBy: oCriador.createdBy }));
-
-            for (const pessoa of pessoas) {
-                const pessoaZip = new AdmZip(); // Cria um ZIP específico para a pessoa
-                const workbook = new excel.Workbook();
-
-                // 1. Adicionar dados da pessoa ao Excel
-                const pessoaSheet = workbook.addWorksheet('Pessoa');
-                pessoaSheet.columns = Object.keys(pessoa).map((key) => ({ header: key, key }));
-                pessoaSheet.addRow(pessoa);
-
-                const oImagemPessoa = await tx.run(
-                    SELECT.one.from(Pessoa).columns('Imagem', 'TipoImagem').where({ ID: pessoa.ID })
-                );
-
-                // 2. Exportar imagem da pessoa (se existir)
-                if (oImagemPessoa && oImagemPessoa.Imagem) {
-                    const pessoaImagemBuffer = await this.ReadableParaBuffer(oImagemPessoa.Imagem);
-                    const pessoaImagemExtensao = oImagemPessoa.TipoImagem.split("/")[1];
-                    pessoaZip.addFile(`${pessoa.ID}.${pessoaImagemExtensao}`, pessoaImagemBuffer);
-                }
-
-                // 3. Buscar cartões da pessoa
-                const cartegorias = await tx.run(
-                    SELECT.from(Categoria).columns('ID', 'Nome', 'TipoImagem', 'Pessoa_ID').where({ Pessoa_ID: pessoa.ID })
-                );
-
-                if (cartegorias.length > 0) {
-
-                    const categoriaSheet = workbook.addWorksheet('Categoria');
-                    categoriaSheet.columns = Object.keys(cartegorias[0]).map((key) => ({ header: key, key }));
-                    categoriaSheet.addRows(cartegorias);
-
-                    for (const categoria of cartegorias) {
-
-                        const oImagemCategoria = await tx.run(
-                            SELECT.one.from(Categoria).columns('Imagem', 'TipoImagem').where({ ID: categoria.ID })
-                        );
-
-                        // Exportar imagem do cartão (se existir)
-                        if (oImagemCategoria && oImagemCategoria.Imagem) {
-                            const categoriaImagemBuffer = await this.ReadableParaBuffer(oImagemCategoria.Imagem);
-                            const categoriaImagemExtensao = oImagemCategoria.TipoImagem.split("/")[1];
-                            pessoaZip.addFile(`${categoria.ID}.${categoriaImagemExtensao}`, categoriaImagemBuffer);
-                        }
-                    }
-
-                }
-
-
-                // 3. Buscar cartões da pessoa
-                const cartoes = await tx.run(
-                    SELECT.from(Cartao).columns('ID', 'NomeCartao', 'Limite', 'Moeda_code', 'DiaFechamento', 'DiaVencimento', 'TipoImagem', 'Pessoa_ID').where({ Pessoa_ID: pessoa.ID })
-                );
-
-                if (cartoes.length > 0) {
-
-                    const cartaoSheet = workbook.addWorksheet('Cartao');
-                    cartaoSheet.columns = Object.keys(cartoes[0]).map((key) => ({ header: key, key }));
-                    cartaoSheet.addRows(cartoes);
-
-                    const faturaSheet = workbook.addWorksheet('Fatura');
-                    const transacaoSheet = workbook.addWorksheet('Transacao');
-
-                    let oPrimeiraFatura = true;
-                    let oPrimeiraTransacao = true;
-
-                    for (const cartao of cartoes) {
-
-                        const oImagemCartao = await tx.run(
-                            SELECT.one.from(Cartao).columns('Imagem', 'TipoImagem').where({ ID: cartao.ID })
-                        );
-
-                        // Exportar imagem do cartão (se existir)
-                        if (oImagemCartao && oImagemCartao.Imagem) {
-                            const cartaoImagemBuffer = await this.ReadableParaBuffer(oImagemCartao.Imagem);
-                            const cartaoImagemExtensao = oImagemCartao.TipoImagem.split("/")[1];
-                            pessoaZip.addFile(`${cartao.ID}.${cartaoImagemExtensao}`, cartaoImagemBuffer);
-                        }
-
-                        // 4. Buscar faturas relacionadas ao cartão
-                        const faturas = await tx.run(
-                            SELECT.from(Fatura).columns('ID', 'Ano', 'Mes', 'ValorTotal', 'Moeda_code', 'Cartao_ID').where({ Cartao_ID: cartao.ID })
-                        );
-
-                        if (faturas.length > 0) {
-
-                            if (oPrimeiraFatura) {
-                                faturaSheet.columns = Object.keys(faturas[0]).map((key) => ({ header: key, key }));
-                                oPrimeiraFatura = false;
-                            }
-                            faturaSheet.addRows(faturas);
-
-                            for (const fatura of faturas) {
-
-                                // 5. Buscar transações relacionadas à fatura
-                                const transacoes = await tx.run(
-                                    SELECT.from(Transacao).columns('ID', 'Identificador', 'Data', 'ValorTotal', 'Valor', 'Moeda_code', 'Parcela', 'ParcelasTotais', 'Descricao', 'Fatura_ID', 'Categoria_ID').where({ Fatura_ID: fatura.ID })
-                                );
-
-                                if (transacoes.length > 0) {
-                                    if (oPrimeiraTransacao) {
-                                        transacaoSheet.columns = Object.keys(transacoes[0]).map((key) => ({ header: key, key }));
-                                        oPrimeiraTransacao = false;
-                                    }
-                                    transacaoSheet.addRows(transacoes);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 6. Salvar o Excel em memória e adicionar ao ZIP da pessoa
-                const excelBuffer = await workbook.xlsx.writeBuffer();
-                pessoaZip.addFile(`Dados_${pessoa.ID}.xlsx`, excelBuffer);
-
-                // 7. Adicionar o ZIP da pessoa ao ZIP principal
-                zip.addFile(`${pessoa.Nome}_backup.zip`, pessoaZip.toBuffer());
-            }
-
-        } catch (erro) {
-            return {
-                erro: 'Erro ao exportar Backup: ' + erro
-            };
-        }
-
-        // Gerar o ZIP final com todos os arquivos de pessoas
-        const zipBuffer = zip.toBuffer();
-
-        if (zipBuffer) {
-
-            let oId = this.gerarUUID();
-
-            let novoBackup = {
-                ID: oId,
-                Backup: zipBuffer,
-                TipoBackup: "application/x-zip-compressed"
-            }
-
-            const oBackupCreate = await INSERT.into(Backup).entries([novoBackup]);
-
-            return {
-                "backup": oId,
-            };
-
-        }
-
-        return {
-            "erro": "Erro ao exportar Backup"
-        };
     }
 
 

@@ -30,9 +30,9 @@ export class BackupControllerImplementation extends BaseControllerImplementation
     }
 
 
-    public async exportBackup(User: User): Promise<BaseControllerResponse> {
+    public async exportBackup(): Promise<BaseControllerResponse> {
         
-        const result = await this.Service.exportBackup(User);
+        const result = await this.Service.exportBackup();
 
         if (result.isLeft()) {
             return this.error(result.value.code, result.value.message);

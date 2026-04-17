@@ -20,7 +20,7 @@ service BackupService {
     ]
     entity Backups as projection on entities.Backups;
 
-    action ExportBackup() returns String;
+    action ExportBackup() returns entities.ActionResult;
 
 }
 

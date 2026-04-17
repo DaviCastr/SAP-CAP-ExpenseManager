@@ -96,7 +96,7 @@ export class BackupRouteImplementation extends BaseRouteImplementation<Backup> i
 
     private async exportBackup(Request: Request): Promise<BaseControllerResponse> {
 
-         const oResult = await this.Controller.exportBackup(Request.user);
+         const oResult = await this.Controller.exportBackup();
 
         if (oResult.status != 201) {
 

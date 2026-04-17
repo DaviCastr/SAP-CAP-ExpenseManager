@@ -5,6 +5,6 @@ import { User } from "@sap/cds";
 export interface BackupController extends BaseController<Backup> {
 
     processBackupDelete(Backup: Backup): Promise<BaseControllerResponse>;
-    exportBackup(User: User): Promise<BaseControllerResponse>;
+    exportBackup(): Promise<BaseControllerResponse>;
 
 }

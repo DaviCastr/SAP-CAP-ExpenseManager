@@ -8,6 +8,7 @@
         "@sap/xssec": "^4.9.1",
         "@sweet-monads/either": "^3.3.1",
         "adm-zip": "^0.5.17",
+        "axios": "^1.15.0",
         "decimal.js": "^10.6.0",
         "exceljs": "^4.4.0",
         "express": "^4.21.2",

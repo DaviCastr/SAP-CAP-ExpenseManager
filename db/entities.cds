@@ -107,7 +107,7 @@ entity Cards : cuid, managed {
     virtual InvoiceAmountForPayment : Decimal;
 
     @Semantics.amount.currencyCode: 'Moeda'
-    virtual InvoiceAmountToPay       : Decimal;
+    virtual InvoiceAmountToPay      : Decimal;
 
     Invoices                        : Composition of many Invoices
                                           on Invoices.Card = $self;
@@ -285,4 +285,9 @@ type TrasactionsCompleteInvoice {
     Installment       : Integer;
     TotalInstallments : Integer;
     Description       : String(255);
+}
+
+type ActionResult {
+    success : Boolean;
+    data    : LargeString;
 }

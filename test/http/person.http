@@ -5,7 +5,7 @@
 
 ### Persons
 # @name Persons_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons?$expand=Cards($expand=Invoices($expand=Transactions))
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons?$expand=Cards($expand=Invoices($expand=Transactions)),Shares($expand=Entities),Categories
 Authorization: Basic {{username}}:{{password}}
 
 

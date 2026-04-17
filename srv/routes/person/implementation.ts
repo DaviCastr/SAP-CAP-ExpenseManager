@@ -1,8 +1,8 @@
-import { ApplicationService, entity } from "@sap/cds";
+import { ApplicationService, entity, Request } from "@sap/cds";
 import { PersonRoute } from "./protocols";
 import { BaseRouteImplementation } from "../base/implementation";
 import { Person } from "@models/apps/dflc/gestordegastos/entities";
-import { BaseController } from "@/controllers/base";
+import { BaseController, BaseControllerResponse } from "@/controllers/base";
 import { PersonController } from "@/controllers/person";
 
 export class PersonRouteImplementation extends BaseRouteImplementation<Person> implements PersonRoute {
@@ -24,6 +24,23 @@ export class PersonRouteImplementation extends BaseRouteImplementation<Person> i
         const { Persons } = Service.entities;
 
         this.mainBase(Service, Persons);
+
+        Service.on('AddCardExpense', this.addCardExpense.bind(this));
+
+    }
+
+
+    private async addCardExpense(Request: Request): Promise<BaseControllerResponse> {
+
+         const oResult = await this.Controller.addCardExpense();
+
+        if (oResult.status != 201) {
+
+            return this.returnRejectMessage(Request, oResult);
+
+        }
+
+        return oResult;
 
     }
 

@@ -29,17 +29,16 @@ service GestorDeGastos {
 
     entity Backups      as projection on entities.Backups;
 
-    //Ações utilizadas no fiori/ui5
-    action   SimulatePerMonthYear(Person: UUID, mes: Integer, ano: Integer)                                                                                            returns entities.SimulationReturn;
-    action   AddExpense(Person: UUID, descricao: String, valor: Decimal, moeda: String, data: Date, parcelas: Integer, gastofixo: Boolean, Category: UUID, Card: UUID) returns entities.BooleanReturn;
-    action   ExportBackup()                                                                                                                                            returns String;
+    action   AddCardExpense(CardId: UUID, CategoryId: UUID, Description: String, Value: Decimal, Currency: String, TransactionDate: Date, Installments: Integer, FixedExpense: Boolean) returns entities.ActionResult;
+    action   ExportBackup()                                                                                                                                                            returns entities.ActionResult;
     action   SendInvoice();
+    action   SimulatePerMonthYear(Person: UUID, mes: Integer, ano: Integer)                                                                                                            returns entities.SimulationReturn;
     action   SendForecastInvoiceDetailed(Person: UUID, mes: Integer, ano: Integer);
-
-    function RecoverCategoriesTotalExpense(Person: UUID, Month: Integer, Year: Integer)                                                                                returns entities.BooleanReturn;
-    function RecoverCategories(Person: UUID, Card: UUID, Invoice: UUID, Month: Integer, Year: Integer)                                                                 returns entities.CategoriesReturn;
-    function RecoverTransactionsPerCategory(Person: UUID, Category: UUID, Total: Boolean, Month: Integer, Year: Integer)                                               returns entities.TransactionsReturn;
-    function RecoverCompleteInvoice(Person: UUID, Month: Integer, Year: Integer)                                                                                       returns entities.CompleteInvoiceReturn;
+    
+    function RecoverCategoriesTotalExpense(Person: UUID, Month: Integer, Year: Integer)                                                                                                returns entities.BooleanReturn;
+    function RecoverCategories(Person: UUID, Card: UUID, Invoice: UUID, Month: Integer, Year: Integer)                                                                                 returns entities.CategoriesReturn;
+    function RecoverTransactionsPerCategory(Person: UUID, Category: UUID, Total: Boolean, Month: Integer, Year: Integer)                                                               returns entities.TransactionsReturn;
+    function RecoverCompleteInvoice(Person: UUID, Month: Integer, Year: Integer)                                                                                                       returns entities.CompleteInvoiceReturn;
 
 }
 

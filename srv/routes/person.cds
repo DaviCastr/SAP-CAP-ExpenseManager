@@ -8,6 +8,8 @@ service PersonService {
     @odata.draft.enabled
     entity Persons as projection on entities.Persons;
 
+    action AddCardExpense(CardId: UUID, CategoryId: UUID, Description: String, Value: Decimal, Currency: String, TransactionDate: Date, Installments: Integer, FixedExpense: Boolean) returns entities.ActionResult;
+
 }
 
 annotate PersonService with @requires: [

@@ -44,7 +44,7 @@ export class EntityModel extends BaseModel {
                 Id: Entity?.ID as string,
                 Entity: Entity?.Entity as EntitiesCodes,
                 Permission: Entity?.Permission as Permissions,
-                ShareId: Entity?.Share_ID as string,
+                ShareId: Entity?.Share_ID || Entity?.Share?.ID as string,
                 CreatedAt: Entity?.createdAt as string,
                 CreatedBy: Entity?.createdBy as string,
                 ModifiedAt: Entity?.modifiedAt as string,

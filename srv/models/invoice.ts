@@ -52,10 +52,10 @@ export class InvoiceModel extends BaseModel {
                     Year: Invoice.Year as number,
                     Month: Invoice.Month as number,
                     Description: Invoice.Description as string,
-                    TotalAmount: new Decimal(Invoice.TotalAmount ?? 0),
+                    TotalAmount: this.retrieveDecimal(Invoice?.TotalAmount),
                     Currency: oCurrencyModel,
                     InvoiceSent: Invoice.InvoiceSent as boolean,
-                    CardId: Invoice?.Card_ID as string,
+                    CardId: Invoice?.Card_ID || Invoice?.Card?.ID as string,
                     Transactions: TransactionModel.mapModel(Invoice?.Transactions || []),
                     CreatedAt: Invoice.createdAt as string,
                     CreatedBy: Invoice.createdBy as string,
@@ -165,7 +165,7 @@ export class InvoiceModel extends BaseModel {
             ID: this.props.Id,
             Year: this.props.Year,
             Month: this.props.Month,
-            TotalAmount: this.props.TotalAmount.toNumber(),
+            TotalAmount: this.props.TotalAmount?.toNumber(),
             Description: this.props.Description,
             Currency: this.props.Currency.toEntityObject(),
             InvoiceSent: this.props.InvoiceSent,
@@ -175,7 +175,7 @@ export class InvoiceModel extends BaseModel {
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,
             modifiedBy: this.props.ModifiedBy
-        });
+        } as Invoice);
 
     }
 

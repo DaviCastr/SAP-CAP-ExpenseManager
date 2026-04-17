@@ -518,7 +518,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
         if (obj && typeof obj === 'object') {
             return Object.fromEntries(
                 Object.entries(obj)
-                    .filter(([_, v]) => v !== undefined && v !== null && (v as any)?.length !== 0)
+                    .filter(([_, v]) => v !== undefined && v !== null && JSON.stringify(v) != '{}' &&  (v as any)?.length !== 0)
                     .map(([k, v]) => [k, this.cleanEntity(v)])
             );
         }

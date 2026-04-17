@@ -100,16 +100,16 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
 
             for (let Card of oCardsFiltered) {
 
+                const oCardModel = CardModel.singleModel(Card);
+
                 if (!('ClosingDay' in Card) || !('DueDay' in Card)) {
 
                     oCardsData.push({
-                        ...Card,
+                        ...oCardModel?.toEntityObject(),
                     });
                     continue;
 
                 }
-
-                const oCardModel = CardModel.singleModel(Card);
 
                 let oInvoiceMonth = oMonth;
                 let oInvoiceYear = oYear;
@@ -160,19 +160,19 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
                     if (oInvoice.Year == oInvoiceYear && oInvoice.Month >= oInvoiceMonth || oInvoice.Year > oInvoiceYear) {
 
                         if (oInvoice.Month == oInvoiceMonth && oInvoice.Year == oInvoiceYear) {
-                            oMonthExpenses = oMonthExpenses.plus(oInvoice.TotalAmount);
+                            oMonthExpenses = oMonthExpenses.plus(oInvoice?.TotalAmount || 0);
                             if (oCardModel.ClosingDay > oDia) {
-                                oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice.TotalAmount)
-                                oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount)
+                                oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice?.TotalAmount || 0)
+                                oTotalExpenses = oTotalExpenses.plus(oInvoice?.TotalAmount || 0)
                             } else if (oCardModel.DueDay >= oDia) {
-                                oMonthExpensesClosed = oMonthExpensesClosed.plus(oInvoice.TotalAmount)
-                                oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount)
+                                oMonthExpensesClosed = oMonthExpensesClosed.plus(oInvoice?.TotalAmount || 0)
+                                oTotalExpenses = oTotalExpenses.plus(oInvoice?.TotalAmount || 0)
                             }
                         } else if (oInvoice.Year == oNextYear && oInvoice.Month == oNextMonth && oCardModel.ClosingDay <= oDia) {
-                            oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice.TotalAmount)
-                            oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount)
+                            oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice?.TotalAmount || 0)
+                            oTotalExpenses = oTotalExpenses.plus(oInvoice?.TotalAmount || 0)
                         } else {
-                            oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount?.toNumber())
+                            oTotalExpenses = oTotalExpenses.plus(oInvoice?.TotalAmount || 0)
                         }
                     }
 

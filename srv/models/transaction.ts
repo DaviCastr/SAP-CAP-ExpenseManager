@@ -49,8 +49,8 @@ export class TransactionModel extends BaseModel {
                 Id: Transaction.ID as string,
                 Identifier: Transaction.Identifier as string,
                 Date: Transaction.Date as string,
-                TotalAmount: new Decimal(Transaction.TotalAmount ?? 0),
-                Amount: new Decimal(Transaction.Amount ?? 0),
+                TotalAmount: this.retrieveDecimal(Transaction.TotalAmount),
+                Amount: this.retrieveDecimal(Transaction.Amount),
                 Currency: oCurrencyModel,
                 TotalInstallments: Transaction.TotalInstallments as number,
                 Installment: Transaction.Installment as number,
@@ -168,8 +168,8 @@ export class TransactionModel extends BaseModel {
             ID: this.props.Id,
             Identifier: this.props.Identifier,
             Date: this.props.Date as Transaction['Date'],
-            TotalAmount: this.props.TotalAmount.toNumber(),
-            Amount: this.props.Amount.toNumber(),
+            TotalAmount: this.props.TotalAmount?.toNumber(),
+            Amount: this.props.Amount?.toNumber(),
             Currency: this.props.Currency?.toEntityObject(),
             TotalInstallments: this.props.TotalInstallments,
             Installment: this.props.Installment,
@@ -179,7 +179,7 @@ export class TransactionModel extends BaseModel {
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,
             modifiedBy: this.props.ModifiedBy
-        });
+        } as Transaction);
  
     }
 

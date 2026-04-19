@@ -14,6 +14,7 @@ type TransactionProperties = {
     Installment: number;
     Description: string;
     InvoiceId: string;
+    CategoryId: string;
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
@@ -56,6 +57,7 @@ export class TransactionModel extends BaseModel {
                 Installment: Transaction.Installment as number,
                 Description: Transaction.Description as string,
                 InvoiceId: Transaction.Invoice_ID || Transaction?.Invoice?.ID as string,
+                CategoryId: Transaction.Category_ID || Transaction?.Category?.ID as string,
                 CreatedAt: Transaction.createdAt as string,
                 CreatedBy: Transaction.createdBy as string,
                 ModifiedAt: Transaction.modifiedAt as string,
@@ -126,6 +128,12 @@ export class TransactionModel extends BaseModel {
 
     }
 
+    public get CategoryId() {
+
+        return this.props.CategoryId;
+
+    }
+
     public get CreatedAt() {
 
         return this.props.CreatedAt;
@@ -175,6 +183,7 @@ export class TransactionModel extends BaseModel {
             Installment: this.props.Installment,
             Description: this.props.Description,
             Invoice: { ID: this.props.InvoiceId },
+            Category: { ID: this.props.CategoryId },
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,

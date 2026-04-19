@@ -70,7 +70,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
                 const oTransactionModel = TransactionModel.singleModel(Transaction);
 
-                if (oTransactionModel.TotalAmount.isZero() && 'TotalAmount' in Transaction) {
+                if (oTransactionModel?.TotalAmount?.isZero() && 'TotalAmount' in Transaction) {
 
                     if (!oTransactionReference) {
 
@@ -78,7 +78,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
                     } else {
 
-                        if (oTransactionModel.Identifier != oTransactionReference.Identifier) {
+                        if (oTransactionModel?.Identifier != oTransactionReference?.Identifier) {
 
                             oTransactionReference = await this.Repository.findById(oTransactionModel.Id);
 

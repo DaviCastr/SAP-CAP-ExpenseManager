@@ -28,4 +28,30 @@ export class PersonControllerImplementation extends BaseControllerImplementation
 
     }
 
+
+    public async sendInvoices(): Promise<BaseControllerResponse> {
+
+        const result = await this.Service.sendInvoices();
+
+        if (result.isLeft()) {
+            return this.error(result.value.code, result.value.message);
+        }
+
+        return this.success(201, result.value);
+
+    }
+
+
+    public async cardExpensesByCategories(): Promise<BaseControllerResponse> {
+
+        const result = await this.Service.cardExpensesByCategories();
+
+        if (result.isLeft()) {
+            return this.error(result.value.code, result.value.message);
+        }
+
+        return this.success(201, result.value);
+
+    }
+
 }

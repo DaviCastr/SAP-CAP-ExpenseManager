@@ -13,7 +13,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         oSql.where({ ID: Id });
 
-        let oTransactions: Invoices = await cds.run(oSql);
+        let oInvoices: Invoices = await cds.run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -21,17 +21,17 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oSql.where({ ID: Id });
 
-            const additionalTransactions: Invoices = await cds.run(oSql) || [];
+            const additionalInvoices: Invoices = await cds.run(oSql) || [];
 
-            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+            oInvoices = [...(oInvoices || []), ...additionalInvoices];
 
         }
 
-        const oTransactionsModel = await this.mapInvoiceResult(oTransactions);
+        const oInvoicesModel = await this.mapInvoiceResult(oInvoices);
 
-        if (Array.isArray(oTransactionsModel)) {
+        if (Array.isArray(oInvoicesModel)) {
 
-            return oTransactionsModel[0];
+            return oInvoicesModel[0];
 
         }
 
@@ -72,7 +72,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         oSql.where({ ...additionalFilters, Card_ID: CardId });
 
-        let oTransactions: Invoices = await cds.run(oSql);
+        let oInvoices: Invoices = await cds.run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -80,15 +80,15 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oSql.where({ ...additionalFilters, Card_ID: CardId });
 
-            const additionalTransactions: Invoices = await cds.run(oSql) || [];
+            const additionalInvoices: Invoices = await cds.run(oSql) || [];
 
-            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+            oInvoices = [...(oInvoices || []), ...additionalInvoices];
 
         }
 
-        const oTransactionsModel = await this.mapInvoiceResult(oTransactions);
+        const oinvoicesModel = await this.mapInvoiceResult(oInvoices);
 
-        return oTransactionsModel;
+        return oinvoicesModel;
 
     }
 
@@ -99,7 +99,7 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         oSql.where({ ...additionalFilters, Card_ID: { 'in': CardIds } });
 
-        let oTransactions: Invoices = await cds.run(oSql);
+        let oInvoices: Invoices = await cds.run(oSql);
 
         if ((this.getEntity() as any)?.isDraft) {
 
@@ -107,15 +107,51 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
             oSql.where({ ...additionalFilters, Card_ID: { 'in': CardIds } });
 
-            const additionalTransactions: Invoices = await cds.run(oSql) || [];
+            const additionalInvoices: Invoices = await cds.run(oSql) || [];
 
-            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+            oInvoices = [...(oInvoices || []), ...additionalInvoices];
 
         }
 
-        const oTransactionsModel = await this.mapInvoiceResult(oTransactions);
+        const oinvoicesModel = await this.mapInvoiceResult(oInvoices);
 
-        return oTransactionsModel;
+        return oinvoicesModel;
+
+    }
+
+
+    public async retrieveTotalAmountByCardIDs(CardIds: Invoice["Card_ID"][], additionalFilters?: {}): Promise<InvoiceModel | null> {
+
+        let oInvoiceEntity = this.getEntity();
+
+        let oSql = SELECT.one`coalesce (sum (TotalAmount),0) as TotalAmount, Currency_code`.from(oInvoiceEntity);
+
+        oSql.where({ ...additionalFilters, Card_ID: { 'in': CardIds } });
+        oSql.groupBy("Currency_code");
+
+        let oInvoice: Invoice = await cds.run(oSql);
+
+        const oInvoiceModel = this.mapInvoiceResult([oInvoice]);
+
+        return oInvoiceModel?.[0] as InvoiceModel;
+
+    }
+
+
+    public async retrieveTotalAmountByIDs(Ids: Invoice["ID"][], additionalFilters?: {}): Promise<InvoiceModel | null> {
+
+        let oInvoiceEntity = this.getEntity();
+
+        let oSql = SELECT.one`coalesce (sum (TotalAmount),0) as TotalAmount, Currency_code`.from(oInvoiceEntity);
+
+        oSql.where({ ...additionalFilters, ID: { 'in': Ids } });
+        oSql.groupBy("Currency_code");
+
+        let oInvoice: Invoice = await cds.run(oSql);
+
+        const oInvoiceModel = this.mapInvoiceResult([oInvoice]);
+
+        return oInvoiceModel?.[0] as InvoiceModel;
 
     }
 
@@ -186,14 +222,14 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
     private getReportBaseSql(ignoreDraft?: boolean): cds.ql.SELECT<unknown, unknown> {
 
-        const oTransactionEntity = this.getEntity(ignoreDraft || false);
+        const oInvoiceEntity = this.getEntity(ignoreDraft || false);
 
-        return SELECT.from(oTransactionEntity);
+        return SELECT.from(oInvoiceEntity);
 
     }
 
 
-    private async mapInvoiceResult(Invoices: Invoices): Promise<InvoiceModel[] | null> {
+    private mapInvoiceResult(Invoices: Invoices): InvoiceModel[] | null {
 
         if (Invoices.length === 0) {
 

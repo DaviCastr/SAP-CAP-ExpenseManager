@@ -4,4 +4,6 @@ import { Person } from "@models/apps/dflc/gestordegastos/entities";
 
 export interface PersonController extends BaseController<Person> {
     addCardExpense(): Promise<BaseControllerResponse>;
+    sendInvoices(): Promise<BaseControllerResponse>;
+    cardExpensesByCategories(): Promise<BaseControllerResponse>;
 }

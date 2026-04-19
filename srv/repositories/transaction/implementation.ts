@@ -151,6 +151,51 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
     }
 
 
+    public async retrieveTotalAmountByInvoiceIds(InvoiceIds: Transaction['Invoice_ID'][], additionalFilters?: {}): Promise<TransactionModel | null> {
+
+        const oTransactionEntity = this.getEntity();
+
+        let invoiceIds = Array.isArray(InvoiceIds) ? InvoiceIds : [InvoiceIds];
+
+        let oSql = SELECT.one('Currency_code, coalesce(sum(Amount), 0) as TotalAmount')
+            .from(oTransactionEntity)
+            .where`Invoice.ID in ${invoiceIds}`;
+
+        if (additionalFilters) {
+
+            oSql.where(additionalFilters);
+
+        }
+
+        const oTransaction = await cds.run(oSql);
+
+        const oTransactionModel = await this.mapTransactionResult([oTransaction]);
+
+        return oTransactionModel?.[0] as TransactionModel;
+
+    }
+
+
+    public async retrieveTotalsGroupedByCategory(invoiceIds: string[]): Promise<TransactionModel[] | null> {
+
+        const entity = this.getEntity();
+
+        const result = await cds.run(
+            SELECT.from(entity)
+                .columns([
+                    'Category_ID',
+                    'Currency_code',
+                    `coalesce(sum(Amount), 0) as TotalAmount`
+                ] as any)
+                .where({ Invoice_ID: { in: invoiceIds } })
+                .groupBy('Category_ID', 'Currency_code')
+        );
+
+        return this.mapTransactionResult(result);
+
+    }
+
+
     public async createEntry(data: Transaction | Transactions): Promise<TransactionModel[] | null> {
 
         let oTransactionEntity = this.getEntity();
@@ -161,7 +206,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         return this.mapTransactionResult(Array.isArray(data) ? data : [data], true);
 
-    } 
+    }
 
 
     private getReportBaseSql(ignoreDraft?: boolean): cds.ql.SELECT<unknown, unknown> {
@@ -192,14 +237,14 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
         if (Transactions.length === 0) {
 
             return null;
- 
-        } 
+
+        }
 
         const oTransactionsModel: TransactionModel[] = [];
         let totalAmounts = new Map;
 
         for (let Transaction of Transactions) {
- 
+
             if (!ignoreTotalAmount && (!Transaction.TotalAmount || Transaction.TotalAmount == 0) && Transaction?.Identifier) {
 
                 const totalAmount = totalAmounts.get(Transaction?.Identifier);
@@ -245,7 +290,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
                 SELECT.one`Identifier, coalesce(sum(TotalAmount),0) as TotalAmount`
                     .from(oTransactionEntity)
                     .where({ Identifier: Identifier })
-            ); 
+            );
 
             return {
                 Identifier: Identifier,

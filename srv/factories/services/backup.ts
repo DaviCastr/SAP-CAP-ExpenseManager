@@ -5,7 +5,6 @@ import { oPersonRepositoryFactory } from "../repositories/person";
 import { oBackupRepositoryFactory } from "../repositories/backup";
 import { ServiceRegistry } from "@/infrastructure/ServiceRegistry";
 import { oEntityRepositoryFactory } from "../repositories/entity";
-import { oInvoiceRepositoryFactory } from "../repositories/invoice";
 
 const makeBackupService = (): BackupService => {
 
@@ -13,7 +12,6 @@ const makeBackupService = (): BackupService => {
         oPersonRepositoryFactory,
         oShareRepositoryFactory,
         oEntityRepositoryFactory,
-        oInvoiceRepositoryFactory,
         oBackupRepositoryFactory,
     );
 

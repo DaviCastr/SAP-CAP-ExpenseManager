@@ -48,19 +48,19 @@ export class InvoiceModel extends BaseModel {
                 });
 
                 return InvoiceModel.with({
-                    Id: Invoice.ID as string,
-                    Year: Invoice.Year as number,
-                    Month: Invoice.Month as number,
-                    Description: Invoice.Description as string,
+                    Id: Invoice?.ID as string,
+                    Year: Invoice?.Year as number,
+                    Month: Invoice?.Month as number,
+                    Description: Invoice?.Description as string,
                     TotalAmount: this.retrieveDecimal(Invoice?.TotalAmount),
                     Currency: oCurrencyModel,
-                    InvoiceSent: Invoice.InvoiceSent as boolean,
+                    InvoiceSent: Invoice?.InvoiceSent as boolean,
                     CardId: Invoice?.Card_ID || Invoice?.Card?.ID as string,
                     Transactions: TransactionModel.mapModel(Invoice?.Transactions || []),
-                    CreatedAt: Invoice.createdAt as string,
-                    CreatedBy: Invoice.createdBy as string,
-                    ModifiedAt: Invoice.modifiedAt as string,
-                    ModifiedBy: Invoice.modifiedBy as string
+                    CreatedAt: Invoice?.createdAt as string,
+                    CreatedBy: Invoice?.createdBy as string,
+                    ModifiedAt: Invoice?.modifiedAt as string,
+                    ModifiedBy: Invoice?.modifiedBy as string
                 });
 
             });

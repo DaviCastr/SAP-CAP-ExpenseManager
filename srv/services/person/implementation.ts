@@ -1,5 +1,5 @@
 import { AbstractError } from "@/errors";
-import { Persons, Person, Cards, Invoice, Transaction } from "@models/apps/dflc/gestordegastos/entities";
+import { Persons, Person, Cards, Invoice, Transaction, Card, Categories } from "@models/apps/dflc/gestordegastos/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { PersonService } from "./protocols";
 import { PersonModel } from "@/models/person";
@@ -22,6 +22,10 @@ import { TransactionServiceImplementation } from "../transaction/implementation"
 import axios from "axios";
 import { InvoiceModel } from "@/models/invoice";
 import { TransactionModel } from "@/models/transaction";
+import { CategoryModel } from "@/models/category";
+import { CardServiceImplementation } from "../card/implementation";
+import { CardExpensesByCategoryModel, CardExpensesByCategoryProperties, CardExpensesByCategoryReturnProperties, CategoryExpenses } from "@/models/card-expenses-by-category";
+import { CategoryServiceImplementation } from "../category/implementation";
 
 export class PersonServiceImplementation extends BaseServiceImplementation<Person> implements PersonService {
 
@@ -192,268 +196,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    // public async addCardExpense(): Promise<Either<AbstractError, boolean>> {
-
-    //     const request = ServiceLocator.getRequest();
-
-    //     let { CardId, CategoryId, Description, Value, Currency, TransactionDate, Installments, FixedExpense } = request.data;
-
-    //     const obrigatoryFields: string[] = [];
-
-    //     if (!CardId) obrigatoryFields.push('CardId')
-    //     if (!CategoryId) obrigatoryFields.push('CategoryId')
-    //     if (!Description) obrigatoryFields.push('Description')
-    //     if (!Value) obrigatoryFields.push('Value')
-    //     if (!Currency) obrigatoryFields.push('Currency')
-    //     if (!TransactionDate) obrigatoryFields.push('TransactionDate')
-    //     if (!Installments) obrigatoryFields.push('Installments')
-
-    //     if (obrigatoryFields.length) {
-
-    //         const message = this.getMessage('error.invalidFields', request, undefined, { fields: obrigatoryFields.join(', ') });
-
-    //         const errorInstance: Error = new Error(message) as Error;
-
-    //         return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
-
-    //     }
-
-    //     if (!this.validateDate(TransactionDate)) {
-
-    //         const message = this.getMessage('error.invalidDate', request, undefined, { date: TransactionDate });
-
-    //         const errorInstance: Error = new Error(message) as Error;
-
-    //         return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
-
-    //     }
-
-    //     let oCard = await this.CardRepository.findById(CardId);
-
-    //     if (!oCard) {
-
-    //         const errorInstance: Error = new Error('error.invalidCard') as Error;
-
-    //         return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
-
-    //     }
-
-    //     let oCategory = await this.CategoryRepository.findById(CategoryId);
-
-    //     if (!oCategory) {
-
-    //         const errorInstance: Error = new Error('error.invalidCategory') as Error;
-
-    //         return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
-
-    //     }
-
-    //     //Checa autorização de permissão para editar Invoices e Transactions
-    //     const invoiceService = ServiceRegistry.get('Invoices') as InvoiceServiceImplementation;
-    //     const transactionService = ServiceRegistry.get('Transactions') as TransactionServiceImplementation;
-
-    //     if (!invoiceService || !transactionService) {
-
-    //         const errorInstance: Error = new Error('error.unknownError') as Error;
-
-    //         return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
-
-    //     }
-
-    //     const oInvoiceToCheck: Invoice = {
-    //         ID: this.generateUUID(),
-    //         Card_ID: CardId,
-    //         Card: { ID: CardId }
-    //     }
-
-    //     const resultCheckInvoice = await invoiceService.beforeUpdate(oInvoiceToCheck, request?.user);
-
-    //     if (resultCheckInvoice.isLeft()) return resultCheckInvoice;
-
-    //     const oTransactionCheck: Transaction = {
-    //         ID: this.generateUUID(),
-    //         Invoice_ID: oInvoiceToCheck.ID,
-    //         Invoice: { ID: oInvoiceToCheck.ID }
-    //     }
-
-    //     const resultCheckTransaction = await transactionService.beforeCreate(oTransactionCheck, request?.user);
-
-    //     if (resultCheckTransaction.isLeft()) return resultCheckTransaction;
-
-    //     let oActualDate = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-    //     oActualDate = oActualDate.replaceAll(",", " ");
-    //     let [oActualDay, oActualMonth, oActualYear]: any[] = oActualDate.split(" ")[0].split("/");
-
-    //     oActualDay = Number(oActualDay);
-    //     oActualMonth = Number(oActualMonth);
-    //     oActualYear = Number(oActualYear);
-
-    //     const oExpenseDate = new Date(`${TransactionDate}T00:00:00`);
-    //     const oExpenseYear = oExpenseDate.getFullYear();       // Retorna 2025
-    //     const oExpenseMonth = Number(String(oExpenseDate.getMonth() + 1).padStart(2, "0")); // Retorna 01 (mês é zero-based)
-    //     const oExpenseDay = Number(String(oExpenseDate.getDate()).padStart(2, "0"));
-
-    //     let oInvoiceYear = oExpenseYear;
-    //     let oInvoiceMonth = oExpenseMonth;
-
-    //     //Realiza cálculo de cotação se necessário
-    //     if (Currency != oCard?.Currency?.Code) {
-
-    //         try {
-    //             const response = await axios.get(`https://api.fxratesapi.com/latest?base=${Currency}&amount=${Value}`);
-
-    //             Value = response.data?.rates[oCard.Currency?.Code];
-
-    //         } catch (error) {
-
-    //             const errorInstance: Error = error as Error;
-    //             return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
-
-    //         }
-
-    //     }
-
-    //     if (oCard.ClosingDay > oCard.DueDay) {
-
-    //         if (oInvoiceMonth == 12) {
-    //             oInvoiceMonth = 1;
-    //             oInvoiceYear += 1;
-    //         } else {
-    //             oInvoiceMonth += 1;
-    //         }
-
-    //     }
-
-    //     try {
-
-    //         if (oCard.ClosingDay > 28) {
-
-    //             if (!this.validateDate(`${oInvoiceYear}-${oInvoiceMonth}-${oCard.ClosingDay}`)) {
-    //                 oCard.ClosingDay = this.lastDayOfTheMonth(oActualYear, oActualMonth - 1);
-    //             }
-
-    //         }
-
-    //     } catch (error) {
-
-    //         const errorInstance: Error = error as Error;
-    //         return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
-
-    //     }
-
-    //     if (oCard.ClosingDay <= oExpenseDay) {
-
-    //         if (oInvoiceMonth == 12) {
-    //             oInvoiceMonth = 1;
-    //             oInvoiceYear += 1;
-    //         } else {
-    //             oInvoiceMonth += 1;
-    //         }
-
-    //     }
-
-    //     let oInstallmentFixed = 1;
-
-    //     if (FixedExpense) {
-
-    //         oInstallmentFixed = (12 - oInvoiceMonth) + 1;
-
-    //     }
-
-    //     try {
-
-    //         let oInstallment = 0;
-    //         let oValue = new Decimal(Value).div(Installments).toDecimalPlaces(2);;// (Math.round(((Value / Installments) + Number.EPSILON) * 100) / 100);
-    //         let oDiference = (oValue.mul(Installments).minus(new Decimal(Value))).toDecimalPlaces(2);;
-    //         let oFirstInstallmentValue = oValue.minus(oDiference).toDecimalPlaces(2);
-    //         let oExpenseIdentifier = this.generateUUID();
-    //         let invoiceData: Invoice = {
-    //             Year: oInvoiceYear,
-    //             Month: oInvoiceMonth,
-    //             TotalAmount: oFirstInstallmentValue.toNumber(),
-    //             Currency: oCard.Currency.toEntityObject(),
-    //             Card: { ID: oCard.Id }
-    //         };
-
-    //         let resultInvoice = await this.retrieveInvoice(invoiceData);
-
-    //         if (resultInvoice.isLeft()) return resultInvoice as any;
-
-    //         let oInvoice = resultInvoice.value;
-
-    //         do {
-
-    //             let oValueInstallment = oFirstInstallmentValue;
-    //             oInstallment += 1;
-
-    //             if (oInstallment > 1) {
-
-    //                 oValueInstallment = oValue;
-
-    //                 if (oInvoiceMonth == 12) {
-    //                     oInvoiceMonth = 1;
-    //                     oInvoiceYear += 1;
-    //                 } else {
-    //                     oInvoiceMonth += 1;
-    //                 }
-
-    //                 invoiceData = {
-    //                     Year: oInvoiceYear,
-    //                     Month: oInvoiceMonth,
-    //                     TotalAmount: oValueInstallment.toNumber(),
-    //                     Currency: oCard.Currency.toEntityObject(),
-    //                     Card: { ID: oCard.Id }
-    //                 };
-
-    //                 resultInvoice = await this.retrieveInvoice(invoiceData);
-
-    //                 if (resultInvoice.isLeft()) return resultInvoice as any;
-
-    //                 oInvoice = resultInvoice.value;
-
-    //             }
-
-    //             let oParcelaTransacao = oInstallment;
-
-    //             if (FixedExpense) {
-    //                 oParcelaTransacao = 1
-    //             }
-
-    //             let oNewTransaction: Transaction = {
-    //                 Identifier: oExpenseIdentifier,
-    //                 Date: TransactionDate,
-    //                 TotalAmount: Value,
-    //                 Amount: oValueInstallment.toNumber(),
-    //                 Currency: oCard.Currency.toEntityObject(),
-    //                 TotalInstallments: Installments,
-    //                 Installment: oParcelaTransacao,
-    //                 Description: Description,
-    //                 Category: { ID: oCategory?.Id },
-    //                 Invoice: { ID: oInvoice.Id }
-    //             }
-
-    //             let oTransactions = await this.TransactionRepository.createEntry(oNewTransaction) as TransactionModel[];
-
-    //             let oTransaction = oTransactions[0];
-
-    //             if (!oInvoice.TotalAmount.eq(oValueInstallment)) {
-    //                 await this.InvoiceRepository.updateTotalAmountByTransactionId(oTransaction.Id);
-    //             }
-
-    //         } while (oInstallment < Installments || oInstallment < oInstallmentFixed);
-
-    //         return right(true)
-
-    //     } catch (error) {
-
-    //         const errorInstance: Error = error as Error;
-    //         return left(new AbstractError(errorInstance.message, 403, errorInstance.stack as string));
-
-    //     }
-
-    // }
-
-
     public async addCardExpense(): Promise<Either<AbstractError, boolean>> {
 
         const request = ServiceLocator.getRequest();
@@ -472,7 +214,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             this.ensureCardExists(card);
             this.ensureCategoryExists(category);
 
-            await this.validateAddExpensePermissions(input.CardId, request.user);
+            await this.validateAddCardExpensePermissions(input.CardId, request.user);
 
             const normalizedValue = await this.convertCurrencyIfNeeded(
                 input.Currency,
@@ -559,6 +301,512 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
+    public async sendInvoices(): Promise<Either<AbstractError, boolean>> {
+
+        return right(true);
+
+        // if (!process.env.SMTPAddres) {
+        //     return
+        // }
+
+        // let oDate = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        // oDate = oDate.replaceAll(",", " ");
+        // let [oDay, oMonth, oYear] = oDate.split(" ")[0].split("/");
+
+        // oDay = Number(oDay);
+        // oMonth = Number(oMonth);
+        // oYear = Number(oYear);
+
+        // try {
+
+        //     const { Pessoa, Cartao, Fatura, Transacao } = this.entities
+
+        //     const oPessoas = await SELECT.from(Pessoa).columns('ID', 'Nome', 'Email').where({ Email: { '!=': null } });
+
+        //     if (!oPessoas.length > 0) {
+        //         return;
+        //     }
+
+        //     const oCards = await SELECT.from(Cartao).columns('ID', 'NomeCartao', 'DiaVencimento', 'Pessoa_ID').where({
+        //         DiaVencimento: { '>=': oDay }
+        //     });
+
+        //     if (!oCards.length > 0) {
+        //         return;
+        //     }
+
+        //     let oInvoices = await SELECT.from(Fatura).where({
+        //         Year: oYear,
+        //         Month: oMonth
+        //     });
+
+        //     oInvoices = oInvoices.filter(fatura => fatura.AvisoEnviado === false || fatura.AvisoEnviado === null);
+
+        //     if (!oInvoices.length > 0) {
+        //         return;
+        //     }
+
+        //     for (let oPessoa of oPessoas) {
+
+        //         let oCartoesDaPessoa = oCards.filter(CardId => CardId.Pessoa_ID == oPessoa.ID);
+
+        //         for (let oCard of oCartoesDaPessoa) {
+
+        //             let oFaturasCartao = oInvoices.filter(fatura => fatura.Cartao_ID == oCard.ID);
+
+        //             for (let oInvoice of oFaturasCartao) {
+
+        //                 oCard.DiaVencimento = Number(oCard.DiaVencimento);
+
+        //                 if ((oCard.DiaVencimento - oDay) <= 3) {
+
+        //                     let oTransacoes = await SELECT.from(Transacao).where({ Fatura_ID: oInvoice.ID });
+
+        //                     if (oTransacoes.length > 0) {
+
+        //                         try {
+
+        //                             if (!oPessoa.Imagem) {
+
+        //                                 const tx = cds.tx();
+
+        //                                 let oImagemPessoa = await tx.run(SELECT.one.from(Pessoa).columns('Imagem', 'TipoImagem').where({
+        //                                     ID: oPessoa.ID
+        //                                 }));
+
+        //                                 if (oImagemPessoa.Imagem) {
+
+        //                                     let oImagemBuffer = await this.ReadableParaBuffer(oImagemPessoa.Imagem);
+
+        //                                     const oExtensao = oImagemPessoa.TipoImagem.split("/")[1];
+
+        //                                     //const oCaminhoImagem = path.join(__dirname, `${oPessoa.Nome}_.${oExtensao}`);
+
+        //                                     // Salva o buffer no disco como um arquivo de imagem
+        //                                     //fs.writeFileSync(oCaminhoImagem, oImagemBuffer);
+
+        //                                     oPessoa.Imagem = oImagemBuffer;
+        //                                     //oPessoa.CaminhoImagem = oCaminhoImagem;
+        //                                     oPessoa.ExtensaoImagem = oExtensao;
+
+        //                                 }
+
+        //                             }
+
+        //                         } catch (error) {
+        //                             console.log("erro: " + error);
+        //                             return error;
+        //                         }
+
+        //                         try {
+
+        //                             const tx = cds.tx();
+
+        //                             let oImagemCartao = await tx.run(SELECT.one.from(Cartao).columns('Imagem', 'TipoImagem').where({
+        //                                 ID: oCard.ID
+        //                             }));
+
+        //                             if (oImagemCartao.Imagem) {
+
+        //                                 let oImagemBuffer = await this.ReadableParaBuffer(oImagemCartao.Imagem);
+
+        //                                 oCard.Imagem = oImagemBuffer;
+
+        //                             }
+
+        //                         } catch (error) {
+        //                             console.log("erro: " + error);
+        //                         }
+
+        //                         let erro = await this.enviarEmail(oPessoa, oCard, oInvoice, oTransacoes, true);
+
+
+        //                         if (erro) {
+        //                             return erro;
+        //                         }
+
+        //                     }
+
+        //                 }
+
+        //             }
+
+        //         }
+
+        //     }
+
+        // } catch (erro) {
+        //     console.log("Erro:" + erro)
+        //     return erro;
+        // }
+
+    }
+
+
+    // public async cardExpensesByCategories(): Promise<Either<AbstractError, CardExpensesByCategoryReturnProperties>> {
+
+    //     try {
+
+    //         const request = ServiceLocator.getRequest();
+    //         let { PersonId, CardId, InvoiceId, Month, Year, TotalOnwards } = request.data;
+
+    //         const required: string[] = [];
+
+    //         if (!PersonId && !CardId && !InvoiceId) {
+
+    //             required.push('PersonId');
+    //             required.push('CardId');
+    //             required.push('InvoiceId');
+
+    //             const message = this.getMessage(
+    //                 'error.fillAtLeastFieldsObrigatory',
+    //                 request,
+    //                 undefined,
+    //                 { fields: required.join(', ') }
+    //             )
+    //             const err = new Error(message) as Error;
+
+    //             return left(
+    //                 new AbstractError(
+    //                     err.message,
+    //                     403,
+    //                     err.stack as string
+    //                 ));
+
+    //         }
+
+    //         if (TotalOnwards && !PersonId) {
+
+    //             required.push('PersonId');
+
+    //             const message = this.getMessage(
+    //                 'error.fillAtLeastFieldsObrigatory',
+    //                 request,
+    //                 undefined,
+    //                 { fields: required.join(', ') }
+    //             )
+    //             const err = new Error(message) as Error;
+
+    //             return left(
+    //                 new AbstractError(
+    //                     err.message,
+    //                     403,
+    //                     err.stack as string
+    //                 ));
+
+    //         }
+
+    //         if (PersonId) {
+
+    //             const oPersonCheckAuthorization: Person = {
+    //                 ID: PersonId
+    //             }
+
+    //             const resultCheck = await this.afterRead([oPersonCheckAuthorization], request?.user);
+
+    //             if (resultCheck.isLeft()) {
+
+    //                 return resultCheck as any;
+
+    //             }
+
+    //         }
+
+
+    //         if (CardId) {
+
+    //             const oCardCheckAuthorization: Person = {
+    //                 ID: PersonId
+    //             }
+
+    //             const cardService = ServiceRegistry.get('Cards') as CardServiceImplementation;
+    //             const resultCheck = await cardService.afterRead([oCardCheckAuthorization], request?.user);
+
+    //             if (resultCheck.isLeft()) {
+
+    //                 return resultCheck as any;
+
+    //             }
+
+    //         }
+
+
+    //         if (InvoiceId) {
+
+    //             const oInvoiceCheckAuthorization: Person = {
+    //                 ID: PersonId
+    //             }
+
+    //             const cardService = ServiceRegistry.get('Cards') as CardServiceImplementation;
+    //             const resultCheck = await cardService.afterRead([oInvoiceCheckAuthorization], request?.user);
+
+    //             if (resultCheck.isLeft()) {
+
+    //                 return resultCheck as any;
+
+    //             }
+
+    //         }
+
+    //         let oDate = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    //         oDate = oDate.replaceAll(",", " ");
+    //         let [oDay, oMonth, oYear]: any[] = oDate.split(" ")[0].split("/");
+
+    //         oDay = Number(oDay);
+    //         oMonth = Number(oMonth);
+    //         oYear = Number(oYear);
+
+    //         if (Month) {
+    //             oMonth = Number(Month);
+    //             oYear = Number(Year);
+    //         }
+
+    //         let oCategories: CategoryModel[] = [];
+    //         let oCards: CardModel[] = [];
+    //         let oInvoices: InvoiceModel[] = []
+    //         let oTotalExpenses: InvoiceModel;
+
+    //         if (PersonId) {
+
+    //             oCategories = await this.CategoryRepository.findByPersonIds([PersonId]) || [];
+
+    //             if (CardId && !TotalOnwards) {
+    //                 oCards.push(CardModel.singleModel({ ID: CardId }));
+    //             } else {
+    //                 oCards = await this.CardRepository.findByPersonIds([PersonId]) || [];
+    //             }
+
+    //             if (!oCards?.length) {
+
+    //                 return right({
+    //                     TotalAmount: 0,
+    //                     Currency: {},
+    //                     Categories: []
+    //                 });
+
+    //             }
+
+    //             const additionalFiltersInvoices = TotalOnwards ?
+    //                 {
+    //                     Year: { '>=': oYear }
+    //                 } :
+    //                 {
+    //                     Year: oYear,
+    //                     Month: oMonth
+    //                 };
+
+    //             oInvoices = await this.InvoiceRepository.findByCardIDs(
+    //                 oCards.map(f => f.Id),
+    //                 additionalFiltersInvoices
+    //             ) || [];
+
+    //             if (TotalOnwards) {
+
+    //                 oInvoices = oInvoices.filter(invoice => invoice.Year > oYear || invoice.Year == oYear && invoice.Month >= oMonth);
+
+    //             }
+
+    //         } else if (CardId) {
+
+    //             let oCard = await this.CardRepository.findById(CardId);
+
+    //             if (oCard) {
+
+    //                 oCategories = await this.CategoryRepository.findByPersonIds([oCard.PersonId]) || [];
+    //                 oCards.push(CardModel.singleModel({ ID: CardId }));
+
+    //                 oInvoices = await this.InvoiceRepository.findByCardIDs(
+    //                     oCards.map(f => f.Id),
+    //                     {
+    //                         Year: oYear,
+    //                         Month: oMonth,
+    //                     }
+    //                 ) || [];
+
+    //             } else {
+
+    //                 return right({
+    //                     TotalAmount: 0,
+    //                     Currency: {},
+    //                     Categories: []
+    //                 });
+
+    //             }
+
+    //         } else {
+
+    //             let oInvoice = await this.InvoiceRepository.findById(InvoiceId);
+
+    //             if (oInvoice) {
+
+    //                 oInvoices.push(oInvoice);
+
+    //                 let oCards = await this.CardRepository.findByInvoiceIds(InvoiceId);
+    //                 let oCard = oCards?.[0];
+
+    //                 if (oCard) {
+
+    //                     oCategories = await this.CategoryRepository.findByPersonIds([oCard.PersonId]) || [];
+
+    //                 }
+
+    //                 if (!oCategories?.length) {
+
+    //                     return right({
+    //                         TotalAmount: 0,
+    //                         Currency: {},
+    //                         Categories: []
+    //                     });
+
+    //                 }
+
+    //             } else {
+
+    //                 return right({
+    //                     TotalAmount: 0,
+    //                     Currency: {},
+    //                     Categories: []
+    //                 });
+
+    //             }
+
+    //         }
+
+    //         if (!oInvoices?.length) {
+    //             return right({
+    //                 TotalAmount: 0,
+    //                 Currency: {},
+    //                 Categories: []
+    //             });
+    //         }
+
+    //         if (oInvoices?.length == 1) {
+
+    //             oTotalExpenses = oInvoices[0];
+
+    //         } else {
+
+    //             oTotalExpenses = await this.InvoiceRepository.retrieveTotalAmountByIDs(
+    //                 oInvoices.map(f => f.Id)) as InvoiceModel;
+
+    //         }
+
+    //         const totalExpenseAmount: Decimal = oTotalExpenses?.TotalAmount?.toDecimalPlaces(2) || new Decimal(0);
+
+    //         if (totalExpenseAmount.eq(0)) {
+
+    //             return right({
+    //                 TotalAmount: 0,
+    //                 Currency: {},
+    //                 Categories: []
+    //             });
+
+    //         }
+
+    //         const oCardExpenseByCategory: CardExpensesByCategoryProperties = {
+    //             TotalAmount: totalExpenseAmount,
+    //             Currency: oInvoices?.[0].Currency,
+    //             Categories: []
+    //         };
+
+    //         for (let category of oCategories) {
+
+    //             const totalByCategory = await this.TransactionRepository.retrieveTotalAmountByInvoiceIds(
+    //                 oInvoices.map(f => f.Id),
+    //                 {
+    //                     Category_ID: category.Id
+    //                 }
+    //             );
+
+    //             const totalAmountByCategory = totalByCategory?.TotalAmount || new Decimal(0);
+
+    //             if (!totalAmountByCategory.eq(0)) {
+
+    //                 const newCategory: CategoryExpenses = {
+    //                     ID: category?.Id,
+    //                     Name: category?.Name,
+    //                     TotalAmount: totalAmountByCategory?.toDecimalPlaces(2),
+    //                     Percent: totalExpenseAmount.gt(0) ? totalAmountByCategory.div(totalExpenseAmount).mul(100)?.toDecimalPlaces(2) : new Decimal(0)
+    //                 }
+
+    //                 if (category.ImageType) {
+
+    //                     newCategory.ImagePath = `Categories(ID='${newCategory?.ID}',IsActiveEntity=true)/Image`
+
+    //                 }
+
+    //                 oCardExpenseByCategory?.Categories?.push(newCategory);
+
+    //             }
+
+    //         }
+
+    //         const oReturn: CardExpensesByCategoryModel = CardExpensesByCategoryModel.with(oCardExpenseByCategory);
+
+    //         return right(oReturn.toEntityObject());
+
+    //     } catch (error) {
+
+    //         const err = error as Error;
+
+    //         return left(
+    //             new AbstractError(
+    //                 err.message,
+    //                 403,
+    //                 err.stack as string
+    //             )
+    //         );
+
+    //     }
+
+    // }
+
+
+    public async cardExpensesByCategories(): Promise<
+        Either<AbstractError, CardExpensesByCategoryReturnProperties>
+    > {
+
+        try {
+
+            const request = ServiceLocator.getRequest();
+
+            const input = this.parseCardExpensesByCategoryFields(request.data);
+
+            const validation = this.validateCardExpensesByCategoriesInput(input);
+            if (validation.isLeft()) return validation as any;
+
+            const authorization = await this.cardExpensesByCategoriesCheckAuthorization(input, request.user);
+            if (authorization.isLeft()) return authorization as any;
+
+            const context = await this.loadContext(input);
+
+            if (!context.categories.length || !context.invoices.length) {
+                return right(this.emptyResult());
+            }
+
+            const summary = await this.buildSummary(
+                context.categories,
+                context.invoices,
+                request.user
+            );
+
+            return right(summary);
+
+        } catch (error) {
+
+            const err = error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    403,
+                    err.stack as string
+                )
+            );
+        }
+    }
+
+
     private parseAddCardExpenseInput(data: any) {
 
         return {
@@ -634,7 +882,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async validateAddExpensePermissions(
+    private async validateAddCardExpensePermissions(
         cardId: string,
         user: User
     ): Promise<void> {
@@ -885,6 +1133,443 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
+    // async enviarEmail(PersonId, CardId, fatura, transacoes, atualizaFatura) {
+
+    //         try {
+
+    //             let oCaminhoHTML;
+
+    //             if (atualizaFatura) {
+    //                 oCaminhoHTML = path.join(__dirname, 'template.html');
+    //             } else {
+    //                 oCaminhoHTML = path.join(__dirname, 'templatePrevisao.html');
+    //             }
+
+    //             const oHtmlTemplate = fs.readFileSync(oCaminhoHTML, "utf-8");
+
+    //             const oLogoCaminho = path.join(__dirname, 'logo.png');
+    //             const oLogo = fs.readFileSync(oLogoCaminho);
+
+    //             const oTemplateHTML = handlebars.compile(oHtmlTemplate);
+    //             const oConteudohtml = oTemplateHTML({
+    //                 nome: PersonId.Nome,
+    //                 nomecartao: CardId.NomeCartao,
+    //                 Year: fatura.Year,
+    //                 Month: fatura.Month,
+    //                 valor: fatura.ValorTotal,
+    //                 moeda: fatura.Moeda_code,
+    //                 datavencimento: `${this.adicionarZeroEsquerda(CardId.DiaVencimento)}/${this.adicionarZeroEsquerda(fatura.Month)}/${fatura.Year}`,
+    //             });
+
+    //             let oCategoriasDescricao = await this.recuperaCategoriasPrincipal({ data: { fatura: fatura.ID } });
+
+    //             let oPDFBuffer = await this.gerarPDF(oLogo, PersonId, fatura, CardId, transacoes, oCategoriasDescricao);
+
+    //             let oArquivos = []
+
+    //             if (oLogo) {
+    //                 oArquivos.push({ conteudo: oLogo, nome: `logo.png`, cid: 'logo' })
+    //             }
+
+    //             if (oPDFBuffer) {
+    //                 oArquivos.push({ conteudo: oPDFBuffer, nome: `${CardId.NomeCartao}.pdf`, cid: '' })
+    //             }
+
+    //             if (PersonId.Imagem) {
+    //                 oArquivos.push({ conteudo: PersonId.Imagem, nome: `${PersonId.Nome}_.${PersonId.ExtensaoImagem}`, cid: 'imagemPessoa' })
+    //             }
+
+    //             oArquivos = oArquivos.map((arquivo) => (
+    //                 {
+    //                     filename: arquivo.nome,
+    //                     content: arquivo.conteudo,
+    //                     cid: arquivo.cid
+    //                 }));
+
+    //             let oSubject;
+
+    //             if (atualizaFatura) {
+    //                 oSubject = `Fatura do Cartão ${CardId.NomeCartao} - ${this.adicionarZeroEsquerda(fatura.Month)}/${fatura.Year}`;
+    //             } else {
+    //                 oSubject = `Previsão/Detalhamento da fatura do Cartão ${CardId.NomeCartao} - ${this.adicionarZeroEsquerda(fatura.Month)}/${fatura.Year}`
+    //             }
+
+    //             const oOpcoesEmail = {
+    //                 from: `"Gestor de Gastos" <${process.env.SMTPAddres}>`,
+    //                 to: PersonId.Email,
+    //                 subject: oSubject,
+    //                 html: oConteudohtml,
+    //                 attachments: oArquivos
+    //             };
+
+    //             try {
+
+    //                 await this.processaEnviarEmail(oOpcoesEmail, fatura.ID, atualizaFatura);
+
+    //             } catch (error) {
+    //                 console.log("Erro" + error)
+    //                 return error;
+    //             }
+
+    //         } catch (error) {
+    //             console.error("Erro ao enviar e-mail:", error);
+    //             return error;
+    //         }
+
+    //     }
+
+    //     private async processaEnviarEmail(conteudo, fatura, atualizaFatura) {
+
+    //         try {
+
+    //             if (!process.EmailAviso) {
+    //                 process.EmailAviso = this.criarInstanciaEmail();
+    //                 await process.EmailAviso.verify();
+    //                 console.log('Conexão com o servidor SMTP bem-sucedida.');
+    //             }
+
+    //             return new Promise((resolve, reject) => {
+    //                 process.EmailAviso.sendMail(conteudo).then(async function (ok) {
+    //                     console.log('Email enviado com sucesso:');
+
+    //                     if (atualizaFatura) {
+    //                         await this.atualizaAvisoEnviadoFatura(fatura);
+    //                     }
+
+    //                     await this.sleep(5000);
+
+    //                     resolve(ok)
+    //                 }.bind(this)).catch(function (erro) {
+    //                     console.log('Erro ao enviar email:' + erro);
+    //                     reject(erro)
+    //                 }.bind(this));
+    //             });
+
+    //         } catch (erro) {
+
+    //             console.log('Erro ao enviar email:' + erro);
+
+    //         }
+    //     }
+
+
+    //    private async gerarPDF(logo, PersonId, fatura, CardId, transacoes, categoriasDescricao) {
+    //         return await new Promise((resolve, reject) => {
+    //             try {
+    //                 const doc = new PDFDocument({
+    //                     size: "A4",
+    //                     margin: 40,
+    //                 });
+
+    //                 const oCorPrimaria = "#085caf";
+    //                 const oCorDoTexto = "#333333";
+
+    //                 const oBufferArray = [];
+    //                 const oBufferStream = new PassThrough();
+
+    //                 oBufferStream.on('data', (chunk) => oBufferArray.push(chunk));
+    //                 oBufferStream.on('end', () => resolve(Buffer.concat(oBufferArray)));
+    //                 oBufferStream.on('error', (err) => reject(`Erro no stream: ${err}`));
+
+    //                 doc.pipe(oBufferStream);
+
+    //                 const desenharCabecalho = (paginaInicial = false) => {
+    //                     if (!paginaInicial) doc.addPage();
+
+    //                     // Cabeçalho estilizado com imagem à esquerda
+    //                     doc
+    //                         .rect(0, 0, doc.page.width, 80)
+    //                         .fill(oCorPrimaria);
+
+    //                     if (logo) {
+    //                         const diamentro = 60;
+    //                         const x = 40;
+    //                         const y = 10;
+    //                         doc
+    //                             .save()
+    //                             .circle(x + diamentro / 2, y + diamentro / 2, diamentro / 2)
+    //                             .clip()
+    //                             .image(logo, x, y, { width: diamentro, height: diamentro })
+    //                             .restore();
+    //                     }
+
+    //                     doc
+    //                         .fillColor("white")
+    //                         .fontSize(30)
+    //                         .text("Gestor de Gastos", 40, 30, { align: "center" });
+
+    //                     doc.moveDown(2);
+    //                 };
+
+    //                 const desenharRodape = () => {
+
+    //                     let posicaoVertical = doc.page.height - 70;
+
+    //                     doc
+    //                         .rect(0, posicaoVertical, doc.page.width, 80)
+    //                         .fill(oCorPrimaria)
+
+    //                 };
+
+    //                 const desenharResumoFatura = () => {
+    //                     const Monthes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    //                     const MonthDescricao = Monthes[fatura.Month - 1];
+
+    //                     if (CardId.Imagem) {
+    //                         const diamentro = 120;
+    //                         const x = (doc.page.width - diamentro) / 2;
+    //                         const y = 100;
+    //                         doc
+    //                             .save()
+    //                             .circle(x + diamentro / 2, y + diamentro / 2, diamentro / 2)
+    //                             .clip()
+    //                             .image(CardId.Imagem, x, y, { width: diamentro, height: diamentro })
+    //                             .restore();
+    //                     }
+
+    //                     doc.moveDown(3);
+    //                     doc
+    //                         .fillColor(oCorDoTexto)
+    //                         .fontSize(22)
+    //                         .text(`${PersonId.Nome}, a sua fatura do cartão ${CardId.NomeCartao}`, { align: "center" });
+
+    //                     doc.moveDown(2);
+    //                     doc
+    //                         .rect(40, doc.y, doc.page.width - 80, 100)
+    //                         .strokeColor(oCorPrimaria)
+    //                         .lineWidth(2)
+    //                         .stroke();
+
+    //                     doc
+    //                         .fillColor(oCorDoTexto)
+    //                         .fontSize(20)
+    //                         .text("TotalAmount da sua fatura:", 60, doc.y + 10, { align: "left" });
+
+    //                     doc
+    //                         .fillColor(oCorPrimaria)
+    //                         .fontSize(45)
+    //                         .text(`${fatura.ValorTotal} ${fatura.Moeda_code}`, { align: "center" });
+
+    //                     doc.moveDown(2);
+
+    //                     doc
+    //                         .fillColor(oCorDoTexto)
+    //                         .fontSize(20)
+    //                         .text(`Este é o valor que você precisa pagar nesse mês.`, 60, doc.y, { align: "left" });
+
+    //                     doc
+    //                         .fillColor(oCorDoTexto)
+    //                         .fontSize(16)
+    //                         .text(`Mês: ${MonthDescricao}`, { align: "left" })
+    //                         .text(`Year: ${fatura.Year}`, { align: "left" })
+    //                         .text(`Data de Vencimento: ${this.adicionarZeroEsquerda(CardId.DiaVencimento)}/${this.adicionarZeroEsquerda(fatura.Month)}/${fatura.Year}`, { align: "left" });
+
+    //                     doc
+    //                         .moveDown(2)
+    //                         .fillColor("black")
+    //                         .fontSize(20)
+    //                         .text("Fatura gerada automaticamente", 45, doc.y, { align: "center" });;
+
+    //                 };
+
+    //                 const desenharResumoCategorias = () => {
+
+    //                     doc
+    //                         .fillColor(oCorPrimaria)
+    //                         .fontSize(20)
+    //                         .text("Gastos por category", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
+
+    //                     // Define as posições fixas das colunas
+    //                     const posicoes = {
+    //                         imagem: 60,
+    //                         nome: 90,
+    //                         totalcategoria: 280,
+    //                         porcentagem: 440,
+    //                     };
+
+    //                     doc.moveDown(2);
+
+    //                     // Cabeçalho da tabela
+    //                     let posicaoVertical = doc.y;
+
+    //                     doc
+    //                         .fontSize(16)
+    //                         .text("", posicoes.imagem, posicaoVertical, { width: 100 })
+    //                         .text("Nome", posicoes.nome, posicaoVertical, { width: 200 })
+    //                         .text("TotalAmount da Categoria", posicoes.totalcategoria, posicaoVertical, { width: 150 })
+    //                         .text("Porcentagem", posicoes.porcentagem, posicaoVertical, { width: 100 });
+
+    //                     posicaoVertical += 25; // Espaço após o cabeçalho
+
+    //                     // Adiciona uma linha horizontal abaixo do cabeçalho
+    //                     doc
+    //                         .moveTo(60, posicaoVertical - 6)
+    //                         .lineTo(560, posicaoVertical - 6)
+    //                         .strokeColor(oCorPrimaria)
+    //                         .lineWidth(1)
+    //                         .stroke();
+
+    //                     // Renderiza as transações em formato de tabela
+    //                     categoriasDescricao.Categories.forEach((category, index) => {
+
+    //                         doc.moveDown(2);
+
+    //                         posicaoVertical += 15
+
+    //                         if (category.Imagem) {
+    //                             const diamentro = 26;
+    //                             const x = posicoes.imagem;
+    //                             const y = posicaoVertical - 10;
+    //                             doc
+    //                                 .save()
+    //                                 .circle(x + diamentro / 2, y + diamentro / 2, diamentro / 2)
+    //                                 .clip()
+    //                                 .image(category.Imagem, x, y, { width: diamentro, height: diamentro })
+    //                                 .restore();
+    //                         }
+
+    //                         doc
+    //                             .fillColor(oCorDoTexto)
+    //                             .fontSize(12)
+    //                             .text(category.Nome, posicoes.nome, posicaoVertical, { width: 200 })
+    //                             .text(`${category.TotalCategoria} ${categoriasDescricao.Currency}`, posicoes.totalcategoria, posicaoVertical, { width: 130, align: "right" })
+    //                             .text(`${Number(category.Porcentagem).toFixed(2)}%`, posicoes.porcentagem, posicaoVertical, { width: 95, align: "right" });
+
+    //                         // Adiciona uma linha horizontal abaixo de cada transação
+    //                         posicaoVertical += 25;
+    //                         doc
+    //                             .moveTo(60, posicaoVertical - 5)
+    //                             .lineTo(560, posicaoVertical - 5)
+    //                             .strokeColor("#CCCCCC")
+    //                             .lineWidth(0.5)
+    //                             .stroke();
+
+    //                         if ((index + 1) % 15 === 0) { // Adiciona nova página se necessário
+    //                             desenharRodape();
+    //                             desenharCabecalho();
+    //                             posicaoVertical = doc.y + 20; // Reinicia a posição vertical na nova página
+    //                         }
+    //                     });
+
+    //                 };
+
+    //                 const desenharTransacoes = () => {
+    //                     // Centraliza o título
+    //                     doc
+    //                         .fillColor(oCorPrimaria)
+    //                         .fontSize(20)
+    //                         .text("Gastos da Fatura", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
+
+    //                     doc.moveDown(1);
+
+    //                     // Centraliza o título
+    //                     doc
+    //                         .fillColor(oCorPrimaria)
+    //                         .fontSize(18)
+    //                         .text(`Quantidade de gastos totais: ${transacoes.length}`, doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
+
+    //                     doc.moveDown(1);
+
+    //                     // Ordena as transações pela data
+    //                     transacoes.sort((a, b) => new Date(a.Data) - new Date(b.Data));
+
+    //                     // Define as posições fixas das colunas
+    //                     const posicoes = {
+    //                         data: 60,
+    //                         descricao: 140,
+    //                         category: 340,
+    //                         parcela: 440,
+    //                         valor: 460,
+    //                     };
+
+    //                     // Cabeçalho da tabela
+    //                     let posicaoVertical = doc.y;
+
+    //                     doc
+    //                         .fontSize(16)
+    //                         .text("Data", posicoes.data, posicaoVertical, { width: 100 })
+    //                         .text("Descrição", posicoes.descricao, posicaoVertical, { width: 200 })
+    //                         .text("Categoria", posicoes.category, posicaoVertical, { width: 100 })
+    //                         .text("Parcela", posicoes.parcela, posicaoVertical, { width: 100 })
+    //                         .text("Valor", posicoes.valor, posicaoVertical, { width: 100, align: "right" });
+
+    //                     posicaoVertical += 20; // Espaço após o cabeçalho
+
+    //                     // Adiciona uma linha horizontal abaixo do cabeçalho
+    //                     doc
+    //                         .moveTo(60, posicaoVertical - 6)
+    //                         .lineTo(560, posicaoVertical - 6)
+    //                         .strokeColor(oCorPrimaria)
+    //                         .lineWidth(1)
+    //                         .stroke();
+
+    //                     // Renderiza as transações em formato de tabela
+    //                     transacoes.forEach((transacao, index) => {
+    //                         doc.moveDown(2);
+    //                         const oDataGasto = new Date(`${transacao.Data}T00:00:00`);
+    //                         const oYearTransacao = oDataGasto.getFullYear();
+    //                         const oMonthTransacao = String(oDataGasto.getMonth() + 1).padStart(2, "0");
+    //                         const oDayTransacao = String(oDataGasto.getDate()).padStart(2, "0");
+
+    //                         let oCategoria = categoriasDescricao.Categories.filter(category => category.ID == transacao.Category_ID);
+
+    //                         if (oCategoria.length > 0) {
+    //                             oCategoria = oCategoria[0].Nome;
+    //                         } else {
+    //                             oCategoria = "Sem category";
+    //                         }
+
+    //                         doc
+    //                             .fillColor(oCorDoTexto)
+    //                             .fontSize(12)
+    //                             .text(`${oDayTransacao}/${oMonthTransacao}/${oYearTransacao}`, posicoes.data, posicaoVertical, { width: 100 })
+    //                             .text(transacao.Descricao, posicoes.descricao, posicaoVertical, { width: 200 })
+    //                             .text(oCategoria, posicoes.category, posicaoVertical, { width: 100 })
+    //                             .text(`${transacao.Parcela} de ${transacao.ParcelasTotais}`, posicoes.parcela, posicaoVertical, { width: 100 })
+    //                             .text(`${transacao.Valor} ${transacao.Moeda_code}`, posicoes.valor, posicaoVertical, { width: 100, align: "right" });
+
+    //                         // Adiciona uma linha horizontal abaixo de cada transação
+    //                         posicaoVertical += 15;
+    //                         doc
+    //                             .moveTo(60, posicaoVertical - 5)
+    //                             .lineTo(560, posicaoVertical - 5)
+    //                             .strokeColor("#CCCCCC")
+    //                             .lineWidth(0.5)
+    //                             .stroke();
+
+    //                         if ((index + 1) % 30 === 0) { // Adiciona nova página se necessário
+    //                             desenharRodape();
+    //                             desenharCabecalho();
+    //                             posicaoVertical = doc.y + 20; // Reinicia a posição vertical na nova página
+    //                         }
+    //                     });
+
+    //                 };
+
+    //                 desenharCabecalho(true);
+    //                 desenharResumoFatura();
+    //                 desenharRodape();
+
+    //                 if (categoriasDescricao.Categories.length > 0) {
+    //                     desenharCabecalho();
+    //                     desenharResumoCategorias();
+    //                     desenharRodape();
+    //                 }
+
+    //                 desenharCabecalho();
+    //                 desenharTransacoes();
+    //                 desenharRodape();
+
+    //                 doc.end();
+
+    //             } catch (erro) {
+    //                 console.log(erro);
+    //                 reject(`Erro ao gerar PDF: ${erro}`);
+    //             }
+    //         });
+    //     }
+
+
     protected personPath(): string[] {
 
         return [];
@@ -924,7 +1609,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             oDate = oDate.replaceAll(",", " ");
             const [day, month, year] = oDate.split(" ")[0].split("/");
 
-            let oDia = Number(day);
+            let oDay = Number(day);
             let oMonth = Number(month);
             let oYear = Number(year);
 
@@ -996,16 +1681,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                         if (oInvoice.Month == oInvoiceMonth && oInvoice.Year == oInvoiceYear) {
                             oMonthExpenses = oMonthExpenses.plus(oInvoice.TotalAmount || 0);
-                            if (oCardModel.ClosingDay > oDia) {
+                            if (oCardModel.ClosingDay > oDay) {
                                 oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice?.TotalAmount || 0)
                                 oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount || 0)
-                            } else if (oCardModel.DueDay >= oDia) {
+                            } else if (oCardModel.DueDay >= oDay) {
                                 oMonthExpensesClosed = oMonthExpensesClosed.plus(oInvoice.TotalAmount || 0)
                                 oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount || 0)
                             } else {
                                 oMonthExpensesPayed = oMonthExpensesPayed.plus(oInvoice.TotalAmount || 0)
                             }
-                        } else if (oInvoice.Year == oNextYear && oInvoice.Month == oNextMonth && oCardModel.ClosingDay <= oDia) {
+                        } else if (oInvoice.Year == oNextYear && oInvoice.Month == oNextMonth && oCardModel.ClosingDay <= oDay) {
                             oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice.TotalAmount || 0)
                             oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount || 0)
                         } else {
@@ -1142,15 +1827,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         try {
 
-            let oInvoice = await this.InvoiceRepository.findByCardID(
+            let oInvoices = await this.InvoiceRepository.findByCardID(
                 Invoice.Card_ID || Invoice.Card?.ID,
                 {
                     Year: Invoice?.Year,
                     Month: Invoice?.Month
                 }
-            ) as unknown as InvoiceModel;
+            ) as unknown as InvoiceModel[];
 
-            if (!oInvoice) {
+            if (!oInvoices) {
 
                 if (!Invoice.Description && Invoice.Month) {
 
@@ -1162,12 +1847,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     Invoice.ID = this.generateUUID();
                 }
 
-                const oInvoices = await this.InvoiceRepository.createEntry(Invoice) as InvoiceModel[];
+                oInvoices = await this.InvoiceRepository.createEntry(Invoice) as InvoiceModel[];
 
-                oInvoice = oInvoices[0];
             }
 
-            return right(oInvoice);
+            return right(oInvoices?.[0]);
 
         } catch (error) {
 
@@ -1175,6 +1859,449 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             return left(new AbstractError(oErrorInstance.message, 403, oErrorInstance.stack as string));
 
         }
+
+    }
+
+
+    private parseCardExpensesByCategoryFields(data: any) {
+
+        const today = this.getBrazilDate();
+
+        return {
+            PersonId: data.PersonId,
+            CardId: data.CardId,
+            InvoiceId: data.InvoiceId,
+            TotalOnwards: !!data.TotalOnwards,
+            Month: Number(data.Month || today.month),
+            Year: Number(data.Year || today.year)
+        };
+    }
+
+    private validateCardExpensesByCategoriesInput(input: any): Either<AbstractError, true> {
+
+        if (
+            !input.PersonId &&
+            !input.CardId &&
+            !input.InvoiceId
+        ) {
+            return this.fail(
+                "error.fillAtLeastFieldsObrigatory",
+                {
+                    fields: "PersonId, CardId, InvoiceId"
+                }
+            );
+        }
+
+        if (
+            input.TotalOnwards &&
+            !input.PersonId &&
+            !input.CardId
+        ) {
+            return this.fail(
+                "error.fillAtLeastFieldsObrigatory",
+                {
+                    fields: "PersonId, CardId"
+                }
+            );
+        }
+
+        return right(true);
+    }
+
+
+    private async cardExpensesByCategoriesCheckAuthorization(
+        input: any,
+        user: any
+    ): Promise<Either<AbstractError, true>> {
+
+        const cardService =
+            ServiceRegistry.get("Cards") as CardServiceImplementation;
+
+        const invoiceService =
+            ServiceRegistry.get("Invoices") as InvoiceServiceImplementation;
+
+        const categoryService =
+            ServiceRegistry.get("Categories") as CategoryServiceImplementation;
+
+        if (input.PersonId) {
+
+            const result =
+                await this.afterRead(
+                    [{ ID: input.PersonId }],
+                    user
+                );
+
+            if (result.isLeft()) return result as any;
+
+            const categoryAuth =
+                await categoryService.afterRead(
+                    [{ Person: { ID: input.PersonId } }],
+                    user
+                );
+
+            if (categoryAuth.isLeft()) return categoryAuth as any;
+        }
+
+        if (input.CardId) {
+
+            const result =
+                await cardService.afterRead(
+                    [{ ID: input.CardId }],
+                    user
+                );
+
+            if (result.isLeft()) return result as any;
+        }
+
+        if (input.InvoiceId) {
+
+            const result =
+                await invoiceService.afterRead(
+                    [{ ID: input.InvoiceId }],
+                    user
+                );
+
+            if (result.isLeft()) return result as any;
+        }
+
+        return right(true);
+
+    }
+
+
+    private async loadContext(input: any): Promise<{
+        categories: CategoryModel[],
+        cards: CardModel[],
+        invoices: InvoiceModel[]
+    }> {
+
+        if (input.PersonId) {
+            return this.loadByPerson(input);
+        }
+
+        if (input.CardId) {
+            return this.loadByCard(input);
+        }
+
+        return this.loadByInvoice(input);
+    }
+
+
+    private async loadByPerson(input: any) {
+
+        const categories =
+            await this.CategoryRepository
+                .findByPersonIds([input.PersonId]) || [];
+
+        const cards =
+            input.CardId && !input.TotalOnwards
+                ? [CardModel.singleModel({ ID: input.CardId })]
+                : await this.CardRepository
+                    .findByPersonIds([input.PersonId]) || [];
+
+        if (!cards.length) {
+            return {
+                categories: [],
+                cards: [],
+                invoices: []
+            };
+        }
+
+        const filters = input.TotalOnwards
+            ? { Year: { ">=": input.Year } }
+            : {
+                Year: input.Year,
+                Month: input.Month
+            };
+
+        let invoices =
+            await this.InvoiceRepository
+                .findByCardIDs(
+                    cards.map(card => card.Id),
+                    filters
+                ) || [];
+
+        if (input.TotalOnwards) {
+
+            invoices = invoices.filter(
+                invoice =>
+                    invoice.Year > input.Year ||
+                    (
+                        invoice.Year === input.Year &&
+                        invoice.Month >= input.Month
+                    )
+            );
+        }
+
+        return {
+            categories,
+            cards,
+            invoices
+        };
+    }
+
+
+    private async loadByCard(input: any) {
+
+        const card =
+            await this.CardRepository
+                .findById(input.CardId);
+
+        if (!card) {
+            return {
+                categories: [],
+                cards: [],
+                invoices: []
+            };
+        }
+
+        const categories =
+            await this.CategoryRepository
+                .findByPersonIds([card.PersonId]) || [];
+
+        const filters = input.TotalOnwards
+            ? { Year: { ">=": input.Year } }
+            : {
+                Year: input.Year,
+                Month: input.Month
+            };
+
+        let invoices =
+            await this.InvoiceRepository
+                .findByCardIDs(
+                    [card.Id],
+                    filters
+                ) || [];
+
+        if (input.TotalOnwards) {
+
+            invoices = invoices.filter(
+                invoice =>
+                    invoice.Year > input.Year ||
+                    (
+                        invoice.Year === input.Year &&
+                        invoice.Month >= input.Month
+                    )
+            );
+        }
+
+        return {
+            categories,
+            cards: [card],
+            invoices
+        };
+    }
+
+
+    private async loadByInvoice(input: any) {
+
+        const invoice =
+            await this.InvoiceRepository
+                .findById(input.InvoiceId);
+
+        if (!invoice) {
+            return {
+                categories: [],
+                cards: [],
+                invoices: []
+            };
+        }
+
+        const cards =
+            await this.CardRepository
+                .findByInvoiceIds(input.InvoiceId);
+
+        const card = cards?.[0];
+
+        if (!card) {
+            return {
+                categories: [],
+                cards: [],
+                invoices: []
+            };
+        }
+
+        const categories =
+            await this.CategoryRepository
+                .findByPersonIds([card.PersonId]) || [];
+
+        return {
+            categories,
+            cards: [card],
+            invoices: [invoice]
+        };
+
+    }
+
+
+    private async buildSummary(
+        categories: CategoryModel[],
+        invoices: InvoiceModel[],
+        user: any
+    ): Promise<CardExpensesByCategoryReturnProperties> {
+
+        const categoryService =
+            ServiceRegistry.get("Categories") as CategoryServiceImplementation;
+
+        const transactionService =
+            ServiceRegistry.get("Transactions") as TransactionServiceImplementation;
+
+        const categoryAuth =
+            await categoryService.afterRead(
+                [categories[0].toEntityObject()],
+                user
+            );
+
+        if (categoryAuth.isLeft()) throw new Error(categoryAuth?.value?.message);
+
+        const transactionAuth =
+            await transactionService.afterRead(
+                [{
+                    Invoice: {
+                        ID: invoices[0].Id
+                    }
+                }],
+                user
+            );
+
+        if (transactionAuth.isLeft()) throw new Error(transactionAuth?.value?.message);
+
+        const invoiceIds =
+            invoices.map(item => item.Id);
+
+        const totalModel =
+            invoices.length === 1
+                ? invoices[0]
+                : await this.InvoiceRepository
+                    .retrieveTotalAmountByIDs(invoiceIds) as InvoiceModel;
+
+        const total =
+            totalModel?.TotalAmount?.toDecimalPlaces(2) ||
+            new Decimal(0);
+
+        if (total.eq(0)) {
+            return this.emptyResult();
+        }
+
+        const totalsByCategory = await this.TransactionRepository
+            .retrieveTotalsGroupedByCategory(invoices.map(i => i.Id));
+
+        const categoryResults = await Promise.all(
+
+            categories.map(async category => {
+
+                const result = totalsByCategory?.find(
+                    t => t.CategoryId === category.Id
+                );
+
+                const amount =
+                    result?.TotalAmount?.toDecimalPlaces(2) ||
+                    new Decimal(0);
+
+                if (amount.eq(0)) return null;
+
+                const item: CategoryExpenses = {
+                    ID: category.Id,
+                    Name: category.Name,
+                    ImagePath: category.ImageType
+                        ? this.buildImagePath(category.Id)
+                        : undefined,
+                    TotalAmount: amount,
+                    Percent: amount
+                        .div(total)
+                        .mul(100)
+                        .toDecimalPlaces(2)
+                };
+
+                return item;
+
+            })
+
+        );
+
+        const model =
+            CardExpensesByCategoryModel.with({
+                TotalAmount: total,
+                Currency: invoices[0].Currency,
+                Categories: categoryResults
+                    .filter(Boolean)
+                    .sort(
+                        (a: any, b: any) =>
+                            b.TotalAmount
+                                .minus(a.TotalAmount)
+                                .toNumber()
+                    ) as CategoryExpenses[]
+            });
+
+        return model.toEntityObject();
+
+    }
+
+
+    private emptyResult(): CardExpensesByCategoryReturnProperties {
+
+        return {
+            TotalAmount: 0,
+            Currency: {},
+            Categories: []
+        };
+
+    }
+
+
+    private buildImagePath(id: string): string {
+
+        return `Categories(ID='${id}',IsActiveEntity=true)/Image`;
+
+    }
+
+
+    private getBrazilDate() {
+
+        const date = new Date().toLocaleString(
+            "pt-BR",
+            {
+                timeZone: "America/Sao_Paulo"
+            }
+        );
+
+        const [rawDate] =
+            date.replaceAll(",", "").split(" ");
+
+        const [day, month, year] =
+            rawDate.split("/").map(Number);
+
+        return {
+            day,
+            month,
+            year
+        };
+
+    }
+
+    private fail(key: string, params?: any): Either<AbstractError, any> {
+
+        const request =
+            ServiceLocator.getRequest();
+
+        const message =
+            this.getMessage(
+                key,
+                request,
+                undefined,
+                params
+            );
+
+        const err =
+            new Error(message);
+
+        return left(
+            new AbstractError(
+                err.message,
+                403,
+                err.stack as string
+            )
+        );
 
     }
 

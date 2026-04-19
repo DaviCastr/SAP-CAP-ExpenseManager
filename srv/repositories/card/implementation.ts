@@ -114,6 +114,34 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
     }
 
 
+    public async findByInvoiceIds(InvoiceIds: Card['ID'] | Card['ID'][]): Promise<CardModel[] | null> {
+
+        let oCardEntity = this.getEntity();
+
+        let invoiceIds = Array.isArray(InvoiceIds) ? InvoiceIds : [InvoiceIds];
+
+        let oSql = SELECT.from(oCardEntity).where`Invoices.ID in ${invoiceIds}`;
+
+        let oCards = await cds.run(oSql);
+
+        if ((oCardEntity as any)?.isDraft) {
+
+            oCardEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oCardEntity).where`Invoices.ID in ${invoiceIds}`;
+
+            const additionalCardts = await cds.run(oSql) || [];
+            oCards = [...(oCards || []), ...additionalCardts];
+
+        }
+
+        const oCardsModel = this.mapCardResult(oCards);
+
+        return oCardsModel;
+
+    }
+
+
     public async createEntry(data: Card | Cards): Promise<CardModel[] | null> {
 
         let oCardEntity = this.getEntity();

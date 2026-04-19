@@ -527,4 +527,11 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     }
 
+
+    protected addLeftZeros(number: number):string {
+
+        return number >= 1 && number <= 9 ? String(number).padStart(2, '0') : String(number);
+    
+    }
+
 }

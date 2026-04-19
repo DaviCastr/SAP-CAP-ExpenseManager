@@ -1,4 +1,4 @@
-import cds, { User } from '@sap/cds';
+import { User } from '@sap/cds';
 import { AbstractError } from '@/errors';
 import { Backup, Card, Category, Entity, Invoice, Person, Share, Transaction } from '@models/apps/dflc/gestordegastos/entities';
 import { Either, left, right } from '@sweet-monads/either';
@@ -16,36 +16,27 @@ import { InvoiceRepository } from '@/repositories/invoice';
 import { PersonModel } from '@/models/person';
 import { Readable } from 'stream';
 import { CategoryServiceImplementation } from '../category/implementation';
-import { CategoryModel } from '@/models/category';
 import { PersonServiceImplementation } from '../person/implementation';
 import { CardServiceImplementation } from '../card/implementation';
-import { CardModel } from '@/models/card';
 import { InvoiceServiceImplementation } from '../invoice/implementation';
-import { InvoiceModel } from '@/models/invoice';
 import { TransactionServiceImplementation } from '../transaction/implementation';
-import { TransactionModel } from '@/models/transaction';
 import { ShareServiceImplementation } from '../share/implementation';
-import { ShareModel } from '@/models/share';
 import { EntityServiceImplementation } from '../entity/implementation';
-import { EntityModel } from '@/models/entity';
 
 export class BackupServiceImplementation extends BaseServiceImplementation<Backup> implements BackupService {
 
     public Repository: BackupRepository;
-    private InvoiceRepository: InvoiceRepository;
 
     constructor(
         PersonRepository: PersonRepository,
         ShareRepository: ShareRepository,
         EntityRepository: EntityRepository,
-        InvoiceRepository: InvoiceRepository,
         Repository: BackupRepository,
     ) {
 
         super(PersonRepository, ShareRepository, EntityRepository);
 
         this.Repository = Repository;
-        this.InvoiceRepository = InvoiceRepository;
 
     }
 
@@ -694,6 +685,7 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
             Installment: this.get(row.Installment, row.Parcela),
             Description: this.get(row.Description, row.Descricao),
             Invoice: this.relation(row.Invoice, { ID: row.Fatura_ID }),
+            Category: this.relation(row.Category, { ID: row.Categoria_ID }),
             ...this.audit(row)
         };
 

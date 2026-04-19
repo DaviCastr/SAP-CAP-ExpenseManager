@@ -26,6 +26,8 @@ export class PersonRouteImplementation extends BaseRouteImplementation<Person> i
         this.mainBase(Service, Persons);
 
         Service.on('AddCardExpense', this.addCardExpense.bind(this));
+        Service.on('SendInvoices', this.sendInvoices.bind(this));
+        Service.on('CardExpensesByCategories', this.cardExpensesByCategories.bind(this));
 
     }
 
@@ -33,6 +35,36 @@ export class PersonRouteImplementation extends BaseRouteImplementation<Person> i
     private async addCardExpense(Request: Request): Promise<BaseControllerResponse> {
 
          const oResult = await this.Controller.addCardExpense();
+
+        if (oResult.status != 201) {
+
+            return this.returnRejectMessage(Request, oResult);
+
+        }
+
+        return oResult;
+
+    }
+
+
+    private async sendInvoices(Request: Request): Promise<BaseControllerResponse> {
+
+         const oResult = await this.Controller.sendInvoices();
+
+        if (oResult.status != 201) {
+
+            return this.returnRejectMessage(Request, oResult);
+
+        }
+
+        return oResult;
+
+    }
+
+
+    private async cardExpensesByCategories(Request: Request): Promise<BaseControllerResponse> {
+
+         const oResult = await this.Controller.cardExpensesByCategories();
 
         if (oResult.status != 201) {
 

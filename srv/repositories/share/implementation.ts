@@ -30,9 +30,9 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         }
 
-        const oSharesModel = this.mapShareResult(oShares)?.[0];
+        const oSharesModel = this.mapShareResult(oShares);
 
-        return oSharesModel?.[0];
+        return oSharesModel?.[0] as ShareModel;
 
     }
 

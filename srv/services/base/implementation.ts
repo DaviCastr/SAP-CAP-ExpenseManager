@@ -518,7 +518,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
         if (obj && typeof obj === 'object') {
             return Object.fromEntries(
                 Object.entries(obj)
-                    .filter(([_, v]) => v !== undefined && v !== null && JSON.stringify(v) != '{}' &&  (v as any)?.length !== 0)
+                    .filter(([_, v]) => v !== undefined && v !== null && JSON.stringify(v) != '{}' && (v as any)?.length !== 0)
                     .map(([k, v]) => [k, this.cleanEntity(v)])
             );
         }
@@ -528,10 +528,15 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
     }
 
 
-    protected addLeftZeros(number: number):string {
+    protected addLeftZeros(number: number): string {
 
         return number >= 1 && number <= 9 ? String(number).padStart(2, '0') : String(number);
-    
+
+    }
+
+
+    protected async sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
 }

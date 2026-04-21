@@ -11,4 +11,5 @@ export interface InvoiceRepository extends BaseRepository {
     createEntry(data: Invoice | Invoices): Promise<InvoiceModel[] | null>;
     updateTotalAmountByTransactionId(TransactionId: Transaction['ID']): Promise<void>;
     updateTotalAmountById(Id: Invoice['ID']): Promise<void>;
+    update(Id: Invoice['ID'], fields: {}): Promise<void>;
 }

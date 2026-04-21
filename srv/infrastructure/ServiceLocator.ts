@@ -19,6 +19,15 @@ export class ServiceLocator {
     }
 
 
+    public static setRequestData(data: {}) {
+
+        const request = (cds.context as any)?._request as Request;
+
+        request.data = data;
+
+    }
+
+
     public static getGestorService(): cds.Service {
 
         if (!this.GestorService) {
@@ -78,6 +87,25 @@ export class ServiceLocator {
         }
 
         return request.context.permissionCache;
+
+    }
+
+
+    public static getEmailSendingCache() {
+
+        const request = this.getRequest() as any;
+
+        if (!request?.context?.emailSendingCache) {
+            request.context.emailSendingCache = {
+                _mailTemplateCache: null,
+                _predictionTemplateCache: null,
+                _logoCache: null,
+                _smtpInstance: null,
+                _categoryImageCache: new Map<string, Buffer>()
+            };
+        }
+
+        return request.context.emailSendingCache;
 
     }
 

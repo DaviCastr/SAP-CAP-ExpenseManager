@@ -36,11 +36,11 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
     }
 
 
-    public async findByIds(Ids: Card['ID'][]): Promise<CardModel[] | null> {
+    public async findByIds(Ids: Card['ID'][], additionalFilters?: {}): Promise<CardModel[] | null> {
 
         let oCardEntity = this.getEntity();
 
-        let oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids } });
+        let oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids }, ...additionalFilters });
 
         let oCards = await cds.run(oSql);
 
@@ -48,7 +48,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
             oCardEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids } });
+            oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids }, ...additionalFilters  });
 
             const additionalCardts = await cds.run(oSql) || [];
             oCards = [...(oCards || []), ...additionalCardts];
@@ -88,11 +88,11 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
     }
 
 
-    public async findByPersonIds(PersonIds: Card['Person_ID'][]): Promise<CardModel[] | null> {
+    public async findByPersonIds(PersonIds: Card['Person_ID'][], additionalFilters?: {}): Promise<CardModel[] | null> {
 
         let oCardEntity = this.getEntity();
 
-        let oSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds } });
+        let oSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds }, ...additionalFilters });
 
         let oCards = await cds.run(oSql);
 
@@ -100,7 +100,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
             oCardEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds } });
+            oSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds }, ...additionalFilters });
 
             const additionalCards = await cds.run(oSql) || [];
             oCards = [...(oCards || []), ...additionalCards];

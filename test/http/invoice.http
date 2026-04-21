@@ -5,7 +5,7 @@
 
 ### Invoices
 # @name Invoices_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices?$select=Year&$expand=Transactions
+GET {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices?$select=InvoiceSent
 Authorization: Basic {{username}}:{{password}}
 
 

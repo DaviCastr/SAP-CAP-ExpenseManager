@@ -1,9 +1,8 @@
 import { AbstractError } from "@/errors";
-import { Persons, Person, Cards, Invoice, Transaction, Card, Categories } from "@models/apps/dflc/gestordegastos/entities";
+import { Persons, Person, Cards, Invoice, Transaction } from "@models/apps/dflc/gestordegastos/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { PersonService } from "./protocols";
 import { PersonModel } from "@/models/person";
-import Decimal from "decimal.js";
 import { PersonRepository } from "@/repositories/person";
 import { BaseServiceImplementation } from "../base/implementation";
 import { ShareRepository } from "@/repositories/share";
@@ -19,13 +18,23 @@ import { InvoiceServiceImplementation } from "../invoice/implementation";
 import { TransactionRepository } from "@/repositories/transaction";
 import { CategoryRepository } from "@/repositories/category";
 import { TransactionServiceImplementation } from "../transaction/implementation";
-import axios from "axios";
 import { InvoiceModel } from "@/models/invoice";
 import { TransactionModel } from "@/models/transaction";
 import { CategoryModel } from "@/models/category";
 import { CardServiceImplementation } from "../card/implementation";
-import { CardExpensesByCategoryModel, CardExpensesByCategoryProperties, CardExpensesByCategoryReturnProperties, CategoryExpenses } from "@/models/card-expenses-by-category";
+import { CardExpensesByCategoryModel, CardExpensesByCategoryReturnProperties, CategoryExpenses } from "@/models/card-expenses-by-category";
 import { CategoryServiceImplementation } from "../category/implementation";
+import { PassThrough } from "stream";
+import cds from "@sap/cds";
+import Decimal from "decimal.js";
+import axios from "axios";
+import path from "path";
+import fs from "fs";
+import handlebars from "handlebars";
+import PDFDocument from "pdfkit";
+import nodemailer from "nodemailer";
+import { error } from "console";
+
 
 export class PersonServiceImplementation extends BaseServiceImplementation<Person> implements PersonService {
 
@@ -301,250 +310,23 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    public async sendInvoices(): Promise<Either<AbstractError, boolean>> {
-
-        return right(true);
-
-        // if (!process.env.SMTPAddres) {
-        //     return
-        // }
-
-        // let oDate = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-        // oDate = oDate.replaceAll(",", " ");
-        // let [oDay, oMonth, oYear] = oDate.split(" ")[0].split("/");
-
-        // oDay = Number(oDay);
-        // oMonth = Number(oMonth);
-        // oYear = Number(oYear);
-
-        // try {
-
-        //     const { Pessoa, Cartao, Fatura, Transacao } = this.entities
-
-        //     const oPessoas = await SELECT.from(Pessoa).columns('ID', 'Nome', 'Email').where({ Email: { '!=': null } });
-
-        //     if (!oPessoas.length > 0) {
-        //         return;
-        //     }
-
-        //     const oCards = await SELECT.from(Cartao).columns('ID', 'NomeCartao', 'DiaVencimento', 'Pessoa_ID').where({
-        //         DiaVencimento: { '>=': oDay }
-        //     });
-
-        //     if (!oCards.length > 0) {
-        //         return;
-        //     }
-
-        //     let oInvoices = await SELECT.from(Fatura).where({
-        //         Year: oYear,
-        //         Month: oMonth
-        //     });
-
-        //     oInvoices = oInvoices.filter(fatura => fatura.AvisoEnviado === false || fatura.AvisoEnviado === null);
-
-        //     if (!oInvoices.length > 0) {
-        //         return;
-        //     }
-
-        //     for (let oPessoa of oPessoas) {
-
-        //         let oCartoesDaPessoa = oCards.filter(CardId => CardId.Pessoa_ID == oPessoa.ID);
-
-        //         for (let oCard of oCartoesDaPessoa) {
-
-        //             let oFaturasCartao = oInvoices.filter(fatura => fatura.Cartao_ID == oCard.ID);
-
-        //             for (let oInvoice of oFaturasCartao) {
-
-        //                 oCard.DiaVencimento = Number(oCard.DiaVencimento);
-
-        //                 if ((oCard.DiaVencimento - oDay) <= 3) {
-
-        //                     let oTransacoes = await SELECT.from(Transacao).where({ Fatura_ID: oInvoice.ID });
-
-        //                     if (oTransacoes.length > 0) {
-
-        //                         try {
-
-        //                             if (!oPessoa.Imagem) {
-
-        //                                 const tx = cds.tx();
-
-        //                                 let oImagemPessoa = await tx.run(SELECT.one.from(Pessoa).columns('Imagem', 'TipoImagem').where({
-        //                                     ID: oPessoa.ID
-        //                                 }));
-
-        //                                 if (oImagemPessoa.Imagem) {
-
-        //                                     let oImagemBuffer = await this.ReadableParaBuffer(oImagemPessoa.Imagem);
-
-        //                                     const oExtensao = oImagemPessoa.TipoImagem.split("/")[1];
-
-        //                                     //const oCaminhoImagem = path.join(__dirname, `${oPessoa.Nome}_.${oExtensao}`);
-
-        //                                     // Salva o buffer no disco como um arquivo de imagem
-        //                                     //fs.writeFileSync(oCaminhoImagem, oImagemBuffer);
-
-        //                                     oPessoa.Imagem = oImagemBuffer;
-        //                                     //oPessoa.CaminhoImagem = oCaminhoImagem;
-        //                                     oPessoa.ExtensaoImagem = oExtensao;
-
-        //                                 }
-
-        //                             }
-
-        //                         } catch (error) {
-        //                             console.log("erro: " + error);
-        //                             return error;
-        //                         }
-
-        //                         try {
-
-        //                             const tx = cds.tx();
-
-        //                             let oImagemCartao = await tx.run(SELECT.one.from(Cartao).columns('Imagem', 'TipoImagem').where({
-        //                                 ID: oCard.ID
-        //                             }));
-
-        //                             if (oImagemCartao.Imagem) {
-
-        //                                 let oImagemBuffer = await this.ReadableParaBuffer(oImagemCartao.Imagem);
-
-        //                                 oCard.Imagem = oImagemBuffer;
-
-        //                             }
-
-        //                         } catch (error) {
-        //                             console.log("erro: " + error);
-        //                         }
-
-        //                         let erro = await this.enviarEmail(oPessoa, oCard, oInvoice, oTransacoes, true);
-
-
-        //                         if (erro) {
-        //                             return erro;
-        //                         }
-
-        //                     }
-
-        //                 }
-
-        //             }
-
-        //         }
-
-        //     }
-
-        // } catch (erro) {
-        //     console.log("Erro:" + erro)
-        //     return erro;
-        // }
-
-    }
-
-
-    // public async cardExpensesByCategories(): Promise<Either<AbstractError, CardExpensesByCategoryReturnProperties>> {
+    // public async sendInvoices(): Promise<Either<AbstractError, boolean>> {
 
     //     try {
 
     //         const request = ServiceLocator.getRequest();
-    //         let { PersonId, CardId, InvoiceId, Month, Year, TotalOnwards } = request.data;
 
-    //         const required: string[] = [];
+    //         if (!process.env.SMTPAddres) {
 
-    //         if (!PersonId && !CardId && !InvoiceId) {
-
-    //             required.push('PersonId');
-    //             required.push('CardId');
-    //             required.push('InvoiceId');
-
-    //             const message = this.getMessage(
-    //                 'error.fillAtLeastFieldsObrigatory',
-    //                 request,
-    //                 undefined,
-    //                 { fields: required.join(', ') }
-    //             )
-    //             const err = new Error(message) as Error;
+    //             const errorInstance = new Error(this.getMessage('error.emailConfigNotFound', request)) as Error;
 
     //             return left(
     //                 new AbstractError(
-    //                     err.message,
+    //                     errorInstance.message,
     //                     403,
-    //                     err.stack as string
-    //                 ));
-
-    //         }
-
-    //         if (TotalOnwards && !PersonId) {
-
-    //             required.push('PersonId');
-
-    //             const message = this.getMessage(
-    //                 'error.fillAtLeastFieldsObrigatory',
-    //                 request,
-    //                 undefined,
-    //                 { fields: required.join(', ') }
-    //             )
-    //             const err = new Error(message) as Error;
-
-    //             return left(
-    //                 new AbstractError(
-    //                     err.message,
-    //                     403,
-    //                     err.stack as string
-    //                 ));
-
-    //         }
-
-    //         if (PersonId) {
-
-    //             const oPersonCheckAuthorization: Person = {
-    //                 ID: PersonId
-    //             }
-
-    //             const resultCheck = await this.afterRead([oPersonCheckAuthorization], request?.user);
-
-    //             if (resultCheck.isLeft()) {
-
-    //                 return resultCheck as any;
-
-    //             }
-
-    //         }
-
-
-    //         if (CardId) {
-
-    //             const oCardCheckAuthorization: Person = {
-    //                 ID: PersonId
-    //             }
-
-    //             const cardService = ServiceRegistry.get('Cards') as CardServiceImplementation;
-    //             const resultCheck = await cardService.afterRead([oCardCheckAuthorization], request?.user);
-
-    //             if (resultCheck.isLeft()) {
-
-    //                 return resultCheck as any;
-
-    //             }
-
-    //         }
-
-
-    //         if (InvoiceId) {
-
-    //             const oInvoiceCheckAuthorization: Person = {
-    //                 ID: PersonId
-    //             }
-
-    //             const cardService = ServiceRegistry.get('Cards') as CardServiceImplementation;
-    //             const resultCheck = await cardService.afterRead([oInvoiceCheckAuthorization], request?.user);
-
-    //             if (resultCheck.isLeft()) {
-
-    //                 return resultCheck as any;
-
-    //             }
+    //                     errorInstance.stack as string
+    //                 )
+    //             );
 
     //         }
 
@@ -556,210 +338,377 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     //         oMonth = Number(oMonth);
     //         oYear = Number(oYear);
 
-    //         if (Month) {
-    //             oMonth = Number(Month);
-    //             oYear = Number(Year);
-    //         }
+    //         const oPersons = await this.Repository.findAll({ Email: { '!=': null } }) || [];
 
-    //         let oCategories: CategoryModel[] = [];
-    //         let oCards: CardModel[] = [];
-    //         let oInvoices: InvoiceModel[] = []
-    //         let oTotalExpenses: InvoiceModel;
+    //         if (!oPersons.length) {
 
-    //         if (PersonId) {
+    //             const errorInstance = new Error(this.getMessage('error.emailNotFound', request)) as Error;
 
-    //             oCategories = await this.CategoryRepository.findByPersonIds([PersonId]) || [];
-
-    //             if (CardId && !TotalOnwards) {
-    //                 oCards.push(CardModel.singleModel({ ID: CardId }));
-    //             } else {
-    //                 oCards = await this.CardRepository.findByPersonIds([PersonId]) || [];
-    //             }
-
-    //             if (!oCards?.length) {
-
-    //                 return right({
-    //                     TotalAmount: 0,
-    //                     Currency: {},
-    //                     Categories: []
-    //                 });
-
-    //             }
-
-    //             const additionalFiltersInvoices = TotalOnwards ?
-    //                 {
-    //                     Year: { '>=': oYear }
-    //                 } :
-    //                 {
-    //                     Year: oYear,
-    //                     Month: oMonth
-    //                 };
-
-    //             oInvoices = await this.InvoiceRepository.findByCardIDs(
-    //                 oCards.map(f => f.Id),
-    //                 additionalFiltersInvoices
-    //             ) || [];
-
-    //             if (TotalOnwards) {
-
-    //                 oInvoices = oInvoices.filter(invoice => invoice.Year > oYear || invoice.Year == oYear && invoice.Month >= oMonth);
-
-    //             }
-
-    //         } else if (CardId) {
-
-    //             let oCard = await this.CardRepository.findById(CardId);
-
-    //             if (oCard) {
-
-    //                 oCategories = await this.CategoryRepository.findByPersonIds([oCard.PersonId]) || [];
-    //                 oCards.push(CardModel.singleModel({ ID: CardId }));
-
-    //                 oInvoices = await this.InvoiceRepository.findByCardIDs(
-    //                     oCards.map(f => f.Id),
-    //                     {
-    //                         Year: oYear,
-    //                         Month: oMonth,
-    //                     }
-    //                 ) || [];
-
-    //             } else {
-
-    //                 return right({
-    //                     TotalAmount: 0,
-    //                     Currency: {},
-    //                     Categories: []
-    //                 });
-
-    //             }
-
-    //         } else {
-
-    //             let oInvoice = await this.InvoiceRepository.findById(InvoiceId);
-
-    //             if (oInvoice) {
-
-    //                 oInvoices.push(oInvoice);
-
-    //                 let oCards = await this.CardRepository.findByInvoiceIds(InvoiceId);
-    //                 let oCard = oCards?.[0];
-
-    //                 if (oCard) {
-
-    //                     oCategories = await this.CategoryRepository.findByPersonIds([oCard.PersonId]) || [];
-
-    //                 }
-
-    //                 if (!oCategories?.length) {
-
-    //                     return right({
-    //                         TotalAmount: 0,
-    //                         Currency: {},
-    //                         Categories: []
-    //                     });
-
-    //                 }
-
-    //             } else {
-
-    //                 return right({
-    //                     TotalAmount: 0,
-    //                     Currency: {},
-    //                     Categories: []
-    //                 });
-
-    //             }
-
-    //         }
-
-    //         if (!oInvoices?.length) {
-    //             return right({
-    //                 TotalAmount: 0,
-    //                 Currency: {},
-    //                 Categories: []
-    //             });
-    //         }
-
-    //         if (oInvoices?.length == 1) {
-
-    //             oTotalExpenses = oInvoices[0];
-
-    //         } else {
-
-    //             oTotalExpenses = await this.InvoiceRepository.retrieveTotalAmountByIDs(
-    //                 oInvoices.map(f => f.Id)) as InvoiceModel;
-
-    //         }
-
-    //         const totalExpenseAmount: Decimal = oTotalExpenses?.TotalAmount?.toDecimalPlaces(2) || new Decimal(0);
-
-    //         if (totalExpenseAmount.eq(0)) {
-
-    //             return right({
-    //                 TotalAmount: 0,
-    //                 Currency: {},
-    //                 Categories: []
-    //             });
-
-    //         }
-
-    //         const oCardExpenseByCategory: CardExpensesByCategoryProperties = {
-    //             TotalAmount: totalExpenseAmount,
-    //             Currency: oInvoices?.[0].Currency,
-    //             Categories: []
-    //         };
-
-    //         for (let category of oCategories) {
-
-    //             const totalByCategory = await this.TransactionRepository.retrieveTotalAmountByInvoiceIds(
-    //                 oInvoices.map(f => f.Id),
-    //                 {
-    //                     Category_ID: category.Id
-    //                 }
+    //             return left(
+    //                 new AbstractError(
+    //                     errorInstance.message,
+    //                     403,
+    //                     errorInstance.stack as string
+    //                 )
     //             );
 
-    //             const totalAmountByCategory = totalByCategory?.TotalAmount || new Decimal(0);
+    //         }
 
-    //             if (!totalAmountByCategory.eq(0)) {
+    //         const oCards = await this.CardRepository.findByPersonIds(oPersons?.map((item) => item?.Id), {
+    //             DueDay: { '>=': oDay }
+    //         }) || [];
 
-    //                 const newCategory: CategoryExpenses = {
-    //                     ID: category?.Id,
-    //                     Name: category?.Name,
-    //                     TotalAmount: totalAmountByCategory?.toDecimalPlaces(2),
-    //                     Percent: totalExpenseAmount.gt(0) ? totalAmountByCategory.div(totalExpenseAmount).mul(100)?.toDecimalPlaces(2) : new Decimal(0)
+    //         if (!oCards.length) {
+
+    //             const errorInstance = new Error(this.getMessage('error.cardsNotFound', request)) as Error;
+
+    //             return left(
+    //                 new AbstractError(
+    //                     errorInstance.message,
+    //                     403,
+    //                     errorInstance.stack as string
+    //                 )
+    //             );
+
+    //         }
+
+    //         let oInvoices = await this.InvoiceRepository.findByCardIDs(oCards.map((item) => item.Id), {
+    //             Year: oYear,
+    //             Month: oMonth,
+    //             InvoiceSent: { '!=': true }
+    //         }) || [];
+
+    //         if (!oInvoices.length) {
+
+    //             const errorInstance = new Error(this.getMessage('error.invoicesNotFound', request)) as Error;
+
+    //             return left(
+    //                 new AbstractError(
+    //                     errorInstance.message,
+    //                     403,
+    //                     errorInstance.stack as string
+    //                 )
+    //             );
+
+    //         }
+
+    //         for (let oPerson of oPersons) {
+
+    //             let oCardsOfPerson = oCards.filter(CardId => CardId.PersonId == oPerson.Id);
+
+    //             for (let oCard of oCardsOfPerson) {
+
+    //                 let oInvoicesByCard = oInvoices.filter(fatura => fatura.CardId == oCard.Id);
+
+    //                 for (let oInvoice of oInvoicesByCard) {
+
+    //                     if ((oCard.DueDay - oDay) <= 5) {
+
+    //                         let oTransactions = await this.TransactionRepository.findByInvoiceIds([oInvoice.Id]) || [];
+
+    //                         if (oTransactions.length > 0) {
+
+    //                             if (oPerson.ImageType) {
+
+    //                                 let oImageResults = await this.Repository.findImageByIds([oPerson.Id]) || [];
+    //                                 let oImagePerson = oImageResults?.[0];
+
+    //                                 if (oImagePerson?.Image) {
+
+    //                                     oPerson.Image = oImagePerson.Image;
+
+    //                                 }
+
+    //                             }
+
+    //                             if (oCard?.ImageType) {
+
+    //                                 let oImageResults = await this.CardRepository.findImageByIds([oCard.Id]) || [];
+
+    //                                 let oImageCard = oImageResults?.[0];
+
+    //                                 if (oImageCard?.Image) {
+
+    //                                     oCard.Image = oImageCard.Image;
+
+    //                                 }
+
+    //                             }
+
+
+    //                             let result = await this.sendEmail(oPerson, oCard, oInvoice, oTransactions, true);
+
+    //                             return result;
+
+    //                         }
+
+    //                     }
+
     //                 }
-
-    //                 if (category.ImageType) {
-
-    //                     newCategory.ImagePath = `Categories(ID='${newCategory?.ID}',IsActiveEntity=true)/Image`
-
-    //                 }
-
-    //                 oCardExpenseByCategory?.Categories?.push(newCategory);
 
     //             }
 
     //         }
 
-    //         const oReturn: CardExpensesByCategoryModel = CardExpensesByCategoryModel.with(oCardExpenseByCategory);
-
-    //         return right(oReturn.toEntityObject());
+    //         return right(true);
 
     //     } catch (error) {
 
-    //         const err = error as Error;
-
+    //         const errorInstance = error as Error;
     //         return left(
     //             new AbstractError(
-    //                 err.message,
+    //                 errorInstance.message,
     //                 403,
-    //                 err.stack as string
+    //                 errorInstance.stack as string
     //             )
     //         );
 
     //     }
 
     // }
+
+
+    public async sendInvoices(): Promise<Either<AbstractError, boolean>> {
+
+        try {
+
+            const request = ServiceLocator.getRequest();
+
+            const { Year, Month } = request.data;
+
+            this.validateEmailConfiguration(request);
+
+            const today = this.getBrazilDate();
+
+            if (Year) {
+                today.year = Number(Year);
+            }
+
+            if (Month) {
+                today.month = Number(Month);
+            }
+
+            const persons = await this.Repository.findAll({
+                Email: { '!=': null }
+            }) || [];
+
+            if (!persons.length) {
+                return right(true);
+            }
+
+            const cards = await this.CardRepository.findByPersonIds(
+                persons.map(p => p.Id),
+                { DueDay: { '>=': today.day } }
+            ) || [];
+
+            if (!cards.length) {
+                return right(true);
+            }
+
+            const invoices = await this.InvoiceRepository.findByCardIDs(
+                cards.map(c => c.Id),
+                {
+                    Year: today.year,
+                    Month: today.month,
+                    InvoiceSent: { '!=': true }
+                }
+            ) || [];
+
+            if (!invoices.length) {
+                return right(true);
+            }
+
+            const transactions = await this.TransactionRepository.findByInvoiceIds(
+                invoices.map(i => i.Id)
+            ) || [];
+
+            await this.loadPersonsImages(persons);
+            await this.loadCardsImages(cards);
+            await this.initializeEmailInfrastructure();
+
+            const cardsByPerson = new Map<string, CardModel[]>();
+
+            for (const card of cards) {
+
+                if (!cardsByPerson.has(card.PersonId)) {
+                    cardsByPerson.set(card.PersonId, []);
+                }
+
+                cardsByPerson.get(card.PersonId)!.push(card);
+            }
+
+            const invoicesByCard = new Map<string, InvoiceModel[]>();
+
+            for (const invoice of invoices) {
+
+                if (!invoicesByCard.has(invoice.CardId)) {
+                    invoicesByCard.set(invoice.CardId, []);
+                }
+
+                invoicesByCard.get(invoice.CardId)!.push(invoice);
+            }
+
+            const transactionsByInvoice = new Map<string, TransactionModel[]>();
+
+            for (const trx of transactions) {
+
+                if (!transactionsByInvoice.has(trx.InvoiceId)) {
+                    transactionsByInvoice.set(trx.InvoiceId, []);
+                }
+
+                transactionsByInvoice.get(trx.InvoiceId)!.push(trx);
+            }
+
+            const cache = ServiceLocator.getEmailSendingCache();
+
+            for (const person of persons) {
+
+                const personCards = cardsByPerson.get(person.Id) || [];
+
+                if (!personCards.length) continue;
+
+                const invoicesToSend: InvoiceModel[] = [];
+                const attachments: any[] = [];
+
+                let totalAmount = new Decimal(0);
+                let currency = '';
+
+                for (const card of personCards) {
+
+                    const cardInvoices = invoicesByCard.get(card.Id) || [];
+
+                    for (const invoice of cardInvoices) {
+
+                        invoicesToSend.push(invoice);
+
+                        totalAmount = totalAmount.plus(invoice.TotalAmount);
+
+                        currency = invoice.Currency?.Code || currency;
+
+                        const invoiceTransactions =
+                            transactionsByInvoice.get(invoice.Id) || [];
+
+                        if (!invoiceTransactions.length) continue;
+
+                        ServiceLocator.setRequestData({
+                            InvoiceId: invoice.Id
+                        });
+
+                        const analyticsResult =
+                            await this.cardExpensesByCategories();
+
+                        if (analyticsResult.isLeft()) continue;
+
+                        const analytics =
+                            CardExpensesByCategoryModel.singleModel(
+                                analyticsResult.value as any
+                            );
+
+                        const pdfResult = await this.generatePDF(
+                            cache._logoCache!,
+                            person,
+                            invoice,
+                            card,
+                            invoiceTransactions,
+                            analytics
+                        );
+
+                        if (pdfResult.isLeft()) continue;
+
+                        attachments.push({
+                            filename: `${card.Name} ${this.addLeftZeros(invoice.Month)}-${invoice.Year}.pdf`,
+                            content: pdfResult.value
+                        });
+
+                    }
+
+                }
+
+                if (!attachments.length) continue;
+
+                attachments.push({
+                    filename: 'logo.png',
+                    content: cache._logoCache,
+                    cid: 'Logo'
+                });
+
+                if (person.Image) {
+
+                    const img = await this.readableToBuffer(person.Image);
+
+                    attachments.push({
+                        filename: `person.${person.ImageType}`,
+                        content: img,
+                        cid: 'PersonImage'
+                    });
+
+                }
+
+                const template = Year || Month ? cache._predictionTemplateCache : cache._mailTemplateCache;
+
+                const html = template({
+                    Name: person.Name,
+                    Year: today.year,
+                    Month: this.addLeftZeros(today.month),
+                    TotalAmount: totalAmount.toNumber(),
+                    Currency: currency,
+                    InvoiceCount: invoicesToSend.length,
+                    Cards: invoicesToSend.map(inv => {
+
+                        const card =
+                            personCards.find(c => c.Id === inv.CardId);
+
+                        return {
+                            CardName: card?.Name,
+                            DueDate:
+                                `${this.addLeftZeros(card?.DueDay || 0)}/` +
+                                `${this.addLeftZeros(inv.Month)}/${inv.Year}`,
+                            Amount: inv.TotalAmount.toNumber(),
+                            Currency: inv.Currency?.Code
+                        };
+
+                    })
+                });
+
+                await cache._smtpInstance.sendMail({
+                    from: `"Gestor de Gastos" <${process.env.SMTPAddres}>`,
+                    to: person.Email,
+                    subject:
+                        Year || Month
+                            ? `Previsão/Detalhamento de duas faturas de ${this.addLeftZeros(today.month)}/${today.year}`
+                            : `Suas faturas de ${this.addLeftZeros(today.month)}/${today.year}`,
+                    html,
+                    attachments
+                });
+
+                await Promise.all(
+                    invoicesToSend.map(inv =>
+                        this.InvoiceRepository.update(
+                            inv.Id,
+                            { InvoiceSent: true }
+                        )
+                    )
+                );
+
+            }
+
+            return right(true);
+
+        } catch (error) {
+
+            const err = error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    403,
+                    err.stack as string
+                )
+            );
+
+        }
+
+    }
 
 
     public async cardExpensesByCategories(): Promise<
@@ -1133,441 +1082,522 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    // async enviarEmail(PersonId, CardId, fatura, transacoes, atualizaFatura) {
+    private async sendEmail(
+        Person: PersonModel,
+        Card: CardModel,
+        Invoice: InvoiceModel,
+        Transactions: TransactionModel[],
+        updateInvoice: boolean
+    ): Promise<Either<AbstractError, boolean>> {
 
-    //         try {
+        try {
 
-    //             let oCaminhoHTML;
+            let oPathHtmlFile: string;
 
-    //             if (atualizaFatura) {
-    //                 oCaminhoHTML = path.join(__dirname, 'template.html');
-    //             } else {
-    //                 oCaminhoHTML = path.join(__dirname, 'templatePrevisao.html');
-    //             }
+            if (updateInvoice) {
+                oPathHtmlFile = path.join(__dirname, '../email/template.html');
+            } else {
+                oPathHtmlFile = path.join(__dirname, '../email/templatePrediction.html');
+            }
 
-    //             const oHtmlTemplate = fs.readFileSync(oCaminhoHTML, "utf-8");
+            const oHtmlTemplate = fs.readFileSync(oPathHtmlFile, "utf-8");
 
-    //             const oLogoCaminho = path.join(__dirname, 'logo.png');
-    //             const oLogo = fs.readFileSync(oLogoCaminho);
+            const oLogoPath = path.join(__dirname, '../email/logo.png');
+            const oLogo = fs.readFileSync(oLogoPath);
 
-    //             const oTemplateHTML = handlebars.compile(oHtmlTemplate);
-    //             const oConteudohtml = oTemplateHTML({
-    //                 nome: PersonId.Nome,
-    //                 nomecartao: CardId.NomeCartao,
-    //                 Year: fatura.Year,
-    //                 Month: fatura.Month,
-    //                 valor: fatura.ValorTotal,
-    //                 moeda: fatura.Moeda_code,
-    //                 datavencimento: `${this.adicionarZeroEsquerda(CardId.DiaVencimento)}/${this.adicionarZeroEsquerda(fatura.Month)}/${fatura.Year}`,
-    //             });
+            const oTemplateHTML = handlebars.compile(oHtmlTemplate);
+            const oHtmlContent = oTemplateHTML({
+                Name: Person?.Name,
+                CardName: Card?.Name,
+                Year: Invoice?.Year,
+                Month: Invoice?.Month,
+                Amount: Invoice.TotalAmount?.toNumber() || 0,
+                Currency: Invoice?.Currency?.Code,
+                DueDate: `${this.addLeftZeros(Card?.DueDay)}/${this.addLeftZeros(Invoice?.Month)}/${Invoice?.Year}`,
+            });
 
-    //             let oCategoriasDescricao = await this.recuperaCategoriasPrincipal({ data: { fatura: fatura.ID } });
+            ServiceLocator.setRequestData({ InvoiceId: Invoice?.Id });
 
-    //             let oPDFBuffer = await this.gerarPDF(oLogo, PersonId, fatura, CardId, transacoes, oCategoriasDescricao);
+            let oCardExpensesByCategoriesResult = await this.cardExpensesByCategories();
 
-    //             let oArquivos = []
+            if (oCardExpensesByCategoriesResult?.isLeft()) return oCardExpensesByCategoriesResult as any;
 
-    //             if (oLogo) {
-    //                 oArquivos.push({ conteudo: oLogo, nome: `logo.png`, cid: 'logo' })
-    //             }
+            const result = oCardExpensesByCategoriesResult.value;
+            const oCardExpensesByCategories = CardExpensesByCategoryModel.singleModel(result as CardExpensesByCategoryReturnProperties);
 
-    //             if (oPDFBuffer) {
-    //                 oArquivos.push({ conteudo: oPDFBuffer, nome: `${CardId.NomeCartao}.pdf`, cid: '' })
-    //             }
+            let oPDFResult = await this.generatePDF(oLogo, Person, Invoice, Card, Transactions, oCardExpensesByCategories);
 
-    //             if (PersonId.Imagem) {
-    //                 oArquivos.push({ conteudo: PersonId.Imagem, nome: `${PersonId.Nome}_.${PersonId.ExtensaoImagem}`, cid: 'imagemPessoa' })
-    //             }
+            if (oPDFResult.isLeft()) return oPDFResult as any;
 
-    //             oArquivos = oArquivos.map((arquivo) => (
-    //                 {
-    //                     filename: arquivo.nome,
-    //                     content: arquivo.conteudo,
-    //                     cid: arquivo.cid
-    //                 }));
+            let oPDFBuffer = oPDFResult.value as Buffer;
 
-    //             let oSubject;
+            let oFiles: any[] = []
 
-    //             if (atualizaFatura) {
-    //                 oSubject = `Fatura do Cartão ${CardId.NomeCartao} - ${this.adicionarZeroEsquerda(fatura.Month)}/${fatura.Year}`;
-    //             } else {
-    //                 oSubject = `Previsão/Detalhamento da fatura do Cartão ${CardId.NomeCartao} - ${this.adicionarZeroEsquerda(fatura.Month)}/${fatura.Year}`
-    //             }
+            if (oLogo) {
+                oFiles.push({ content: oLogo, filename: `logo.png`, cid: 'Logo' })
+            }
 
-    //             const oOpcoesEmail = {
-    //                 from: `"Gestor de Gastos" <${process.env.SMTPAddres}>`,
-    //                 to: PersonId.Email,
-    //                 subject: oSubject,
-    //                 html: oConteudohtml,
-    //                 attachments: oArquivos
-    //             };
+            if (oPDFBuffer) {
+                oFiles.push({ content: oPDFBuffer, filename: `${Card?.Name}.pdf`, cid: '' })
+            }
 
-    //             try {
+            if (Person?.Image) {
+                const oImage = await this.readableToBuffer(Person?.Image);
+                oFiles.push({ content: oImage, filename: `${Person?.Name}.${Person?.ImageType}`, cid: 'PersonImage' })
+            }
 
-    //                 await this.processaEnviarEmail(oOpcoesEmail, fatura.ID, atualizaFatura);
+            let oSubject: string;
 
-    //             } catch (error) {
-    //                 console.log("Erro" + error)
-    //                 return error;
-    //             }
+            if (updateInvoice) {
+                oSubject = `Fatura do Cartão ${Card?.Name} - ${this.addLeftZeros(Invoice?.Month)}/${Invoice?.Year}`;
+            } else {
+                oSubject = `Previsão/Detalhamento da fatura do Cartão ${Card.Name} - ${this.addLeftZeros(Invoice.Month)}/${Invoice.Year}`
+            }
 
-    //         } catch (error) {
-    //             console.error("Erro ao enviar e-mail:", error);
-    //             return error;
-    //         }
+            const oEmailOptions = {
+                from: `"Gestor de Gastos" <${process.env.SMTPAddres}>`,
+                to: Person?.Email,
+                subject: oSubject,
+                html: oHtmlContent,
+                attachments: oFiles
+            };
 
-    //     }
+            const resultEmailSending = await this.processSendEmail(oEmailOptions, Invoice.Id, updateInvoice);
 
-    //     private async processaEnviarEmail(conteudo, fatura, atualizaFatura) {
+            if (resultEmailSending.isLeft()) return resultEmailSending as any;
 
-    //         try {
+            return right(true);
 
-    //             if (!process.EmailAviso) {
-    //                 process.EmailAviso = this.criarInstanciaEmail();
-    //                 await process.EmailAviso.verify();
-    //                 console.log('Conexão com o servidor SMTP bem-sucedida.');
-    //             }
+        } catch (error) {
 
-    //             return new Promise((resolve, reject) => {
-    //                 process.EmailAviso.sendMail(conteudo).then(async function (ok) {
-    //                     console.log('Email enviado com sucesso:');
-
-    //                     if (atualizaFatura) {
-    //                         await this.atualizaAvisoEnviadoFatura(fatura);
-    //                     }
-
-    //                     await this.sleep(5000);
-
-    //                     resolve(ok)
-    //                 }.bind(this)).catch(function (erro) {
-    //                     console.log('Erro ao enviar email:' + erro);
-    //                     reject(erro)
-    //                 }.bind(this));
-    //             });
-
-    //         } catch (erro) {
-
-    //             console.log('Erro ao enviar email:' + erro);
-
-    //         }
-    //     }
-
-
-    //    private async gerarPDF(logo, PersonId, fatura, CardId, transacoes, categoriasDescricao) {
-    //         return await new Promise((resolve, reject) => {
-    //             try {
-    //                 const doc = new PDFDocument({
-    //                     size: "A4",
-    //                     margin: 40,
-    //                 });
-
-    //                 const oCorPrimaria = "#085caf";
-    //                 const oCorDoTexto = "#333333";
-
-    //                 const oBufferArray = [];
-    //                 const oBufferStream = new PassThrough();
-
-    //                 oBufferStream.on('data', (chunk) => oBufferArray.push(chunk));
-    //                 oBufferStream.on('end', () => resolve(Buffer.concat(oBufferArray)));
-    //                 oBufferStream.on('error', (err) => reject(`Erro no stream: ${err}`));
-
-    //                 doc.pipe(oBufferStream);
-
-    //                 const desenharCabecalho = (paginaInicial = false) => {
-    //                     if (!paginaInicial) doc.addPage();
-
-    //                     // Cabeçalho estilizado com imagem à esquerda
-    //                     doc
-    //                         .rect(0, 0, doc.page.width, 80)
-    //                         .fill(oCorPrimaria);
-
-    //                     if (logo) {
-    //                         const diamentro = 60;
-    //                         const x = 40;
-    //                         const y = 10;
-    //                         doc
-    //                             .save()
-    //                             .circle(x + diamentro / 2, y + diamentro / 2, diamentro / 2)
-    //                             .clip()
-    //                             .image(logo, x, y, { width: diamentro, height: diamentro })
-    //                             .restore();
-    //                     }
-
-    //                     doc
-    //                         .fillColor("white")
-    //                         .fontSize(30)
-    //                         .text("Gestor de Gastos", 40, 30, { align: "center" });
-
-    //                     doc.moveDown(2);
-    //                 };
-
-    //                 const desenharRodape = () => {
-
-    //                     let posicaoVertical = doc.page.height - 70;
-
-    //                     doc
-    //                         .rect(0, posicaoVertical, doc.page.width, 80)
-    //                         .fill(oCorPrimaria)
-
-    //                 };
-
-    //                 const desenharResumoFatura = () => {
-    //                     const Monthes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    //                     const MonthDescricao = Monthes[fatura.Month - 1];
-
-    //                     if (CardId.Imagem) {
-    //                         const diamentro = 120;
-    //                         const x = (doc.page.width - diamentro) / 2;
-    //                         const y = 100;
-    //                         doc
-    //                             .save()
-    //                             .circle(x + diamentro / 2, y + diamentro / 2, diamentro / 2)
-    //                             .clip()
-    //                             .image(CardId.Imagem, x, y, { width: diamentro, height: diamentro })
-    //                             .restore();
-    //                     }
-
-    //                     doc.moveDown(3);
-    //                     doc
-    //                         .fillColor(oCorDoTexto)
-    //                         .fontSize(22)
-    //                         .text(`${PersonId.Nome}, a sua fatura do cartão ${CardId.NomeCartao}`, { align: "center" });
-
-    //                     doc.moveDown(2);
-    //                     doc
-    //                         .rect(40, doc.y, doc.page.width - 80, 100)
-    //                         .strokeColor(oCorPrimaria)
-    //                         .lineWidth(2)
-    //                         .stroke();
-
-    //                     doc
-    //                         .fillColor(oCorDoTexto)
-    //                         .fontSize(20)
-    //                         .text("TotalAmount da sua fatura:", 60, doc.y + 10, { align: "left" });
-
-    //                     doc
-    //                         .fillColor(oCorPrimaria)
-    //                         .fontSize(45)
-    //                         .text(`${fatura.ValorTotal} ${fatura.Moeda_code}`, { align: "center" });
-
-    //                     doc.moveDown(2);
-
-    //                     doc
-    //                         .fillColor(oCorDoTexto)
-    //                         .fontSize(20)
-    //                         .text(`Este é o valor que você precisa pagar nesse mês.`, 60, doc.y, { align: "left" });
-
-    //                     doc
-    //                         .fillColor(oCorDoTexto)
-    //                         .fontSize(16)
-    //                         .text(`Mês: ${MonthDescricao}`, { align: "left" })
-    //                         .text(`Year: ${fatura.Year}`, { align: "left" })
-    //                         .text(`Data de Vencimento: ${this.adicionarZeroEsquerda(CardId.DiaVencimento)}/${this.adicionarZeroEsquerda(fatura.Month)}/${fatura.Year}`, { align: "left" });
-
-    //                     doc
-    //                         .moveDown(2)
-    //                         .fillColor("black")
-    //                         .fontSize(20)
-    //                         .text("Fatura gerada automaticamente", 45, doc.y, { align: "center" });;
-
-    //                 };
-
-    //                 const desenharResumoCategorias = () => {
-
-    //                     doc
-    //                         .fillColor(oCorPrimaria)
-    //                         .fontSize(20)
-    //                         .text("Gastos por category", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
-
-    //                     // Define as posições fixas das colunas
-    //                     const posicoes = {
-    //                         imagem: 60,
-    //                         nome: 90,
-    //                         totalcategoria: 280,
-    //                         porcentagem: 440,
-    //                     };
-
-    //                     doc.moveDown(2);
-
-    //                     // Cabeçalho da tabela
-    //                     let posicaoVertical = doc.y;
-
-    //                     doc
-    //                         .fontSize(16)
-    //                         .text("", posicoes.imagem, posicaoVertical, { width: 100 })
-    //                         .text("Nome", posicoes.nome, posicaoVertical, { width: 200 })
-    //                         .text("TotalAmount da Categoria", posicoes.totalcategoria, posicaoVertical, { width: 150 })
-    //                         .text("Porcentagem", posicoes.porcentagem, posicaoVertical, { width: 100 });
-
-    //                     posicaoVertical += 25; // Espaço após o cabeçalho
-
-    //                     // Adiciona uma linha horizontal abaixo do cabeçalho
-    //                     doc
-    //                         .moveTo(60, posicaoVertical - 6)
-    //                         .lineTo(560, posicaoVertical - 6)
-    //                         .strokeColor(oCorPrimaria)
-    //                         .lineWidth(1)
-    //                         .stroke();
-
-    //                     // Renderiza as transações em formato de tabela
-    //                     categoriasDescricao.Categories.forEach((category, index) => {
-
-    //                         doc.moveDown(2);
-
-    //                         posicaoVertical += 15
-
-    //                         if (category.Imagem) {
-    //                             const diamentro = 26;
-    //                             const x = posicoes.imagem;
-    //                             const y = posicaoVertical - 10;
-    //                             doc
-    //                                 .save()
-    //                                 .circle(x + diamentro / 2, y + diamentro / 2, diamentro / 2)
-    //                                 .clip()
-    //                                 .image(category.Imagem, x, y, { width: diamentro, height: diamentro })
-    //                                 .restore();
-    //                         }
-
-    //                         doc
-    //                             .fillColor(oCorDoTexto)
-    //                             .fontSize(12)
-    //                             .text(category.Nome, posicoes.nome, posicaoVertical, { width: 200 })
-    //                             .text(`${category.TotalCategoria} ${categoriasDescricao.Currency}`, posicoes.totalcategoria, posicaoVertical, { width: 130, align: "right" })
-    //                             .text(`${Number(category.Porcentagem).toFixed(2)}%`, posicoes.porcentagem, posicaoVertical, { width: 95, align: "right" });
-
-    //                         // Adiciona uma linha horizontal abaixo de cada transação
-    //                         posicaoVertical += 25;
-    //                         doc
-    //                             .moveTo(60, posicaoVertical - 5)
-    //                             .lineTo(560, posicaoVertical - 5)
-    //                             .strokeColor("#CCCCCC")
-    //                             .lineWidth(0.5)
-    //                             .stroke();
-
-    //                         if ((index + 1) % 15 === 0) { // Adiciona nova página se necessário
-    //                             desenharRodape();
-    //                             desenharCabecalho();
-    //                             posicaoVertical = doc.y + 20; // Reinicia a posição vertical na nova página
-    //                         }
-    //                     });
-
-    //                 };
-
-    //                 const desenharTransacoes = () => {
-    //                     // Centraliza o título
-    //                     doc
-    //                         .fillColor(oCorPrimaria)
-    //                         .fontSize(20)
-    //                         .text("Gastos da Fatura", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
-
-    //                     doc.moveDown(1);
-
-    //                     // Centraliza o título
-    //                     doc
-    //                         .fillColor(oCorPrimaria)
-    //                         .fontSize(18)
-    //                         .text(`Quantidade de gastos totais: ${transacoes.length}`, doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
-
-    //                     doc.moveDown(1);
-
-    //                     // Ordena as transações pela data
-    //                     transacoes.sort((a, b) => new Date(a.Data) - new Date(b.Data));
-
-    //                     // Define as posições fixas das colunas
-    //                     const posicoes = {
-    //                         data: 60,
-    //                         descricao: 140,
-    //                         category: 340,
-    //                         parcela: 440,
-    //                         valor: 460,
-    //                     };
-
-    //                     // Cabeçalho da tabela
-    //                     let posicaoVertical = doc.y;
-
-    //                     doc
-    //                         .fontSize(16)
-    //                         .text("Data", posicoes.data, posicaoVertical, { width: 100 })
-    //                         .text("Descrição", posicoes.descricao, posicaoVertical, { width: 200 })
-    //                         .text("Categoria", posicoes.category, posicaoVertical, { width: 100 })
-    //                         .text("Parcela", posicoes.parcela, posicaoVertical, { width: 100 })
-    //                         .text("Valor", posicoes.valor, posicaoVertical, { width: 100, align: "right" });
-
-    //                     posicaoVertical += 20; // Espaço após o cabeçalho
-
-    //                     // Adiciona uma linha horizontal abaixo do cabeçalho
-    //                     doc
-    //                         .moveTo(60, posicaoVertical - 6)
-    //                         .lineTo(560, posicaoVertical - 6)
-    //                         .strokeColor(oCorPrimaria)
-    //                         .lineWidth(1)
-    //                         .stroke();
-
-    //                     // Renderiza as transações em formato de tabela
-    //                     transacoes.forEach((transacao, index) => {
-    //                         doc.moveDown(2);
-    //                         const oDataGasto = new Date(`${transacao.Data}T00:00:00`);
-    //                         const oYearTransacao = oDataGasto.getFullYear();
-    //                         const oMonthTransacao = String(oDataGasto.getMonth() + 1).padStart(2, "0");
-    //                         const oDayTransacao = String(oDataGasto.getDate()).padStart(2, "0");
-
-    //                         let oCategoria = categoriasDescricao.Categories.filter(category => category.ID == transacao.Category_ID);
-
-    //                         if (oCategoria.length > 0) {
-    //                             oCategoria = oCategoria[0].Nome;
-    //                         } else {
-    //                             oCategoria = "Sem category";
-    //                         }
-
-    //                         doc
-    //                             .fillColor(oCorDoTexto)
-    //                             .fontSize(12)
-    //                             .text(`${oDayTransacao}/${oMonthTransacao}/${oYearTransacao}`, posicoes.data, posicaoVertical, { width: 100 })
-    //                             .text(transacao.Descricao, posicoes.descricao, posicaoVertical, { width: 200 })
-    //                             .text(oCategoria, posicoes.category, posicaoVertical, { width: 100 })
-    //                             .text(`${transacao.Parcela} de ${transacao.ParcelasTotais}`, posicoes.parcela, posicaoVertical, { width: 100 })
-    //                             .text(`${transacao.Valor} ${transacao.Moeda_code}`, posicoes.valor, posicaoVertical, { width: 100, align: "right" });
-
-    //                         // Adiciona uma linha horizontal abaixo de cada transação
-    //                         posicaoVertical += 15;
-    //                         doc
-    //                             .moveTo(60, posicaoVertical - 5)
-    //                             .lineTo(560, posicaoVertical - 5)
-    //                             .strokeColor("#CCCCCC")
-    //                             .lineWidth(0.5)
-    //                             .stroke();
-
-    //                         if ((index + 1) % 30 === 0) { // Adiciona nova página se necessário
-    //                             desenharRodape();
-    //                             desenharCabecalho();
-    //                             posicaoVertical = doc.y + 20; // Reinicia a posição vertical na nova página
-    //                         }
-    //                     });
-
-    //                 };
-
-    //                 desenharCabecalho(true);
-    //                 desenharResumoFatura();
-    //                 desenharRodape();
-
-    //                 if (categoriasDescricao.Categories.length > 0) {
-    //                     desenharCabecalho();
-    //                     desenharResumoCategorias();
-    //                     desenharRodape();
-    //                 }
-
-    //                 desenharCabecalho();
-    //                 desenharTransacoes();
-    //                 desenharRodape();
-
-    //                 doc.end();
-
-    //             } catch (erro) {
-    //                 console.log(erro);
-    //                 reject(`Erro ao gerar PDF: ${erro}`);
-    //             }
-    //         });
-    //     }
+            const errorInstance = error as Error;
+            return left(
+                new AbstractError(
+                    errorInstance.message,
+                    403,
+                    errorInstance.stack as string
+                )
+            );
+
+        }
+
+    }
+
+
+    private async processSendEmail(
+        content: {},
+        InvoiceId: string,
+        updateInvoice: boolean): Promise<Either<AbstractError, boolean>> {
+
+        try {
+
+            const context = cds.context;
+
+            if (!(context as any)?.EmailInstance) {
+                (context as any).EmailInstance = this.createEmailInstance();
+                await (context as any).EmailInstance.verify();
+                console.log('Conexão com o servidor SMTP bem-sucedida.');
+            }
+
+            const result = await new Promise((resolve, reject) => {
+                (context as any).EmailInstance.sendMail(content).then(async (ok) => {
+                    console.log('Email enviado com sucesso:');
+
+                    if (updateInvoice) {
+                        await this.InvoiceRepository.update(InvoiceId, { InvoiceSent: true });
+                    }
+
+                    await this.sleep(5000);
+
+                    resolve(true)
+                }).catch(function (erro) {
+                    console.log('Erro ao enviar email:' + erro);
+                    reject(erro)
+                });
+            });
+
+            if (result != true) {
+                throw result;
+            }
+
+            return right(true);
+
+        } catch (error) {
+
+            const errorInstance = error as Error;
+            return left(
+                new AbstractError(
+                    errorInstance.message,
+                    403,
+                    errorInstance.stack as string
+                )
+            );
+
+        }
+
+    }
+
+
+    private createEmailInstance() {
+
+        return nodemailer.createTransport({
+            host: process.env.SMTPHost,
+            port: 587, // TLS
+            secure: false, // Use false para TLS
+            auth: {
+                user: process.env.SMTPAddres,
+                pass: process.env.SMTPKey
+            }
+        });
+
+    }
+
+
+    private async generatePDF(
+        Logo: Buffer,
+        Person: PersonModel,
+        Invoice: InvoiceModel,
+        Card: CardModel,
+        Transactions: TransactionModel[],
+        CardExpensesByCategory: CardExpensesByCategoryModel
+    ): Promise<Either<AbstractError, Buffer>> {
+
+        try {
+
+            const result = await new Promise(async (resolve, reject) => {
+
+                const doc = new PDFDocument({
+                    size: "A4",
+                    margin: 40,
+                });
+
+                const oPrimaryColor = "#085caf";
+                const oTextColor = "#333333";
+
+                const oBufferArray: any[] = [];
+                const oBufferStream = new PassThrough();
+
+                oBufferStream.on('data', (chunk) => oBufferArray.push(chunk));
+                oBufferStream.on('end', () => resolve(Buffer?.concat(oBufferArray) as any));
+                oBufferStream.on('error', (err) => reject(`Erro no stream: ${err}`));
+
+                doc.pipe(oBufferStream);
+
+                const designHeader = (initialPage = false) => {
+                    if (!initialPage) doc.addPage();
+
+                    // Cabeçalho estilizado com Image à esquerda
+                    doc
+                        .rect(0, 0, doc.page.width, 80)
+                        .fill(oPrimaryColor);
+
+                    if (Logo) {
+                        const diameter = 60;
+                        const x = 40;
+                        const y = 10;
+                        doc
+                            .save()
+                            .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
+                            .clip()
+                            .image(Logo, x, y, { width: diameter, height: diameter })
+                            .restore();
+                    }
+
+                    doc
+                        .fillColor("white")
+                        .fontSize(30)
+                        .text("Gestor de Gastos", 40, 30, { align: "center" });
+
+                    doc.moveDown(2);
+                };
+
+                const designFooter = () => {
+
+                    let verticalPosition = doc.page.height - 70;
+
+                    doc
+                        .rect(0, verticalPosition, doc.page.width, 80)
+                        .fill(oPrimaryColor)
+
+                };
+
+                const designInvoiceSummary = async () => {
+                    const oMonthDescription = this.getMessage(`month.${Invoice?.Month}`, ServiceLocator.getRequest());
+
+                    if (Card?.Image) {
+                        const diameter = 120;
+                        const x = (doc.page.width - diameter) / 2;
+                        const y = 100;
+                        const oImage = await this.readableToBuffer(Card?.Image);
+                        doc
+                            .save()
+                            .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
+                            .clip()
+                            .image(oImage as Buffer, x, y, { width: diameter, height: diameter })
+                            .restore();
+                    }
+
+                    doc.moveDown(3);
+                    doc
+                        .fillColor(oTextColor)
+                        .fontSize(22)
+                        .text(`${Person?.Name}, a sua fatura do cartão ${Card?.Name}`, { align: "center" });
+
+                    doc.moveDown(2);
+                    doc
+                        .rect(40, doc.y, doc.page.width - 80, 100)
+                        .strokeColor(oPrimaryColor)
+                        .lineWidth(2)
+                        .stroke();
+
+                    doc
+                        .fillColor(oTextColor)
+                        .fontSize(20)
+                        .text("Total da sua fatura:", 60, doc.y + 10, { align: "left" });
+
+                    doc
+                        .fillColor(oPrimaryColor)
+                        .fontSize(45)
+                        .text(`${Invoice?.TotalAmount?.toNumber()} ${Invoice?.Currency?.Code}`, { align: "center" });
+
+                    doc.moveDown(2);
+
+                    doc
+                        .fillColor(oTextColor)
+                        .fontSize(20)
+                        .text(`Este é o valor que você precisa pagar nesse mês.`, 60, doc.y, { align: "left" });
+
+                    doc
+                        .fillColor(oTextColor)
+                        .fontSize(16)
+                        .text(`Mês: ${oMonthDescription}`, { align: "left" })
+                        .text(`Ano: ${Invoice?.Year}`, { align: "left" })
+                        .text(`Data de Vencimento: ${this.addLeftZeros(Card?.DueDay)}/${this.addLeftZeros(Invoice?.Month)}/${Invoice?.Year}`, { align: "left" });
+
+                    doc
+                        .moveDown(2)
+                        .fillColor("black")
+                        .fontSize(20)
+                        .text("Fatura gerada automaticamente", 45, doc.y, { align: "center" });;
+
+                };
+
+                const designCategoriesSummary = async () => {
+
+                    doc
+                        .fillColor(oPrimaryColor)
+                        .fontSize(20)
+                        .text("Gastos por categoria", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
+
+                    // Define as posições fixas das colunas
+                    const positions = {
+                        image: 60,
+                        name: 90,
+                        totalCategory: 280,
+                        percent: 440,
+                    };
+
+                    doc.moveDown(2);
+
+                    // Cabeçalho da tabela
+                    let verticalPosition = doc.y;
+
+                    doc
+                        .fontSize(16)
+                        .text("", positions.image, verticalPosition, { width: 100 })
+                        .text("Nome", positions.name, verticalPosition, { width: 200 })
+                        .text("Total da Categoria", positions.totalCategory, verticalPosition, { width: 150 })
+                        .text("Porcentagem", positions.percent, verticalPosition, { width: 100 });
+
+                    verticalPosition += 25; // Espaço após o cabeçalho
+
+                    // Adiciona uma linha horizontal abaixo do cabeçalho
+                    doc
+                        .moveTo(60, verticalPosition - 6)
+                        .lineTo(560, verticalPosition - 6)
+                        .strokeColor(oPrimaryColor)
+                        .lineWidth(1)
+                        .stroke();
+
+                    // Renderiza as transações em formato de tabela
+                    let index = 0;
+                    for (const category of CardExpensesByCategory.Categories) {
+
+                        doc.moveDown(2);
+
+                        verticalPosition += 15
+
+                        if (category?.ImagePath) {
+
+                            const diameter = 26;
+                            const x = positions.image;
+                            const y = verticalPosition - 10;
+                            const oImageBuffer = await this.getCategoryImageCached(category?.ID);
+
+                            doc
+                                .save()
+                                .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
+                                .clip()
+                                .image(oImageBuffer as Buffer, x, y, { width: diameter, height: diameter })
+                                .restore();
+
+                        }
+
+                        doc
+                            .fillColor(oTextColor)
+                            .fontSize(12)
+                            .text(category.Name, positions.name, verticalPosition, { width: 200 })
+                            .text(`${category.TotalAmount?.toNumber()} ${CardExpensesByCategory?.Currency?.Code}`, positions.totalCategory, verticalPosition, { width: 130, align: "right" })
+                            .text(`${Number(category.Percent?.toNumber()).toFixed(2)}%`, positions.percent, verticalPosition, { width: 95, align: "right" });
+
+                        // Adiciona uma linha horizontal abaixo de cada transação
+                        verticalPosition += 25;
+                        doc
+                            .moveTo(60, verticalPosition - 5)
+                            .lineTo(560, verticalPosition - 5)
+                            .strokeColor("#CCCCCC")
+                            .lineWidth(0.5)
+                            .stroke();
+
+                        if ((index + 1) % 15 === 0) { // Adiciona nova página se necessário
+                            designFooter();
+                            designHeader();
+                            verticalPosition = doc.y + 20; // Reinicia a posição vertical na nova página
+                        }
+
+                        index++;
+
+                    };
+
+                };
+
+                const designTransactions = () => {
+                    // Centraliza o título
+                    doc
+                        .fillColor(oPrimaryColor)
+                        .fontSize(20)
+                        .text("Gastos da Fatura", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
+
+                    doc.moveDown(1);
+
+                    // Centraliza o título
+                    doc
+                        .fillColor(oPrimaryColor)
+                        .fontSize(18)
+                        .text(`Quantidade de gastos totais: ${Transactions.length}`, doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
+
+                    doc.moveDown(1);
+
+                    // Ordena as transações pela data
+                    Transactions.sort((a, b) => (new Date(a.Date) as any) - (new Date(b.Date) as any));
+
+                    // Define as posições fixas das colunas
+                    const positions = {
+                        data: 60,
+                        description: 140,
+                        category: 340,
+                        parcela: 440,
+                        valor: 460,
+                    };
+
+                    // Cabeçalho da tabela
+                    let verticalPosition = doc.y;
+
+                    doc
+                        .fontSize(16)
+                        .text("Data", positions.data, verticalPosition, { width: 100 })
+                        .text("Descrição", positions.description, verticalPosition, { width: 200 })
+                        .text("Categoria", positions.category, verticalPosition, { width: 100 })
+                        .text("Parcela", positions.parcela, verticalPosition, { width: 100 })
+                        .text("Valor", positions.valor, verticalPosition, { width: 100, align: "right" });
+
+                    verticalPosition += 20; // Espaço após o cabeçalho
+
+                    // Adiciona uma linha horizontal abaixo do cabeçalho
+                    doc
+                        .moveTo(60, verticalPosition - 6)
+                        .lineTo(560, verticalPosition - 6)
+                        .strokeColor(oPrimaryColor)
+                        .lineWidth(1)
+                        .stroke();
+
+                    // Renderiza as transações em formato de tabela
+                    Transactions.forEach((transaction, index) => {
+                        doc.moveDown(2);
+                        const oExpenseDate = new Date(`${transaction?.Date}T00:00:00`);
+                        const oYearTransacao = oExpenseDate.getFullYear();
+                        const oMonthTransacao = String(oExpenseDate.getMonth() + 1).padStart(2, "0");
+                        const oDayTransacao = String(oExpenseDate.getDate()).padStart(2, "0");
+
+                        let oCategory = CardExpensesByCategory.Categories.filter(category => category.ID == transaction.CategoryId);
+                        let oCategoryName: string;
+                        if (oCategory.length > 0) {
+                            oCategoryName = oCategory[0].Name;
+                        } else {
+                            oCategoryName = "Sem categoria";
+                        }
+
+                        doc
+                            .fillColor(oTextColor)
+                            .fontSize(12)
+                            .text(`${oDayTransacao}/${oMonthTransacao}/${oYearTransacao}`, positions.data, verticalPosition, { width: 100 })
+                            .text(transaction.Description, positions.description, verticalPosition, { width: 200 })
+                            .text(oCategoryName, positions.category, verticalPosition, { width: 100 })
+                            .text(`${transaction.Installment} de ${transaction.TotalInstallments}`, positions.parcela, verticalPosition, { width: 100 })
+                            .text(`${transaction.Amount?.toNumber()} ${transaction?.Currency?.Code}`, positions.valor, verticalPosition, { width: 100, align: "right" });
+
+                        // Adiciona uma linha horizontal abaixo de cada transação
+                        verticalPosition += 15;
+                        doc
+                            .moveTo(60, verticalPosition - 5)
+                            .lineTo(560, verticalPosition - 5)
+                            .strokeColor("#CCCCCC")
+                            .lineWidth(0.5)
+                            .stroke();
+
+                        if ((index + 1) % 30 === 0) { // Adiciona nova página se necessário
+                            designFooter();
+                            designHeader();
+                            verticalPosition = doc.y + 20; // Reinicia a posição vertical na nova página
+                        }
+                    });
+
+                };
+
+                designHeader(true);
+                await designInvoiceSummary();
+                designFooter();
+
+                if (CardExpensesByCategory.Categories.length > 0) {
+                    designHeader();
+                    await designCategoriesSummary();
+                    designFooter();
+                }
+
+                designHeader();
+                designTransactions();
+                designFooter();
+
+                doc.end();
+
+            });
+
+            return right(result as Buffer);
+
+        } catch (error) {
+
+            const errorInstance = error as Error;
+            return left(
+                new AbstractError(
+                    errorInstance.message,
+                    403,
+                    errorInstance.stack as string
+                )
+            );
+
+        }
+
+    }
 
 
     protected personPath(): string[] {
@@ -2279,6 +2309,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
     }
 
+
     private fail(key: string, params?: any): Either<AbstractError, any> {
 
         const request =
@@ -2302,6 +2333,172 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 err.stack as string
             )
         );
+
+    }
+
+
+    private validateEmailConfiguration(request: any): void {
+
+        if (!process.env.SMTPAddres ||
+            !process.env.SMTPHost ||
+            !process.env.SMTPKey) {
+
+            throw new Error(
+                this.getMessage(
+                    'error.emailConfigNotFound',
+                    request
+                )
+            );
+        }
+    }
+
+
+    /**
+     * SMTP + templates cache
+    */
+    private async initializeEmailInfrastructure(): Promise<void> {
+
+        const cache = ServiceLocator.getEmailSendingCache();
+
+        if (!cache._logoCache) {
+
+            cache._logoCache = fs.readFileSync(
+                path.join(__dirname, '../email/logo.png')
+            );
+        }
+
+        if (!cache._mailTemplateCache) {
+
+            const template = fs.readFileSync(
+                path.join(__dirname, '../email/template.html'),
+                'utf8'
+            );
+
+            cache._mailTemplateCache =
+                handlebars.compile(template);
+        }
+
+        if (!cache._predictionTemplateCache) {
+
+            const template = fs.readFileSync(
+                path.join(__dirname, '../email/templatePrediction.html'),
+                'utf8'
+            );
+
+            cache._predictionTemplateCache =
+                handlebars.compile(template);
+        }
+
+        if (!cache._smtpInstance) {
+
+            cache._smtpInstance =
+                nodemailer.createTransport({
+                    host: process.env.SMTPHost,
+                    port: 587,
+                    secure: false,
+                    auth: {
+                        user: process.env.SMTPAddres,
+                        pass: process.env.SMTPKey
+                    }
+                });
+
+            await cache._smtpInstance.verify();
+        }
+    }
+
+
+    private async loadPersonsImages(
+        persons: PersonModel[]
+    ): Promise<void> {
+
+        const ids =
+            persons
+                .filter(p => p.ImageType)
+                .map(p => p.Id);
+
+        if (!ids.length) return;
+
+        const images =
+            await this.Repository.findImageByIds(ids) || [];
+
+        const map = new Map(
+            images.map(i => [i.ID, i.Image])
+        );
+
+        for (const person of persons) {
+
+            const img = map.get(person.Id);
+
+            if (img) {
+                person.Image = img;
+            }
+        }
+    }
+
+
+    /**
+     * cards image batch
+     */
+    private async loadCardsImages(
+        cards: CardModel[]
+    ): Promise<void> {
+
+        const ids =
+            cards
+                .filter(c => c.ImageType)
+                .map(c => c.Id);
+
+        if (!ids.length) return;
+
+        const images =
+            await this.CardRepository.findImageByIds(ids) || [];
+
+        const map = new Map(
+            images.map(i => [i.ID, i.Image])
+        );
+
+        for (const card of cards) {
+
+            const img = map.get(card.Id);
+
+            if (img) {
+                card.Image = img;
+            }
+        }
+    }
+
+
+    private async getCategoryImageCached(
+        categoryId: string
+    ): Promise<Buffer | null> {
+
+        if (!categoryId) return null;
+
+        const cache = ServiceLocator.getEmailSendingCache();
+
+        const cached =
+            cache._categoryImageCache.get(categoryId);
+
+        if (cached) return cached;
+
+        const result =
+            await this.CategoryRepository.findImageByIds(
+                [categoryId]
+            ) || [];
+
+        const image = result?.[0]?.Image;
+
+        if (!image) return null;
+
+        const buffer =
+            await this.readableToBuffer(image);
+
+        cache._categoryImageCache.set(
+            categoryId,
+            buffer as any
+        );
+
+        return buffer as any;
 
     }
 

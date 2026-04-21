@@ -1,10 +1,8 @@
 import cds, { entity, Request } from "@sap/cds";
-import Decimal from "decimal.js";
 
 import { PersonModel } from "@/models/person";
 import { Person, Persons } from "@models/apps/dflc/gestordegastos/entities";
 import { PersonRepository } from "./protocols";
-import { CurrencyModel } from "@/models/currency";
 import { BaseRepositoryImplementation } from "../base/implementation";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
@@ -93,8 +91,8 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oPersonEntity).where({ ID: { in: Ids } });
 
-            const additionalPersonts = await cds.run(oSql) || [];
-            oPersons = [...(oPersons || []), ...additionalPersonts];
+            const additionalPersons = await cds.run(oSql) || [];
+            oPersons = [...(oPersons || []), ...additionalPersons];
 
         }
 
@@ -119,8 +117,42 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
             oSql = SELECT.from(oPersonEntity).where({ createdBy: createdBy });
 
-            const additionalPersonts = await cds.run(oSql) || [];
-            oPersons = [...(oPersons || []), ...additionalPersonts];
+            const additionalPersons = await cds.run(oSql) || [];
+            oPersons = [...(oPersons || []), ...additionalPersons];
+
+        }
+
+        const oPersonsModel = this.mapPersonResult(oPersons);
+
+        return oPersonsModel;
+
+    }
+
+
+    public async findAll(genericFilters?: {}): Promise<PersonModel[] | null> {
+
+        let oPersonEntity = this.getEntity();
+
+        let oSql = SELECT.from(oPersonEntity);
+
+        if (genericFilters) {
+            oSql.where(genericFilters);
+        }
+
+        let oPersons = await cds.run(oSql);
+
+        if ((oPersonEntity as any)?.isDraft) {
+
+            oPersonEntity = this.getEntity(true);
+
+            oSql = SELECT.from(oPersonEntity);
+
+            if (genericFilters) {
+                oSql.where(genericFilters);
+            }
+
+            const additionalPersons = await cds.run(oSql) || [];
+            oPersons = [...(oPersons || []), ...additionalPersons];
 
         }
 

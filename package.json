@@ -12,8 +12,12 @@
         "decimal.js": "^10.6.0",
         "exceljs": "^4.4.0",
         "express": "^4.21.2",
+        "fs": "^0.0.1-security",
         "git-commit-msg-linter": "^5.0.8",
-        "passport": "^0.7.0"
+        "handlebars": "^4.7.9",
+        "nodemailer": "^8.0.5",
+        "passport": "^0.7.0",
+        "pdfkit": "^0.18.0"
     },
     "devDependencies": {
         "@cap-js/cds-typer": "^0.38.0",
@@ -23,6 +27,8 @@
         "@types/adm-zip": "^0.5.8",
         "@types/exceljs": "^0.5.3",
         "@types/node": "^25.2.1",
+        "@types/nodemailer": "^8.0.0",
+        "@types/pdfkit": "^0.17.6",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3"
     },

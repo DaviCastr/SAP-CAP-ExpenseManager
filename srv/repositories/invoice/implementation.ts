@@ -220,6 +220,19 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
     }
 
 
+    public async update(Id: Invoice["ID"], fields: {}): Promise<void> {
+
+        let oInvoiceEntity = this.getEntity();
+
+        if (fields) {
+
+            await cds.update(oInvoiceEntity, Id).with(fields);
+
+        }
+
+    }
+
+
     private getReportBaseSql(ignoreDraft?: boolean): cds.ql.SELECT<unknown, unknown> {
 
         const oInvoiceEntity = this.getEntity(ignoreDraft || false);

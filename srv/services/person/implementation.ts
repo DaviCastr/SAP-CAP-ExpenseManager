@@ -34,6 +34,10 @@ import handlebars from "handlebars";
 import PDFDocument from "pdfkit";
 import nodemailer from "nodemailer";
 import { error } from "console";
+import { Currency } from "@models/sap/common";
+import { SimulateExpenseModel, SimulateExpenseReturnProperties } from "@/models/simulate-expense";
+import { CurrencyModel } from "@/models/currency";
+import { FinancialFutureReturn, FinancialRecommendation } from "@/models/financial-future";
 
 
 export class PersonServiceImplementation extends BaseServiceImplementation<Person> implements PersonService {
@@ -310,164 +314,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    // public async sendInvoices(): Promise<Either<AbstractError, boolean>> {
-
-    //     try {
-
-    //         const request = ServiceLocator.getRequest();
-
-    //         if (!process.env.SMTPAddres) {
-
-    //             const errorInstance = new Error(this.getMessage('error.emailConfigNotFound', request)) as Error;
-
-    //             return left(
-    //                 new AbstractError(
-    //                     errorInstance.message,
-    //                     403,
-    //                     errorInstance.stack as string
-    //                 )
-    //             );
-
-    //         }
-
-    //         let oDate = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-    //         oDate = oDate.replaceAll(",", " ");
-    //         let [oDay, oMonth, oYear]: any[] = oDate.split(" ")[0].split("/");
-
-    //         oDay = Number(oDay);
-    //         oMonth = Number(oMonth);
-    //         oYear = Number(oYear);
-
-    //         const oPersons = await this.Repository.findAll({ Email: { '!=': null } }) || [];
-
-    //         if (!oPersons.length) {
-
-    //             const errorInstance = new Error(this.getMessage('error.emailNotFound', request)) as Error;
-
-    //             return left(
-    //                 new AbstractError(
-    //                     errorInstance.message,
-    //                     403,
-    //                     errorInstance.stack as string
-    //                 )
-    //             );
-
-    //         }
-
-    //         const oCards = await this.CardRepository.findByPersonIds(oPersons?.map((item) => item?.Id), {
-    //             DueDay: { '>=': oDay }
-    //         }) || [];
-
-    //         if (!oCards.length) {
-
-    //             const errorInstance = new Error(this.getMessage('error.cardsNotFound', request)) as Error;
-
-    //             return left(
-    //                 new AbstractError(
-    //                     errorInstance.message,
-    //                     403,
-    //                     errorInstance.stack as string
-    //                 )
-    //             );
-
-    //         }
-
-    //         let oInvoices = await this.InvoiceRepository.findByCardIDs(oCards.map((item) => item.Id), {
-    //             Year: oYear,
-    //             Month: oMonth,
-    //             InvoiceSent: { '!=': true }
-    //         }) || [];
-
-    //         if (!oInvoices.length) {
-
-    //             const errorInstance = new Error(this.getMessage('error.invoicesNotFound', request)) as Error;
-
-    //             return left(
-    //                 new AbstractError(
-    //                     errorInstance.message,
-    //                     403,
-    //                     errorInstance.stack as string
-    //                 )
-    //             );
-
-    //         }
-
-    //         for (let oPerson of oPersons) {
-
-    //             let oCardsOfPerson = oCards.filter(CardId => CardId.PersonId == oPerson.Id);
-
-    //             for (let oCard of oCardsOfPerson) {
-
-    //                 let oInvoicesByCard = oInvoices.filter(fatura => fatura.CardId == oCard.Id);
-
-    //                 for (let oInvoice of oInvoicesByCard) {
-
-    //                     if ((oCard.DueDay - oDay) <= 5) {
-
-    //                         let oTransactions = await this.TransactionRepository.findByInvoiceIds([oInvoice.Id]) || [];
-
-    //                         if (oTransactions.length > 0) {
-
-    //                             if (oPerson.ImageType) {
-
-    //                                 let oImageResults = await this.Repository.findImageByIds([oPerson.Id]) || [];
-    //                                 let oImagePerson = oImageResults?.[0];
-
-    //                                 if (oImagePerson?.Image) {
-
-    //                                     oPerson.Image = oImagePerson.Image;
-
-    //                                 }
-
-    //                             }
-
-    //                             if (oCard?.ImageType) {
-
-    //                                 let oImageResults = await this.CardRepository.findImageByIds([oCard.Id]) || [];
-
-    //                                 let oImageCard = oImageResults?.[0];
-
-    //                                 if (oImageCard?.Image) {
-
-    //                                     oCard.Image = oImageCard.Image;
-
-    //                                 }
-
-    //                             }
-
-
-    //                             let result = await this.sendEmail(oPerson, oCard, oInvoice, oTransactions, true);
-
-    //                             return result;
-
-    //                         }
-
-    //                     }
-
-    //                 }
-
-    //             }
-
-    //         }
-
-    //         return right(true);
-
-    //     } catch (error) {
-
-    //         const errorInstance = error as Error;
-    //         return left(
-    //             new AbstractError(
-    //                 errorInstance.message,
-    //                 403,
-    //                 errorInstance.stack as string
-    //             )
-    //         );
-
-    //     }
-
-    // }
-
-
     public async sendInvoices(): Promise<Either<AbstractError, boolean>> {
 
         try {
@@ -496,22 +342,34 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 return right(true);
             }
 
+            const cardsAdditionalFilters = Year || Month
+                ? {}
+                : { DueDay: { '>=': today.day } };
+
             const cards = await this.CardRepository.findByPersonIds(
                 persons.map(p => p.Id),
-                { DueDay: { '>=': today.day } }
+                cardsAdditionalFilters
             ) || [];
 
             if (!cards.length) {
                 return right(true);
             }
 
-            const invoices = await this.InvoiceRepository.findByCardIDs(
-                cards.map(c => c.Id),
-                {
+
+            const invoicesAdditionalFilters = Year || Month
+                ? {
+                    Year: today.year,
+                    Month: today.month
+                }
+                : {
                     Year: today.year,
                     Month: today.month,
                     InvoiceSent: { '!=': true }
-                }
+                };
+
+            const invoices = await this.InvoiceRepository.findByCardIDs(
+                cards.map(c => c.Id),
+                invoicesAdditionalFilters
             ) || [];
 
             if (!invoices.length) {
@@ -675,8 +533,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     to: person.Email,
                     subject:
                         Year || Month
-                            ? `Previsão/Detalhamento de duas faturas de ${this.addLeftZeros(today.month)}/${today.year}`
-                            : `Suas faturas de ${this.addLeftZeros(today.month)}/${today.year}`,
+                            ? `Previsão/Detalhamento de duas invoicesByCard de ${this.addLeftZeros(today.month)}/${today.year}`
+                            : `Suas invoicesByCard de ${this.addLeftZeros(today.month)}/${today.year}`,
                     html,
                     attachments
                 });
@@ -740,6 +598,394 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             );
 
             return right(summary);
+
+        } catch (error) {
+
+            const err = error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    403,
+                    err.stack as string
+                )
+            );
+        }
+    }
+
+
+    public async simulateExpenses():
+        Promise<Either<AbstractError, SimulateExpenseReturnProperties>> {
+
+        try {
+
+            const request = ServiceLocator.getRequest();
+
+            const input = this.extractSimulationInput(request);
+
+            const validation = await this.validateSimulationInput(input, request);
+            if (validation.isLeft()) return validation as any;
+
+            const person = validation.value.person;
+            const cards = validation.value.cards;
+
+            if (!cards.length) {
+                return right(
+                    this.buildEmptySimulation(person).toEntityObject()
+                );
+            }
+
+            const invoices = await this.loadInvoicesForSimulation(
+                cards.map(card => card.Id),
+                input.Year
+            );
+
+            const totals = this.calculateSimulationTotals(
+                invoices,
+                input.Year,
+                input.Month
+            );
+
+            const model = this.buildSimulationResult(
+                person,
+                totals.totalFuture,
+                totals.totalMonth
+            );
+
+            return right(model.toEntityObject());
+
+        } catch (error) {
+
+            return this.handleSimulationError(error);
+
+        }
+
+    }
+
+
+    public async simulateFinancialFuture(): Promise<Either<AbstractError, FinancialFutureReturn>> {
+
+        try {
+
+            const request = ServiceLocator.getRequest();
+
+            const { PersonId, Year, Month } = request.data;
+
+            /* --------------------------------------------------------------------
+               VALIDATION
+            -------------------------------------------------------------------- */
+
+            const required: string[] = [];
+            if (!PersonId) required.push("PersonId");
+            if (!Year) required.push("Year");
+            if (!Month) required.push("Month");
+
+            if (required.length) {
+                return left(this.buildFutureError(
+                    this.getMessage(
+                        "error.invalidFields",
+                        request,
+                        undefined,
+                        { fields: required.join(", ") }
+                    )
+                ));
+            }
+
+            const targetYear = Number(Year);
+            const targetMonth = Number(Month);
+
+            if (targetMonth < 1 || targetMonth > 12) {
+                return left(this.buildFutureError("Invalid Month"));
+            }
+
+            /* --------------------------------------------------------------------
+               AUTHORIZATION
+            -------------------------------------------------------------------- */
+
+            const auth = await this.afterRead(
+                [{ ID: PersonId }],
+                request?.user
+            );
+
+            if (auth.isLeft()) return auth as any;
+
+            /* --------------------------------------------------------------------
+               LOAD PERSON
+            -------------------------------------------------------------------- */
+
+            const person = await this.Repository.findById(PersonId);
+
+            if (!person) {
+                return left(this.buildFutureError("Person not found"));
+            }
+
+            const cards =
+                await this.CardRepository.findByPersonIds([PersonId]) || [];
+
+            if (!cards.length) {
+                return right(this.buildEmptyFuture(person));
+            }
+
+            const cardIds = cards.map(card => card.Id);
+
+            /* --------------------------------------------------------------------
+               LOAD DATA
+            -------------------------------------------------------------------- */
+
+            const invoices =
+                await this.InvoiceRepository.findByCardIDs(cardIds, {
+                    Year: { ">=": new Date().getFullYear() - 1 }
+                }) || [];
+
+            const transactions =
+                //await this.TransactionRepository?.findByCardIds?.(cardIds)
+                //|| 
+                await this.loadTransactionsByCardsFallback(cardIds);
+
+            /* --------------------------------------------------------------------
+               ENGINE
+            -------------------------------------------------------------------- */
+
+            const timeline = new Map<string, Decimal>();
+
+            let generatedInvoices = new Decimal(0);
+            let installmentPending = new Decimal(0);
+            let recurringExpenses = new Decimal(0);
+
+            /* --------------------------------------------------------------------
+               1) EXISTING INVOICES
+            -------------------------------------------------------------------- */
+
+            for (const invoice of invoices) {
+
+                const key = this.futureKey(invoice.Year, invoice.Month);
+
+                if (!this.isBeforeOrEqual(
+                    invoice.Year,
+                    invoice.Month,
+                    targetYear,
+                    targetMonth
+                )) continue;
+
+                this.futureAddTimeline(
+                    timeline,
+                    key,
+                    invoice.TotalAmount || 0
+                );
+
+                generatedInvoices =
+                    generatedInvoices.plus(invoice.TotalAmount || 0);
+            }
+
+            /* --------------------------------------------------------------------
+               2) INSTALLMENTS FUTURE
+            -------------------------------------------------------------------- */
+
+            const installmentMap =
+                this.detectPendingInstallments(transactions);
+
+            for (const item of installmentMap) {
+
+                const tx = item.tx;
+                const remaining = item.remaining;
+
+                let year = item.nextYear;
+                let month = item.nextMonth;
+
+                for (let i = 0; i < remaining; i++) {
+
+                    if (!this.isBeforeOrEqual(
+                        year, month,
+                        targetYear, targetMonth
+                    )) break;
+
+                    const key = this.futureKey(year, month);
+
+                    this.futureAddTimeline(
+                        timeline,
+                        key,
+                        tx.Amount || 0
+                    );
+
+                    installmentPending =
+                        installmentPending.plus(tx.Amount || 0);
+
+                    ({ year, month } =
+                        this.nextMonth(year, month));
+                }
+            }
+
+            /* --------------------------------------------------------------------
+               3) RECURRING FIXED EXPENSES
+            -------------------------------------------------------------------- */
+
+            const recurring =
+                this.detectRecurringExpenses(transactions);
+
+            for (const item of recurring) {
+
+                let year = new Date().getFullYear();
+                let month = new Date().getMonth() + 1;
+
+                while (
+                    this.isBeforeOrEqual(
+                        year,
+                        month,
+                        targetYear,
+                        targetMonth
+                    )
+                ) {
+
+                    const key = this.futureKey(year, month);
+
+                    this.futureAddTimeline(
+                        timeline,
+                        key,
+                        item.MaxAmount
+                    );
+
+                    recurringExpenses =
+                        recurringExpenses.plus(item.MaxAmount);
+
+                    ({ year, month } =
+                        this.nextMonth(year, month));
+                }
+            }
+
+            /* --------------------------------------------------------------------
+               KPI CALCULATIONS
+            -------------------------------------------------------------------- */
+
+            const targetKey =
+                this.futureKey(targetYear, targetMonth);
+
+            const targetMonthDebt =
+                timeline.get(targetKey) || new Decimal(0);
+
+            let totalDebt = new Decimal(0);
+
+            for (const val of timeline.values()) {
+                totalDebt = totalDebt.plus(val);
+            }
+
+            const expenseTarget =
+                person?.ExpenseTarget || new Decimal(0);
+
+            const savingGap =
+                expenseTarget.minus(targetMonthDebt);
+
+            const freeCashFlow =
+                savingGap;
+
+            const avgRecurring =
+                recurring.length
+                    ? recurringExpenses.div(
+                        this.monthDiffFromNow(
+                            targetYear,
+                            targetMonth
+                        )
+                    )
+                    : new Decimal(0);
+
+            const risk =
+                this.calculateRisk(
+                    targetMonthDebt,
+                    expenseTarget
+                );
+
+            /* --------------------------------------------------------------------
+               CHARTS
+            -------------------------------------------------------------------- */
+
+            const monthlyTimeline =
+                Array.from(timeline.entries())
+                    .sort((a, b) =>
+                        a[0].localeCompare(b[0]))
+                    .map(([key, value]) => {
+
+                        const [y, m] = key.split("-");
+
+                        return {
+                            Key: key,
+                            Year: Number(y),
+                            Month: Number(m),
+                            Amount: value.toNumber()
+                        };
+                    });
+
+            /* --------------------------------------------------------------------
+               RECOMMENDATIONS
+            -------------------------------------------------------------------- */
+
+            const recommendations =
+                this.buildFutureRecommendations(
+                    risk,
+                    recurring.length,
+                    installmentPending,
+                    targetMonthDebt,
+                    expenseTarget
+                );
+
+            /* --------------------------------------------------------------------
+               RETURN
+            -------------------------------------------------------------------- */
+
+            return right({
+
+                KPIs: {
+                    TotalDebtUntilTarget:
+                        totalDebt.toNumber(),
+
+                    TargetMonthDebt:
+                        targetMonthDebt.toNumber(),
+
+                    RecurringMonthlyAverage:
+                        avgRecurring.toDecimalPlaces(2).toNumber(),
+
+                    InstallmentPending:
+                        installmentPending.toNumber(),
+
+                    FixedExpensesDetected:
+                        recurring.length,
+
+                    FreeCashFlow:
+                        freeCashFlow.toNumber(),
+
+                    SavingGap:
+                        savingGap.toNumber(),
+
+                    RiskLevel:
+                        risk
+                },
+
+                Charts: {
+                    MonthlyTimeline: monthlyTimeline,
+
+                    DebtComposition: [
+                        {
+                            Type: "GeneratedInvoices",
+                            Amount: generatedInvoices.toNumber()
+                        },
+                        {
+                            Type: "Installments",
+                            Amount: installmentPending.toNumber()
+                        },
+                        {
+                            Type: "Recurring",
+                            Amount: recurringExpenses.toNumber()
+                        }
+                    ]
+                },
+
+                Details: {
+                    RecurringExpenses: recurring,
+                    PendingInstallments: installmentMap,
+                    OpenInvoices: invoices
+                },
+
+                Recommendations: recommendations
+
+            });
 
         } catch (error) {
 
@@ -1082,177 +1328,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async sendEmail(
-        Person: PersonModel,
-        Card: CardModel,
-        Invoice: InvoiceModel,
-        Transactions: TransactionModel[],
-        updateInvoice: boolean
-    ): Promise<Either<AbstractError, boolean>> {
-
-        try {
-
-            let oPathHtmlFile: string;
-
-            if (updateInvoice) {
-                oPathHtmlFile = path.join(__dirname, '../email/template.html');
-            } else {
-                oPathHtmlFile = path.join(__dirname, '../email/templatePrediction.html');
-            }
-
-            const oHtmlTemplate = fs.readFileSync(oPathHtmlFile, "utf-8");
-
-            const oLogoPath = path.join(__dirname, '../email/logo.png');
-            const oLogo = fs.readFileSync(oLogoPath);
-
-            const oTemplateHTML = handlebars.compile(oHtmlTemplate);
-            const oHtmlContent = oTemplateHTML({
-                Name: Person?.Name,
-                CardName: Card?.Name,
-                Year: Invoice?.Year,
-                Month: Invoice?.Month,
-                Amount: Invoice.TotalAmount?.toNumber() || 0,
-                Currency: Invoice?.Currency?.Code,
-                DueDate: `${this.addLeftZeros(Card?.DueDay)}/${this.addLeftZeros(Invoice?.Month)}/${Invoice?.Year}`,
-            });
-
-            ServiceLocator.setRequestData({ InvoiceId: Invoice?.Id });
-
-            let oCardExpensesByCategoriesResult = await this.cardExpensesByCategories();
-
-            if (oCardExpensesByCategoriesResult?.isLeft()) return oCardExpensesByCategoriesResult as any;
-
-            const result = oCardExpensesByCategoriesResult.value;
-            const oCardExpensesByCategories = CardExpensesByCategoryModel.singleModel(result as CardExpensesByCategoryReturnProperties);
-
-            let oPDFResult = await this.generatePDF(oLogo, Person, Invoice, Card, Transactions, oCardExpensesByCategories);
-
-            if (oPDFResult.isLeft()) return oPDFResult as any;
-
-            let oPDFBuffer = oPDFResult.value as Buffer;
-
-            let oFiles: any[] = []
-
-            if (oLogo) {
-                oFiles.push({ content: oLogo, filename: `logo.png`, cid: 'Logo' })
-            }
-
-            if (oPDFBuffer) {
-                oFiles.push({ content: oPDFBuffer, filename: `${Card?.Name}.pdf`, cid: '' })
-            }
-
-            if (Person?.Image) {
-                const oImage = await this.readableToBuffer(Person?.Image);
-                oFiles.push({ content: oImage, filename: `${Person?.Name}.${Person?.ImageType}`, cid: 'PersonImage' })
-            }
-
-            let oSubject: string;
-
-            if (updateInvoice) {
-                oSubject = `Fatura do Cartão ${Card?.Name} - ${this.addLeftZeros(Invoice?.Month)}/${Invoice?.Year}`;
-            } else {
-                oSubject = `Previsão/Detalhamento da fatura do Cartão ${Card.Name} - ${this.addLeftZeros(Invoice.Month)}/${Invoice.Year}`
-            }
-
-            const oEmailOptions = {
-                from: `"Gestor de Gastos" <${process.env.SMTPAddres}>`,
-                to: Person?.Email,
-                subject: oSubject,
-                html: oHtmlContent,
-                attachments: oFiles
-            };
-
-            const resultEmailSending = await this.processSendEmail(oEmailOptions, Invoice.Id, updateInvoice);
-
-            if (resultEmailSending.isLeft()) return resultEmailSending as any;
-
-            return right(true);
-
-        } catch (error) {
-
-            const errorInstance = error as Error;
-            return left(
-                new AbstractError(
-                    errorInstance.message,
-                    403,
-                    errorInstance.stack as string
-                )
-            );
-
-        }
-
-    }
-
-
-    private async processSendEmail(
-        content: {},
-        InvoiceId: string,
-        updateInvoice: boolean): Promise<Either<AbstractError, boolean>> {
-
-        try {
-
-            const context = cds.context;
-
-            if (!(context as any)?.EmailInstance) {
-                (context as any).EmailInstance = this.createEmailInstance();
-                await (context as any).EmailInstance.verify();
-                console.log('Conexão com o servidor SMTP bem-sucedida.');
-            }
-
-            const result = await new Promise((resolve, reject) => {
-                (context as any).EmailInstance.sendMail(content).then(async (ok) => {
-                    console.log('Email enviado com sucesso:');
-
-                    if (updateInvoice) {
-                        await this.InvoiceRepository.update(InvoiceId, { InvoiceSent: true });
-                    }
-
-                    await this.sleep(5000);
-
-                    resolve(true)
-                }).catch(function (erro) {
-                    console.log('Erro ao enviar email:' + erro);
-                    reject(erro)
-                });
-            });
-
-            if (result != true) {
-                throw result;
-            }
-
-            return right(true);
-
-        } catch (error) {
-
-            const errorInstance = error as Error;
-            return left(
-                new AbstractError(
-                    errorInstance.message,
-                    403,
-                    errorInstance.stack as string
-                )
-            );
-
-        }
-
-    }
-
-
-    private createEmailInstance() {
-
-        return nodemailer.createTransport({
-            host: process.env.SMTPHost,
-            port: 587, // TLS
-            secure: false, // Use false para TLS
-            auth: {
-                user: process.env.SMTPAddres,
-                pass: process.env.SMTPKey
-            }
-        });
-
-    }
-
-
     private async generatePDF(
         Logo: Buffer,
         Person: PersonModel,
@@ -1286,7 +1361,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 const designHeader = (initialPage = false) => {
                     if (!initialPage) doc.addPage();
 
-                    // Cabeçalho estilizado com Image à esquerda
                     doc
                         .rect(0, 0, doc.page.width, 80)
                         .fill(oPrimaryColor);
@@ -1341,7 +1415,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     doc
                         .fillColor(oTextColor)
                         .fontSize(22)
-                        .text(`${Person?.Name}, a sua fatura do cartão ${Card?.Name}`, { align: "center" });
+                        .text(`${Person?.Name}, a sua invoice do cartão ${Card?.Name}`, { align: "center" });
 
                     doc.moveDown(2);
                     doc
@@ -1353,7 +1427,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     doc
                         .fillColor(oTextColor)
                         .fontSize(20)
-                        .text("Total da sua fatura:", 60, doc.y + 10, { align: "left" });
+                        .text("Total da sua invoice:", 60, doc.y + 10, { align: "left" });
 
                     doc
                         .fillColor(oPrimaryColor)
@@ -1378,7 +1452,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .moveDown(2)
                         .fillColor("black")
                         .fontSize(20)
-                        .text("Fatura gerada automaticamente", 45, doc.y, { align: "center" });;
+                        .text("invoice gerada automaticamente", 45, doc.y, { align: "center" });;
 
                 };
 
@@ -1389,7 +1463,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .fontSize(20)
                         .text("Gastos por categoria", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
 
-                    // Define as posições fixas das colunas
                     const positions = {
                         image: 60,
                         name: 90,
@@ -1399,7 +1472,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                     doc.moveDown(2);
 
-                    // Cabeçalho da tabela
                     let verticalPosition = doc.y;
 
                     doc
@@ -1409,9 +1481,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .text("Total da Categoria", positions.totalCategory, verticalPosition, { width: 150 })
                         .text("Porcentagem", positions.percent, verticalPosition, { width: 100 });
 
-                    verticalPosition += 25; // Espaço após o cabeçalho
+                    verticalPosition += 25;
 
-                    // Adiciona uma linha horizontal abaixo do cabeçalho
                     doc
                         .moveTo(60, verticalPosition - 6)
                         .lineTo(560, verticalPosition - 6)
@@ -1419,7 +1490,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .lineWidth(1)
                         .stroke();
 
-                    // Renderiza as transações em formato de tabela
                     let index = 0;
                     for (const category of CardExpensesByCategory.Categories) {
 
@@ -1450,7 +1520,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             .text(`${category.TotalAmount?.toNumber()} ${CardExpensesByCategory?.Currency?.Code}`, positions.totalCategory, verticalPosition, { width: 130, align: "right" })
                             .text(`${Number(category.Percent?.toNumber()).toFixed(2)}%`, positions.percent, verticalPosition, { width: 95, align: "right" });
 
-                        // Adiciona uma linha horizontal abaixo de cada transação
                         verticalPosition += 25;
                         doc
                             .moveTo(60, verticalPosition - 5)
@@ -1459,10 +1528,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             .lineWidth(0.5)
                             .stroke();
 
-                        if ((index + 1) % 15 === 0) { // Adiciona nova página se necessário
+                        if ((index + 1) % 15 === 0) {
                             designFooter();
                             designHeader();
-                            verticalPosition = doc.y + 20; // Reinicia a posição vertical na nova página
+                            verticalPosition = doc.y + 20;
                         }
 
                         index++;
@@ -1472,15 +1541,14 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 };
 
                 const designTransactions = () => {
-                    // Centraliza o título
+
                     doc
                         .fillColor(oPrimaryColor)
                         .fontSize(20)
-                        .text("Gastos da Fatura", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
+                        .text("Gastos da invoice", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
 
                     doc.moveDown(1);
 
-                    // Centraliza o título
                     doc
                         .fillColor(oPrimaryColor)
                         .fontSize(18)
@@ -1488,10 +1556,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                     doc.moveDown(1);
 
-                    // Ordena as transações pela data
                     Transactions.sort((a, b) => (new Date(a.Date) as any) - (new Date(b.Date) as any));
 
-                    // Define as posições fixas das colunas
                     const positions = {
                         data: 60,
                         description: 140,
@@ -1500,7 +1566,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         valor: 460,
                     };
 
-                    // Cabeçalho da tabela
                     let verticalPosition = doc.y;
 
                     doc
@@ -1511,9 +1576,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .text("Parcela", positions.parcela, verticalPosition, { width: 100 })
                         .text("Valor", positions.valor, verticalPosition, { width: 100, align: "right" });
 
-                    verticalPosition += 20; // Espaço após o cabeçalho
+                    verticalPosition += 20;
 
-                    // Adiciona uma linha horizontal abaixo do cabeçalho
                     doc
                         .moveTo(60, verticalPosition - 6)
                         .lineTo(560, verticalPosition - 6)
@@ -1521,7 +1585,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .lineWidth(1)
                         .stroke();
 
-                    // Renderiza as transações em formato de tabela
                     Transactions.forEach((transaction, index) => {
                         doc.moveDown(2);
                         const oExpenseDate = new Date(`${transaction?.Date}T00:00:00`);
@@ -1546,7 +1609,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             .text(`${transaction.Installment} de ${transaction.TotalInstallments}`, positions.parcela, verticalPosition, { width: 100 })
                             .text(`${transaction.Amount?.toNumber()} ${transaction?.Currency?.Code}`, positions.valor, verticalPosition, { width: 100, align: "right" });
 
-                        // Adiciona uma linha horizontal abaixo de cada transação
                         verticalPosition += 15;
                         doc
                             .moveTo(60, verticalPosition - 5)
@@ -1555,10 +1617,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             .lineWidth(0.5)
                             .stroke();
 
-                        if ((index + 1) % 30 === 0) { // Adiciona nova página se necessário
+                        if ((index + 1) % 30 === 0) {
                             designFooter();
                             designHeader();
-                            verticalPosition = doc.y + 20; // Reinicia a posição vertical na nova página
+                            verticalPosition = doc.y + 20;
                         }
                     });
 
@@ -2469,37 +2531,569 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
 
     private async getCategoryImageCached(
-        categoryId: string
+        categoryId: string | string[]
     ): Promise<Buffer | null> {
-
-        if (!categoryId) return null;
 
         const cache = ServiceLocator.getEmailSendingCache();
 
-        const cached =
-            cache._categoryImageCache.get(categoryId);
+        if (!Array.isArray(categoryId)) {
 
-        if (cached) return cached;
+            if (!categoryId) return null;
+
+            const cached =
+                cache._categoryImageCache.get(categoryId);
+
+            if (cached) return cached;
+
+        }
+
+        const categoryIds = Array.isArray(categoryId) ? categoryId : [categoryId];
 
         const result =
             await this.CategoryRepository.findImageByIds(
-                [categoryId]
+                categoryIds
             ) || [];
 
-        const image = result?.[0]?.Image;
+        if (result.length == 1) {
 
-        if (!image) return null;
+            const image = result?.[0]?.Image;
 
-        const buffer =
-            await this.readableToBuffer(image);
+            if (!image) return null;
 
-        cache._categoryImageCache.set(
-            categoryId,
-            buffer as any
+            const buffer =
+                await this.readableToBuffer(image);
+
+            cache._categoryImageCache.set(
+                result?.[0]?.ID,
+                buffer as any
+            );
+
+            return buffer as any;
+
+        } else {
+
+            for (const categoryImage of result) {
+
+                const buffer =
+                    await this.readableToBuffer(categoryImage?.Image);
+
+                cache._categoryImageCache.set(
+                    categoryImage?.ID,
+                    buffer as any
+                );
+
+            }
+
+            return null;
+
+        }
+
+    }
+
+
+    /* ============================================================================
+     * INPUT
+     * ========================================================================== */
+
+    private extractSimulationInput(request: any) {
+
+        return {
+            PersonId: request?.data?.PersonId,
+            Year: Number(request?.data?.Year),
+            Month: Number(request?.data?.Month)
+        };
+
+    }
+
+
+    /* ============================================================================
+     * VALIDATION
+     * ========================================================================== */
+
+    private async validateSimulationInput(
+        input: {
+            PersonId: string,
+            Year: number,
+            Month: number
+        },
+        request: any
+    ): Promise<Either<AbstractError, {
+        person: PersonModel,
+        cards: CardModel[]
+    }>> {
+
+        const missing: string[] = [];
+
+        if (!input.PersonId) missing.push("PersonId");
+        if (!input.Year) missing.push("Year");
+        if (!input.Month) missing.push("Month");
+
+        if (missing.length) {
+            return left(
+                this.buildValidationError(
+                    request,
+                    missing.join(", ")
+                )
+            );
+        }
+
+        if (input.Month < 1 || input.Month > 12) {
+            return left(
+                this.buildValidationError(
+                    request,
+                    "Month"
+                )
+            );
+        }
+
+        const person = await this.Repository.findById(input.PersonId);
+
+        if (!person) {
+            return left(
+                this.buildValidationError(
+                    request,
+                    "PersonId"
+                )
+            );
+        }
+
+        /**
+         * Segurança
+         */
+        const authCheck = await this.afterRead(
+            [{ ID: input.PersonId }],
+            request?.user
         );
 
-        return buffer as any;
+        if (authCheck.isLeft()) {
+            return authCheck as any;
+        }
 
+        const cards =
+            await this.CardRepository.findByPersonIds([input.PersonId]) || [];
+
+        return right({
+            person,
+            cards
+        });
+
+    }
+
+
+    /* ============================================================================
+     * LOAD DATA
+     * ========================================================================== */
+
+    private async loadInvoicesForSimulation(
+        cardIds: string[],
+        year: number
+    ): Promise<InvoiceModel[]> {
+
+        if (!cardIds.length) return [];
+
+        return await this.InvoiceRepository.findByCardIDs(
+            cardIds,
+            {
+                Year: { ">=": year }
+            }
+        ) || [];
+
+    }
+
+
+    /* ============================================================================
+     * CALCULATIONS
+     * ========================================================================== */
+
+    private calculateSimulationTotals(
+        invoices: InvoiceModel[],
+        targetYear: number,
+        targetMonth: number
+    ): {
+        totalFuture: Decimal,
+        totalMonth: Decimal
+    } {
+
+        let totalFuture = new Decimal(0);
+        let totalMonth = new Decimal(0);
+
+        for (const invoice of invoices) {
+
+            const isFutureOrCurrent =
+                invoice.Year > targetYear ||
+                (
+                    invoice.Year === targetYear &&
+                    invoice.Month >= targetMonth
+                );
+
+            if (!isFutureOrCurrent) continue;
+
+            totalFuture = totalFuture.plus(
+                invoice.TotalAmount || 0
+            );
+
+            const isTargetMonth =
+                invoice.Year === targetYear &&
+                invoice.Month === targetMonth;
+
+            if (isTargetMonth) {
+                totalMonth = totalMonth.plus(
+                    invoice.TotalAmount || 0
+                );
+            }
+
+        }
+
+        return {
+            totalFuture,
+            totalMonth
+        };
+
+    }
+
+
+    /* ============================================================================
+     * RESULT BUILDERS
+     * ========================================================================== */
+
+    private buildSimulationResult(
+        person: PersonModel,
+        totalFuture: Decimal,
+        totalMonth: Decimal
+    ): SimulateExpenseModel {
+
+        const target = person?.ExpenseTarget || new Decimal(0);
+
+        const currency =
+            person?.Currency?.toEntityObject()
+            || { code: "BRL" };
+
+        return SimulateExpenseModel.with({
+
+            TotalAmount: totalFuture,
+
+            TotalMonth: totalMonth,
+
+            AmountSaving: target.minus(totalMonth),
+
+            Currency: CurrencyModel.singleModel(currency)
+
+        });
+
+    }
+
+
+    private buildEmptySimulation(
+        person: PersonModel
+    ): SimulateExpenseModel {
+
+        const currency =
+            person?.Currency?.toEntityObject()
+            || { code: "BRL" };
+
+        return SimulateExpenseModel.with({
+            TotalAmount: new Decimal(0),
+            TotalMonth: new Decimal(0),
+            AmountSaving: person?.ExpenseTarget || new Decimal(0),
+            Currency: CurrencyModel.singleModel(currency)
+        });
+
+    }
+
+
+    /* ============================================================================
+     * ERROR HELPERS
+     * ========================================================================== */
+
+    private buildValidationError(
+        request: any,
+        fields: string
+    ): AbstractError {
+
+        const error = new Error(
+            this.getMessage(
+                "error.invalidFields",
+                request,
+                undefined,
+                { fields }
+            )
+        );
+
+        return new AbstractError(
+            error.message,
+            403,
+            error.stack as string
+        );
+
+    }
+
+
+    private handleSimulationError(
+        error: any
+    ): Either<AbstractError, any> {
+
+        const err = error as Error;
+
+        return left(
+            new AbstractError(
+                err.message,
+                403,
+                err.stack as string
+            )
+        );
+
+    }
+
+
+    private futureKey(year: number, month: number): string {
+        return `${year}-${String(month).padStart(2, "0")}`;
+    }
+
+
+    private futureAddTimeline(
+        map: Map<string, Decimal>,
+        key: string,
+        amount: any
+    ) {
+        const current = map.get(key) || new Decimal(0);
+        map.set(key, current.plus(amount || 0));
+    }
+
+
+    private isBeforeOrEqual(
+        year: number,
+        month: number,
+        targetYear: number,
+        targetMonth: number
+    ): boolean {
+
+        if (year < targetYear) return true;
+        if (year === targetYear && month <= targetMonth) return true;
+        return false;
+    }
+
+
+    private monthDiffFromNow(
+        targetYear: number,
+        targetMonth: number
+    ): number {
+
+        const now = new Date();
+
+        const y = now.getFullYear();
+        const m = now.getMonth() + 1;
+
+        return (
+            (targetYear - y) * 12 +
+            (targetMonth - m) + 1
+        );
+    }
+
+
+    private calculateRisk(
+        targetDebt: Decimal,
+        targetLimit: Decimal
+    ): "LOW" | "MEDIUM" | "HIGH" {
+
+        if (targetLimit.lte(0)) return "HIGH";
+
+        const ratio =
+            targetDebt.div(targetLimit).mul(100);
+
+        if (ratio.lte(60)) return "LOW";
+        if (ratio.lte(100)) return "MEDIUM";
+
+        return "HIGH";
+    }
+
+
+    private detectPendingInstallments(
+        transactions: any[]
+    ) {
+
+        const result: any[] = [];
+
+        for (const tx of transactions) {
+
+            if (
+                Number(tx.TotalInstallments) > 1 &&
+                Number(tx.Installment) <
+                Number(tx.TotalInstallments)
+            ) {
+
+                const remaining =
+                    Number(tx.TotalInstallments) -
+                    Number(tx.Installment);
+
+                const date = new Date(`${tx.Date}T00:00:00`);
+
+                let year = date.getFullYear();
+                let month = date.getMonth() + 1;
+
+                ({ year, month } =
+                    this.nextMonth(year, month));
+
+                result.push({
+                    tx,
+                    remaining,
+                    nextYear: year,
+                    nextMonth: month
+                });
+            }
+        }
+
+        return result;
+    }
+
+
+    private detectRecurringExpenses(
+        transactions: any[]
+    ) {
+
+        const map = new Map<string, any[]>();
+
+        for (const tx of transactions) {
+
+            if (
+                Number(tx.TotalInstallments) !== 1 ||
+                !tx.Identifier
+            ) continue;
+
+            if (!map.has(tx.Identifier)) {
+                map.set(tx.Identifier, []);
+            }
+
+            map.get(tx.Identifier)!.push(tx);
+        }
+
+        const result: any[] = [];
+
+        for (const [identifier, items] of map) {
+
+            if (items.length <= 1) continue;
+
+            let max = new Decimal(0);
+
+            for (const tx of items) {
+                if (new Decimal(tx.Amount).gt(max)) {
+                    max = new Decimal(tx.Amount);
+                }
+            }
+
+            result.push({
+                Identifier: identifier,
+                Description: items[0]?.Description,
+                Count: items.length,
+                MaxAmount: max.toNumber()
+            });
+        }
+
+        return result;
+    }
+
+
+    private buildFutureRecommendations(
+        risk: string,
+        recurringCount: number,
+        installmentPending: Decimal,
+        targetDebt: Decimal,
+        targetLimit: Decimal
+    ): FinancialRecommendation[] {
+
+        const result: FinancialRecommendation[] = [];
+
+        if (risk === "HIGH") {
+            result.push({
+                Type: "WARNING",
+                Message:
+                    "Seu mês alvo está acima da meta financeira."
+            });
+        }
+
+        if (recurringCount > 5) {
+            result.push({
+                Type: "INFO",
+                Message:
+                    `Você possui ${recurringCount} despesas fixas detectadas.`
+            });
+        }
+
+        if (installmentPending.gt(0)) {
+            result.push({
+                Type: "INFO",
+                Message:
+                    "Parcelamentos futuros impactarão meses seguintes."
+            });
+        }
+
+        if (targetDebt.lt(targetLimit)) {
+            result.push({
+                Type: "SUCCESS",
+                Message:
+                    "Sua projeção está dentro da meta mensal."
+            });
+        }
+
+        return result;
+    }
+
+
+    private buildEmptyFuture(person: any): FinancialFutureReturn {
+
+        return {
+            KPIs: {
+                TotalDebtUntilTarget: 0,
+                TargetMonthDebt: 0,
+                RecurringMonthlyAverage: 0,
+                InstallmentPending: 0,
+                FixedExpensesDetected: 0,
+                FreeCashFlow:
+                    person?.ExpenseTarget?.toNumber?.() || 0,
+                SavingGap:
+                    person?.ExpenseTarget?.toNumber?.() || 0,
+                RiskLevel: "LOW"
+            },
+            Charts: {
+                MonthlyTimeline: [],
+                DebtComposition: []
+            },
+            Details: {
+                RecurringExpenses: [],
+                PendingInstallments: [],
+                OpenInvoices: []
+            },
+            Recommendations: []
+        };
+    }
+
+
+    private buildFutureError(
+        message: string
+    ): AbstractError {
+
+        const err = new Error(message);
+
+        return new AbstractError(
+            err.message,
+            403,
+            err.stack as string
+        );
+    }
+
+
+    private async loadTransactionsByCardsFallback(
+        cardIds: string[]
+    ): Promise<any[]> {
+
+        const invoices =
+            await this.InvoiceRepository.findByCardIDs(cardIds);
+
+        if (!invoices?.length) return [];
+
+        return await this.TransactionRepository
+            .findByInvoiceIds(
+                invoices.map((i: any) => i.Id)
+            ) || [];
     }
 
 

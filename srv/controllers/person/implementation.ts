@@ -50,6 +50,32 @@ export class PersonControllerImplementation extends BaseControllerImplementation
             return this.error(result.value.code, result.value.message);
         }
 
+        return this.success(200, result.value);
+
+    }
+
+
+    public async simulateExpenses(): Promise<BaseControllerResponse> {
+
+        const result = await this.Service.simulateExpenses();
+
+        if (result.isLeft()) {
+            return this.error(result.value.code, result.value.message);
+        }
+
+        return this.success(201, result.value);
+
+    }
+
+
+    public async simulateFinancialFuture(): Promise<BaseControllerResponse> {
+
+        const result = await this.Service.simulateFinancialFuture();
+
+        if (result.isLeft()) {
+            return this.error(result.value.code, result.value.message);
+        }
+
         return this.success(201, result.value);
 
     }

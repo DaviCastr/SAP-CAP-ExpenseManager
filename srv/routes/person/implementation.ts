@@ -1,8 +1,8 @@
-import { ApplicationService, entity, Request } from "@sap/cds";
+import { ApplicationService, Request } from "@sap/cds";
 import { PersonRoute } from "./protocols";
 import { BaseRouteImplementation } from "../base/implementation";
 import { Person } from "@models/apps/dflc/gestordegastos/entities";
-import { BaseController, BaseControllerResponse } from "@/controllers/base";
+import { BaseControllerResponse } from "@/controllers/base";
 import { PersonController } from "@/controllers/person";
 
 export class PersonRouteImplementation extends BaseRouteImplementation<Person> implements PersonRoute {
@@ -28,6 +28,8 @@ export class PersonRouteImplementation extends BaseRouteImplementation<Person> i
         Service.on('AddCardExpense', this.addCardExpense.bind(this));
         Service.on('SendInvoices', this.sendInvoices.bind(this));
         Service.on('CardExpensesByCategories', this.cardExpensesByCategories.bind(this));
+        Service.on('SimulateExpenses', this.simulateExpenses.bind(this));
+        Service.on('SimulateFinancialFuture', this.simulateFinancialFuture.bind(this));
 
     }
 
@@ -65,6 +67,36 @@ export class PersonRouteImplementation extends BaseRouteImplementation<Person> i
     private async cardExpensesByCategories(Request: Request): Promise<BaseControllerResponse> {
 
          const oResult = await this.Controller.cardExpensesByCategories();
+
+        if (oResult.status != 200) {
+
+            return this.returnRejectMessage(Request, oResult);
+
+        }
+
+        return oResult;
+
+    }
+
+
+    private async simulateExpenses(Request: Request): Promise<BaseControllerResponse> {
+
+         const oResult = await this.Controller.simulateExpenses();
+
+        if (oResult.status != 201) {
+
+            return this.returnRejectMessage(Request, oResult);
+
+        }
+
+        return oResult;
+
+    }
+
+
+    private async simulateFinancialFuture(Request: Request): Promise<BaseControllerResponse> {
+
+         const oResult = await this.Controller.simulateFinancialFuture();
 
         if (oResult.status != 201) {
 

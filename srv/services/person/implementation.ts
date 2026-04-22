@@ -1,5 +1,5 @@
 import { AbstractError } from "@/errors";
-import { Persons, Person, Cards, Invoice, Transaction } from "@models/apps/dflc/gestordegastos/entities";
+import { Persons, Person, Cards, Invoice, Transaction, Transactions } from "@models/apps/dflc/gestordegastos/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { PersonService } from "./protocols";
 import { PersonModel } from "@/models/person";
@@ -25,7 +25,6 @@ import { CardServiceImplementation } from "../card/implementation";
 import { CardExpensesByCategoryModel, CardExpensesByCategoryReturnProperties, CategoryExpenses } from "@/models/card-expenses-by-category";
 import { CategoryServiceImplementation } from "../category/implementation";
 import { PassThrough } from "stream";
-import cds from "@sap/cds";
 import Decimal from "decimal.js";
 import axios from "axios";
 import path from "path";
@@ -33,11 +32,10 @@ import fs from "fs";
 import handlebars from "handlebars";
 import PDFDocument from "pdfkit";
 import nodemailer from "nodemailer";
-import { error } from "console";
-import { Currency } from "@models/sap/common";
 import { SimulateExpenseModel, SimulateExpenseReturnProperties } from "@/models/simulate-expense";
 import { CurrencyModel } from "@/models/currency";
 import { FinancialFutureReturn, FinancialRecommendation } from "@/models/financial-future";
+import { CategoryTransactionsModel, CategoryTransactionsReturnProperties } from "@/models/transactions-by-category";
 
 
 export class PersonServiceImplementation extends BaseServiceImplementation<Person> implements PersonService {
@@ -671,10 +669,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             const { PersonId, Year, Month } = request.data;
 
-            /* --------------------------------------------------------------------
-               VALIDATION
-            -------------------------------------------------------------------- */
-
             const required: string[] = [];
             if (!PersonId) required.push("PersonId");
             if (!Year) required.push("Year");
@@ -698,20 +692,12 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 return left(this.buildFutureError("Invalid Month"));
             }
 
-            /* --------------------------------------------------------------------
-               AUTHORIZATION
-            -------------------------------------------------------------------- */
-
             const auth = await this.afterRead(
                 [{ ID: PersonId }],
                 request?.user
             );
 
             if (auth.isLeft()) return auth as any;
-
-            /* --------------------------------------------------------------------
-               LOAD PERSON
-            -------------------------------------------------------------------- */
 
             const person = await this.Repository.findById(PersonId);
 
@@ -726,35 +712,58 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 return right(this.buildEmptyFuture(person));
             }
 
-            const cardIds = cards.map(card => card.Id);
+            const cardService = ServiceRegistry.get("Cards") as CardServiceImplementation;
 
-            /* --------------------------------------------------------------------
-               LOAD DATA
-            -------------------------------------------------------------------- */
+            const authCardCheck = await cardService.afterRead(
+                [{ Person: { ID: PersonId } }],
+                request?.user
+            );
+
+            if (authCardCheck.isLeft()) {
+                return authCardCheck as any;
+            }
+
+            const invoiceService = ServiceRegistry.get("Invoices") as InvoiceServiceImplementation;
+
+            const authInvoiceCheck = await invoiceService.afterRead(
+                [{ Card: { ID: cards[0].Id } }],
+                request?.user
+            );
+
+            if (authInvoiceCheck.isLeft()) {
+                return authInvoiceCheck as any;
+            }
+
+            const cardIds = cards.map(card => card.Id);
 
             const invoices =
                 await this.InvoiceRepository.findByCardIDs(cardIds, {
                     Year: { ">=": new Date().getFullYear() - 1 }
                 }) || [];
 
-            const transactions =
-                //await this.TransactionRepository?.findByCardIds?.(cardIds)
-                //|| 
-                await this.loadTransactionsByCardsFallback(cardIds);
+            if (invoices?.length) {
 
-            /* --------------------------------------------------------------------
-               ENGINE
-            -------------------------------------------------------------------- */
+                const transactionService = ServiceRegistry.get("Transactions") as TransactionServiceImplementation;
+
+                const authTransactionCheck = await transactionService.afterRead(
+                    [{ Invoice: { ID: invoices[0].Id } }],
+                    request?.user
+                );
+
+                if (authTransactionCheck.isLeft()) {
+                    return authTransactionCheck as any;
+                }
+
+            }
+
+            const transactions =
+                await this.loadTransactionsByCardsFallback(cardIds);
 
             const timeline = new Map<string, Decimal>();
 
             let generatedInvoices = new Decimal(0);
             let installmentPending = new Decimal(0);
             let recurringExpenses = new Decimal(0);
-
-            /* --------------------------------------------------------------------
-               1) EXISTING INVOICES
-            -------------------------------------------------------------------- */
 
             for (const invoice of invoices) {
 
@@ -776,10 +785,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 generatedInvoices =
                     generatedInvoices.plus(invoice.TotalAmount || 0);
             }
-
-            /* --------------------------------------------------------------------
-               2) INSTALLMENTS FUTURE
-            -------------------------------------------------------------------- */
 
             const installmentMap =
                 this.detectPendingInstallments(transactions);
@@ -815,10 +820,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 }
             }
 
-            /* --------------------------------------------------------------------
-               3) RECURRING FIXED EXPENSES
-            -------------------------------------------------------------------- */
-
             const recurring =
                 this.detectRecurringExpenses(transactions);
 
@@ -851,10 +852,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         this.nextMonth(year, month));
                 }
             }
-
-            /* --------------------------------------------------------------------
-               KPI CALCULATIONS
-            -------------------------------------------------------------------- */
 
             const targetKey =
                 this.futureKey(targetYear, targetMonth);
@@ -893,10 +890,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     expenseTarget
                 );
 
-            /* --------------------------------------------------------------------
-               CHARTS
-            -------------------------------------------------------------------- */
-
             const monthlyTimeline =
                 Array.from(timeline.entries())
                     .sort((a, b) =>
@@ -913,10 +906,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         };
                     });
 
-            /* --------------------------------------------------------------------
-               RECOMMENDATIONS
-            -------------------------------------------------------------------- */
-
             const recommendations =
                 this.buildFutureRecommendations(
                     risk,
@@ -925,10 +914,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     targetMonthDebt,
                     expenseTarget
                 );
-
-            /* --------------------------------------------------------------------
-               RETURN
-            -------------------------------------------------------------------- */
 
             return right({
 
@@ -999,6 +984,113 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 )
             );
         }
+    }
+
+
+    public async retrieveTransactionsByCategory():
+        Promise<Either<AbstractError, CategoryTransactionsReturnProperties>> {
+
+        try {
+
+            const request = ServiceLocator.getRequest();
+
+            const input = this.validateRetrieveTransactionsByCategoryInput(request.data);
+
+            if (input.isLeft()) return input as any;
+
+            const {
+                PersonId,
+                CategoryId,
+                Total,
+                Month,
+                Year
+            } = input.value;
+
+            const auth = await this.authorizeRetrieveTransactionsByCategory(
+                request.user,
+                PersonId,
+                CategoryId
+            );
+
+            if (auth.isLeft()) return auth as any;
+
+            const person = await this.Repository.findById(PersonId);
+
+            if (!person) {
+                return right(this.emptyCategoryTransactionsResponse());
+            }
+
+            const cards = await this.CardRepository.findByPersonId(PersonId) || [];
+
+            if (!cards.length) {
+                return right(this.emptyCategoryTransactionsResponse());
+            }
+
+            const cardIds = cards.map(card => card.Id);
+
+            const invoices = await this.resolveInvoicesScope(
+                cardIds,
+                Total,
+                Month as number,
+                Year as number
+            );
+
+            if (!invoices.length) {
+                return right(this.emptyCategoryTransactionsResponse());
+            }
+
+            const invoiceIds = invoices.map(invoice => invoice.Id);
+
+            const transactions =
+                await this.TransactionRepository.findByInvoiceIds(
+                    invoiceIds,
+                    {
+                        Category_ID: CategoryId
+                    }
+                ) || [];
+
+            if (!transactions.length) {
+                return right(this.emptyCategoryTransactionsResponse());
+            }
+
+            const authObjects = await this.authorizeAnalyticsObjects(
+                request.user,
+                cards,
+                invoices,
+                transactions
+            );
+
+            if (authObjects.isLeft()) return authObjects as any;
+
+            const category = await this.CategoryRepository.findById(CategoryId);
+
+            if (!category) {
+                return right(this.emptyCategoryTransactionsResponse());
+            }
+
+            const result = this.buildCategoryTransactionResponse(
+                category,
+                cards,
+                invoices,
+                transactions
+            );
+
+            return right(result);
+
+        } catch (error) {
+
+            const err = error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    403,
+                    err.stack as string
+                )
+            );
+
+        }
+
     }
 
 
@@ -2591,10 +2683,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    /* ============================================================================
-     * INPUT
-     * ========================================================================== */
-
     private extractSimulationInput(request: any) {
 
         return {
@@ -2605,10 +2693,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
     }
 
-
-    /* ============================================================================
-     * VALIDATION
-     * ========================================================================== */
 
     private async validateSimulationInput(
         input: {
@@ -2657,9 +2741,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             );
         }
 
-        /**
-         * Segurança
-         */
         const authCheck = await this.afterRead(
             [{ ID: input.PersonId }],
             request?.user
@@ -2669,8 +2750,34 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             return authCheck as any;
         }
 
+        const cardService = ServiceRegistry.get("Cards") as CardServiceImplementation;
+
         const cards =
             await this.CardRepository.findByPersonIds([input.PersonId]) || [];
+
+        const authCardCheck = await cardService.afterRead(
+            [{ Person: { ID: input.PersonId } }],
+            request?.user
+        );
+
+        if (authCardCheck.isLeft()) {
+            return authCardCheck as any;
+        }
+
+        if (cards?.length) {
+
+            const invoiceService = ServiceRegistry.get("Invoices") as InvoiceServiceImplementation;
+
+            const authInvoiceCheck = await invoiceService.afterRead(
+                [{ Card: { ID: cards[0].Id } }],
+                request?.user
+            );
+
+            if (authInvoiceCheck.isLeft()) {
+                return authInvoiceCheck as any;
+            }
+
+        }
 
         return right({
             person,
@@ -2679,10 +2786,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
     }
 
-
-    /* ============================================================================
-     * LOAD DATA
-     * ========================================================================== */
 
     private async loadInvoicesForSimulation(
         cardIds: string[],
@@ -2700,10 +2803,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
     }
 
-
-    /* ============================================================================
-     * CALCULATIONS
-     * ========================================================================== */
 
     private calculateSimulationTotals(
         invoices: InvoiceModel[],
@@ -2752,10 +2851,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    /* ============================================================================
-     * RESULT BUILDERS
-     * ========================================================================== */
-
     private buildSimulationResult(
         person: PersonModel,
         totalFuture: Decimal,
@@ -2800,10 +2895,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
     }
 
-
-    /* ============================================================================
-     * ERROR HELPERS
-     * ========================================================================== */
 
     private buildValidationError(
         request: any,
@@ -3022,7 +3113,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             result.push({
                 Type: "INFO",
                 Message:
-                    "Parcelamentos futuros impactarão meses seguintes."
+                    "Parcelamentos futuros impactarão Monthes seguintes."
             });
         }
 
@@ -3095,6 +3186,284 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 invoices.map((i: any) => i.Id)
             ) || [];
     }
+
+
+    private validateRetrieveTransactionsByCategoryInput(data: any):
+        Either<AbstractError, {
+            PersonId: string,
+            CategoryId: string,
+            Total: boolean,
+            Month?: number,
+            Year?: number
+        }> {
+
+        const request = ServiceLocator.getRequest();
+
+        const required: string[] = [];
+
+        if (!data.PersonId) required.push('PersonId');
+        if (!data.CategoryId) required.push('CategoryId');
+
+        if (required.length) {
+
+            const err = new Error(
+                this.getMessage(
+                    'error.invalidFields',
+                    request,
+                    undefined,
+                    { fields: required.join(', ') }
+                )
+            );
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    403,
+                    err.stack as string
+                )
+            );
+
+        }
+
+        const now = this.getBrazilDate();
+
+        return right({
+            PersonId: data.PersonId,
+            CategoryId: data.CategoryId,
+            Total: !!data.Total,
+            Month: Number(data.Month || now.month),
+            Year: Number(data.Year || now.year)
+        });
+
+    }
+
+
+    private async authorizeRetrieveTransactionsByCategory(
+        user: any,
+        PersonId: string,
+        CategoryId: string
+    ): Promise<Either<AbstractError, boolean>> {
+
+        const resultPerson = await this.afterRead(
+            [{ ID: PersonId }],
+            user
+        );
+
+        if (resultPerson.isLeft()) return resultPerson as any;
+
+        const categoryService =
+            ServiceRegistry.get('Categories') as CategoryServiceImplementation;
+
+        if (categoryService) {
+
+            const resultCategory = await categoryService.afterRead(
+                [{ ID: CategoryId }],
+                user
+            );
+
+            if (resultCategory.isLeft()) return resultCategory as any;
+
+        }
+
+        return right(true);
+
+    }
+
+
+    private async authorizeAnalyticsObjects(
+        user: any,
+        cards: CardModel[],
+        invoices: InvoiceModel[],
+        transactions: TransactionModel[]
+    ): Promise<Either<AbstractError, boolean>> {
+
+        const cardService =
+            ServiceRegistry.get('Cards') as CardServiceImplementation;
+
+        const invoiceService =
+            ServiceRegistry.get('Invoices') as InvoiceServiceImplementation;
+
+        const transactionService =
+            ServiceRegistry.get('Transactions') as TransactionServiceImplementation;
+
+        if (cardService) {
+            const result = await cardService.afterRead([cards?.[0]?.toEntityObject()], user);
+            if (result.isLeft()) return result as any;
+        }
+
+        if (invoiceService) {
+            const result = await invoiceService.afterRead([invoices?.[0]?.toEntityObject()], user);
+            if (result.isLeft()) return result as any;
+        }
+
+        if (transactionService) {
+            const result = await transactionService.afterRead([transactions?.[0]?.toEntityObject()], user);
+            if (result.isLeft()) return result as any;
+        }
+
+        return right(true);
+
+    }
+
+
+    private async resolveInvoicesScope(
+        cardIds: string[],
+        Total: boolean,
+        Month: number,
+        Year: number
+    ): Promise<InvoiceModel[]> {
+
+        if (!Total) {
+
+            return await this.InvoiceRepository.findByCardIDs(
+                cardIds,
+                {
+                    Month,
+                    Year
+                }
+            ) || [];
+
+        }
+
+        const invoices =
+            await this.InvoiceRepository.findByCardIDs(
+                cardIds,
+                {
+                    Year: { '>=': Year }
+                }
+            ) || [];
+
+        return invoices.filter(
+            invoice =>
+                invoice.Year > Year ||
+                (invoice.Year === Year && invoice.Month >= Month)
+        );
+
+    }
+
+
+    private buildCategoryTransactionResponse(
+        category: CategoryModel,
+        cards: CardModel[],
+        invoices: InvoiceModel[],
+        transactions: TransactionModel[]
+    ): CategoryTransactionsReturnProperties {
+
+        const invoicesByCard = new Map<string, InvoiceModel[]>();
+        const transactionsByInvoice = new Map<string, TransactionModel[]>();
+
+        for (const invoice of invoices) {
+
+            if (!invoicesByCard.has(invoice.CardId)) {
+                invoicesByCard.set(invoice.CardId, []);
+            }
+
+            invoicesByCard.get(invoice.CardId)!.push(invoice);
+
+        }
+
+        for (const transaction of transactions) {
+
+            if (!transactionsByInvoice.has(transaction.InvoiceId)) {
+                transactionsByInvoice.set(transaction.InvoiceId, []);
+            }
+
+            transactionsByInvoice.get(transaction.InvoiceId)!.push(transaction);
+
+        }
+
+        let totalAmount = 0;
+
+        let cardsReturn = cards.map((card) => {
+
+            const cardInvoices = invoicesByCard.get(card.Id) || [];
+
+            let invoicesReturn = cardInvoices.map((invoice) => {
+
+                const invoiceTransactions =
+                    transactionsByInvoice.get(invoice.Id) || [];
+
+                if (invoiceTransactions.length) {
+
+                    const invoiceTotal =
+                        invoiceTransactions.reduce(
+                            (sum, item) =>
+                                sum + Number(item.Amount?.toNumber() || 0),
+                            0
+                        );
+
+                    totalAmount += invoiceTotal;
+
+                    return {
+                        ID: invoice.Id,
+                        Year: invoice.Year,
+                        Month: invoice.Month,
+                        Description:
+                            invoice.Description ||
+                            this.getMessage(
+                                `month.${invoice.Month}`,
+                                ServiceLocator.getRequest()
+                            ),
+                        TotalAmount: invoiceTotal,
+                        Transactions: invoiceTransactions.map(
+                            item => item.toEntityObject()
+                        )
+                    };
+
+                }
+
+            }).filter(Boolean);
+
+            if (invoicesReturn.length) {
+
+                return {
+                    ID: card.Id,
+                    Name: card.Name,
+                    ImagePath: card.ImageType
+                        ? `Cards(ID='${card.Id}',IsActiveEntity=true)/Image`
+                        : undefined,
+                    TotalAmount:
+                        invoicesReturn.reduce(
+                            (sum, inv) => sum + (inv as any).TotalAmount,
+                            0
+                        ),
+                    Invoices: invoicesReturn
+                };
+
+            }
+
+        }).filter(Boolean);
+
+        const model =
+            CategoryTransactionsModel.singleModel({
+                ID: category.Id,
+                Name: category.Name,
+                ImagePath: category.ImageType
+                    ? `Categories(ID='${category.Id}',IsActiveEntity=true)/Image`
+                    : undefined,
+                Currency: { code: cards[0].Currency.Code },
+                TotalAmount: totalAmount,
+                Cards: cardsReturn as any
+            });
+
+        return model.toEntityObject();
+
+    }
+
+
+    private emptyCategoryTransactionsResponse():
+        CategoryTransactionsReturnProperties {
+
+        return {
+            ID: '',
+            Name: '',
+            Currency: { code: 'BRL' },
+            TotalAmount: 0,
+            Cards: []
+        };
+
+    }
+
 
 
 }

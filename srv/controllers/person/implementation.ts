@@ -80,4 +80,17 @@ export class PersonControllerImplementation extends BaseControllerImplementation
 
     }
 
+
+    public async retrieveTransactionsByCategory(): Promise<BaseControllerResponse> {
+
+        const result = await this.Service.retrieveTransactionsByCategory();
+
+        if (result.isLeft()) {
+            return this.error(result.value.code, result.value.message);
+        }
+
+        return this.success(200, result.value);
+
+    }
+
 }

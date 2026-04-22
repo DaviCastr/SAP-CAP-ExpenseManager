@@ -36,7 +36,7 @@ service GestorDeGastos {
     action   SimulateFinancialFuture(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                      returns entities.ActionResult;
 
     function CardExpensesByCategories(PersonId: UUID, CardId: UUID, InvoiceId: UUID, Month: Integer, Year: Integer, TotalOnwards: Boolean)                                              returns entities.CategoriesReturn;
-    function RecoverTransactionsPerCategory(Person: UUID, Category: UUID, Total: Boolean, Month: Integer, Year: Integer)                                                                returns entities.TransactionsReturn;
+    function RetrieveTransactionsByCategory(PersonId: UUID, CategoryId: UUID, Total: Boolean, Month: Integer, Year: Integer)                                                                returns entities.TransactionsReturn;
     function RecoverCompleteInvoice(Person: UUID, Month: Integer, Year: Integer)                                                                                                        returns entities.CompleteInvoiceReturn;
 
 }

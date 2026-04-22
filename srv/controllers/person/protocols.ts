@@ -8,4 +8,5 @@ export interface PersonController extends BaseController<Person> {
     cardExpensesByCategories(): Promise<BaseControllerResponse>;
     simulateExpenses(): Promise<BaseControllerResponse>;
     simulateFinancialFuture(): Promise<BaseControllerResponse>;
+    retrieveTransactionsByCategory(): Promise<BaseControllerResponse>;
 }

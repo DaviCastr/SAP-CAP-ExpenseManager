@@ -11,5 +11,6 @@ export interface PersonService extends BaseService<Person> {
     sendInvoices(): Promise<Either<AbstractError, boolean>>;
     cardExpensesByCategories(): Promise<Either<AbstractError, CardExpensesByCategoryReturnProperties>>;
     simulateExpenses(): Promise<Either<AbstractError, SimulateExpenseReturnProperties>>;
-    simulateFinancialFuture(): Promise<Either<AbstractError, FinancialFutureReturn>>
+    simulateFinancialFuture(): Promise<Either<AbstractError, FinancialFutureReturn>>;
+    retrieveTransactionsByCategory(): Promise<Either<AbstractError, {}>>;
 }

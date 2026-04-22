@@ -110,13 +110,13 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
     }
 
 
-    public async findByInvoiceIds(InvoiceIds: Transaction["Invoice_ID"] | Transaction["Invoice_ID"][], Limit?: number): Promise<TransactionModel[] | null> {
+    public async findByInvoiceIds(InvoiceIds: Transaction["Invoice_ID"] | Transaction["Invoice_ID"][], additionalFilters?: {}, Limit?: number): Promise<TransactionModel[] | null> {
 
         let oSql = this.getReportBaseSql();
 
         const invoiceIds = Array.isArray(InvoiceIds) ? InvoiceIds : [InvoiceIds];
 
-        oSql.where({ Invoice_ID: { in: invoiceIds } });
+        oSql.where({ Invoice_ID: { in: invoiceIds }, ...additionalFilters });
 
         if (Limit != 0 && Limit) {
 
@@ -130,7 +130,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             oSql = this.getReportBaseSql(true);
 
-            oSql.where({ Invoice_ID: { in: invoiceIds } });
+            oSql.where({ Invoice_ID: { in: invoiceIds }, ...additionalFilters });
 
             if (Limit != 0 && Limit) {
 

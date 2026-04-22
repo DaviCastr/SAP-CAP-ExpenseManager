@@ -225,11 +225,11 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     }
 
+    
+    public abstract entityCode(): number;
+
 
     protected abstract personPath(): string[];
-
-
-    protected abstract entityCode(): number;
 
 
     protected abstract parentField(): string | null;

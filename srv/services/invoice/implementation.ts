@@ -145,7 +145,7 @@ export class InvoiceServiceImplementation extends BaseServiceImplementation<Invo
     }
 
 
-    protected entityCode(): number {
+    public entityCode(): number {
 
         return 6;
 

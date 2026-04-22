@@ -7,5 +7,6 @@ export interface CardRepository extends BaseRepository{
     findByPersonId(PersonId: Card['Person_ID']): Promise<CardModel[] | null>;
     findByPersonIds(PersonId: Card['Person_ID'][], additionalFilters?: {}): Promise<CardModel[] | null>;
     findByInvoiceIds(InvoiceIds: Card['ID'] | Card['ID'][]): Promise<CardModel[] | null>;
+    retrieveCompleteInvoiceTransactions(PersonId: string, Year: number, Month: number): Promise<any[]>
     createEntry(data: Card | Cards): Promise<CardModel[] | null>;
 }

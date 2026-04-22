@@ -15,6 +15,7 @@ service PersonService {
 
     function CardExpensesByCategories(PersonId: UUID, CardId: UUID, InvoiceId: UUID, Month: Integer, Year: Integer, TotalOnwards: Boolean)                                              returns entities.CategoriesReturn;
     function RetrieveTransactionsByCategory(PersonId: UUID, CategoryId: UUID, Total: Boolean, Month: Integer, Year: Integer)                                                            returns entities.TransactionsReturn;
+    function RetrieveCompleteInvoice(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                      returns entities.CompleteInvoiceReturn;
 
 }
 

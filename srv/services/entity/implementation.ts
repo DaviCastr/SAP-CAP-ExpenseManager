@@ -138,7 +138,7 @@ export class EntityServiceImplementation extends BaseServiceImplementation<Entit
     }
 
 
-    protected entityCode(): number {
+    public entityCode(): number {
 
         return 3;
 

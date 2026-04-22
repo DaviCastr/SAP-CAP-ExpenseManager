@@ -5,6 +5,8 @@ import { Either } from "@sweet-monads/either";
 import { CardExpensesByCategoryReturnProperties } from "@/models/card-expenses-by-category";
 import { SimulateExpenseReturnProperties } from "@/models/simulate-expense";
 import { FinancialFutureReturn } from "@/models/financial-future";
+import { CategoryTransactionsReturnProperties } from "@/models/transactions-by-category";
+import { CompleteInvoiceReturnProperties } from "@/models/complete-invoice";
 
 export interface PersonService extends BaseService<Person> {
     addCardExpense(): Promise<Either<AbstractError, boolean>>;
@@ -12,5 +14,6 @@ export interface PersonService extends BaseService<Person> {
     cardExpensesByCategories(): Promise<Either<AbstractError, CardExpensesByCategoryReturnProperties>>;
     simulateExpenses(): Promise<Either<AbstractError, SimulateExpenseReturnProperties>>;
     simulateFinancialFuture(): Promise<Either<AbstractError, FinancialFutureReturn>>;
-    retrieveTransactionsByCategory(): Promise<Either<AbstractError, {}>>;
+    retrieveTransactionsByCategory(): Promise<Either<AbstractError, CategoryTransactionsReturnProperties>>;
+    retrieveCompleteInvoice(): Promise<Either<AbstractError, CompleteInvoiceReturnProperties>>;
 }

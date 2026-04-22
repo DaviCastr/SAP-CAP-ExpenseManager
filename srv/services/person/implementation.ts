@@ -6,7 +6,7 @@ import { PersonModel } from "@/models/person";
 import { PersonRepository } from "@/repositories/person";
 import { BaseServiceImplementation } from "../base/implementation";
 import { ShareRepository } from "@/repositories/share";
-import { User } from "@sap/cds";
+import cds, { User } from "@sap/cds";
 import { EntityRepository } from '@/repositories/entity';
 import { PermissionDenied } from "@/errors/permission-denied";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
@@ -36,6 +36,7 @@ import { SimulateExpenseModel, SimulateExpenseReturnProperties } from "@/models/
 import { CurrencyModel } from "@/models/currency";
 import { FinancialFutureReturn, FinancialRecommendation } from "@/models/financial-future";
 import { CategoryTransactionsModel, CategoryTransactionsReturnProperties } from "@/models/transactions-by-category";
+import { CompleteInvoiceModel, CompleteInvoiceReturnProperties } from "@/models/complete-invoice";
 
 
 export class PersonServiceImplementation extends BaseServiceImplementation<Person> implements PersonService {
@@ -698,6 +699,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             );
 
             if (auth.isLeft()) return auth as any;
+            else if (!auth.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
 
             const person = await this.Repository.findById(PersonId);
 
@@ -721,6 +732,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             if (authCardCheck.isLeft()) {
                 return authCardCheck as any;
+            } else if (!authCardCheck.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), cardService.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
             }
 
             const invoiceService = ServiceRegistry.get("Invoices") as InvoiceServiceImplementation;
@@ -732,6 +752,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             if (authInvoiceCheck.isLeft()) {
                 return authInvoiceCheck as any;
+            } else if (!authInvoiceCheck.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), invoiceService.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
             }
 
             const cardIds = cards.map(card => card.Id);
@@ -752,6 +781,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 if (authTransactionCheck.isLeft()) {
                     return authTransactionCheck as any;
+                } else if (!authTransactionCheck.value?.length) {
+
+                    const oStack = new Error().stack as string;
+
+                    const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), transactionService.entityCode()) ||
+                        'error.modificationPermissionDenied';
+
+                    return left(new PermissionDenied(message, 403, oStack));
+
                 }
 
             }
@@ -791,7 +829,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             for (const item of installmentMap) {
 
-                const tx = item.tx;
+                const tx = item;
                 const remaining = item.remaining;
 
                 let year = item.nextYear;
@@ -965,7 +1003,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 Details: {
                     RecurringExpenses: recurring,
                     PendingInstallments: installmentMap,
-                    OpenInvoices: invoices
+                    OpenInvoices: invoices?.map(item=>item.toEntityObject())
                 },
 
                 Recommendations: recommendations
@@ -1076,6 +1114,112 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             );
 
             return right(result);
+
+        } catch (error) {
+
+            const err = error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    403,
+                    err.stack as string
+                )
+            );
+
+        }
+
+    }
+
+
+    public async retrieveCompleteInvoice():
+        Promise<Either<AbstractError, CompleteInvoiceReturnProperties>> {
+
+        try {
+
+            const request = ServiceLocator.getRequest();
+
+            const { PersonId, Year, Month } = request.data;
+
+            const required: string[] = [];
+
+            if (!PersonId) required.push('PersonId');
+            if (!Year) required.push('Year');
+            if (!Month) required.push('Month');
+
+            if (required.length) {
+
+                const err = new Error(
+                    this.getMessage(
+                        'error.invalidFields',
+                        request,
+                        undefined,
+                        { fields: required.join(', ') }
+                    )
+                );
+
+                return left(
+                    new AbstractError(
+                        err.message,
+                        403,
+                        err.stack as string
+                    )
+                );
+
+            }
+
+            const authPerson = await this.afterRead(
+                [{ ID: PersonId }],
+                request.user
+            );
+
+            if (authPerson.isLeft()) return authPerson as any;
+            else if (!authPerson.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
+
+            const rows =
+                await this.CardRepository.retrieveCompleteInvoiceTransactions(
+                    PersonId,
+                    Number(Year),
+                    Number(Month)
+                );
+
+            if (!rows.length) {
+                return right(
+                    CompleteInvoiceModel.empty(
+                        Number(Year),
+                        Number(Month)
+                    ).toEntityObject()
+                );
+            }
+
+            const resultAuth = await this.authorizeCompleteInvoiceObjects(
+                rows,
+                request.user
+            );
+
+            if(resultAuth.isLeft()) return resultAuth as any;
+
+            const result =
+                CompleteInvoiceModel.fromRepositoryRows(
+                    rows,
+                    Number(Year),
+                    Number(Month),
+                    this.getMessage(
+                        `month.${Month}`,
+                        request
+                    )
+                );
+
+            return right(result.toEntityObject());
 
         } catch (error) {
 
@@ -1537,7 +1681,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .fillColor(oTextColor)
                         .fontSize(16)
                         .text(`Mês: ${oMonthDescription}`, { align: "left" })
-                        .text(`Ano: ${Invoice?.Year}`, { align: "left" })
+                        .text(`Year: ${Invoice?.Year}`, { align: "left" })
                         .text(`Data de Vencimento: ${this.addLeftZeros(Card?.DueDay)}/${this.addLeftZeros(Invoice?.Month)}/${Invoice?.Year}`, { align: "left" });
 
                     doc
@@ -1665,8 +1809,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .text("Data", positions.data, verticalPosition, { width: 100 })
                         .text("Descrição", positions.description, verticalPosition, { width: 200 })
                         .text("Categoria", positions.category, verticalPosition, { width: 100 })
-                        .text("Parcela", positions.parcela, verticalPosition, { width: 100 })
-                        .text("Valor", positions.valor, verticalPosition, { width: 100, align: "right" });
+                        .text("Installment", positions.parcela, verticalPosition, { width: 100 })
+                        .text("Amount", positions.valor, verticalPosition, { width: 100, align: "right" });
 
                     verticalPosition += 20;
 
@@ -1761,7 +1905,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    protected entityCode(): number {
+    public entityCode(): number {
 
         return 1;
 
@@ -2116,6 +2260,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 );
 
             if (result.isLeft()) return result as any;
+            else if (!result.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
 
             const categoryAuth =
                 await categoryService.afterRead(
@@ -2124,6 +2278,17 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 );
 
             if (categoryAuth.isLeft()) return categoryAuth as any;
+            else if (!result.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
+
         }
 
         if (input.CardId) {
@@ -2135,6 +2300,17 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 );
 
             if (result.isLeft()) return result as any;
+            else if (!result.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
+
         }
 
         if (input.InvoiceId) {
@@ -2146,6 +2322,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 );
 
             if (result.isLeft()) return result as any;
+            else if (!result.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
         }
 
         return right(true);
@@ -2337,6 +2523,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             );
 
         if (categoryAuth.isLeft()) throw new Error(categoryAuth?.value?.message);
+        else if (!categoryAuth.value?.length) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), categoryService.entityCode()) ||
+                'error.modificationPermissionDenied';
+
+            throw new PermissionDenied(message, 403, oStack);
+
+        }
 
         const transactionAuth =
             await transactionService.afterRead(
@@ -2349,6 +2545,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             );
 
         if (transactionAuth.isLeft()) throw new Error(transactionAuth?.value?.message);
+        else if (!transactionAuth.value?.length) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), transactionService.entityCode()) ||
+                'error.modificationPermissionDenied';
+
+            throw new PermissionDenied(message, 403, oStack);
+
+        }
 
         const invoiceIds =
             invoices.map(item => item.Id);
@@ -2748,6 +2954,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         if (authCheck.isLeft()) {
             return authCheck as any;
+        } else if (!authCheck.value?.length) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.modificationPermissionDenied';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
         }
 
         const cardService = ServiceRegistry.get("Cards") as CardServiceImplementation;
@@ -2762,6 +2977,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         if (authCardCheck.isLeft()) {
             return authCardCheck as any;
+        } else if (!authCardCheck.value?.length) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), cardService.entityCode()) ||
+                'error.modificationPermissionDenied';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
         }
 
         if (cards?.length) {
@@ -2775,6 +2999,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             if (authInvoiceCheck.isLeft()) {
                 return authInvoiceCheck as any;
+            } else if (!authInvoiceCheck.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), invoiceService.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
             }
 
         }
@@ -2999,7 +3232,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
 
     private detectPendingInstallments(
-        transactions: any[]
+        transactions: TransactionModel[]
     ) {
 
         const result: any[] = [];
@@ -3025,7 +3258,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     this.nextMonth(year, month));
 
                 result.push({
-                    tx,
+                    ...tx.toEntityObject(),
                     remaining,
                     nextYear: year,
                     nextMonth: month
@@ -3038,7 +3271,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
 
     private detectRecurringExpenses(
-        transactions: any[]
+        transactions: TransactionModel[]
     ) {
 
         const map = new Map<string, any[]>();
@@ -3113,7 +3346,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             result.push({
                 Type: "INFO",
                 Message:
-                    "Parcelamentos futuros impactarão Monthes seguintes."
+                    "Installmentmentos futuros impactarão Monthes seguintes."
             });
         }
 
@@ -3250,6 +3483,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         );
 
         if (resultPerson.isLeft()) return resultPerson as any;
+        else if (!resultPerson.value?.length) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
+                'error.modificationPermissionDenied';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
 
         const categoryService =
             ServiceRegistry.get('Categories') as CategoryServiceImplementation;
@@ -3262,6 +3505,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             );
 
             if (resultCategory.isLeft()) return resultCategory as any;
+            else if (!resultCategory.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), categoryService.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
 
         }
 
@@ -3289,16 +3542,50 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         if (cardService) {
             const result = await cardService.afterRead([cards?.[0]?.toEntityObject()], user);
             if (result.isLeft()) return result as any;
+            else if (!result.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), cardService.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
         }
 
         if (invoiceService) {
+
             const result = await invoiceService.afterRead([invoices?.[0]?.toEntityObject()], user);
             if (result.isLeft()) return result as any;
+            else if (!result.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), invoiceService.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
+
         }
 
         if (transactionService) {
+
             const result = await transactionService.afterRead([transactions?.[0]?.toEntityObject()], user);
             if (result.isLeft()) return result as any;
+            else if (!result.value?.length) {
+
+                const oStack = new Error().stack as string;
+
+                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), transactionService.entityCode()) ||
+                    'error.modificationPermissionDenied';
+
+                return left(new PermissionDenied(message, 403, oStack));
+
+            }
+
         }
 
         return right(true);
@@ -3464,6 +3751,108 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
     }
 
+
+    private async authorizeCompleteInvoiceObjects(
+        rows: any[],
+        user: any
+    ): Promise<Either<AbstractError, boolean>> {
+
+        const cardService =
+            ServiceRegistry.get('Cards') as CardServiceImplementation;
+
+        const invoiceService =
+            ServiceRegistry.get('Invoices') as InvoiceServiceImplementation;
+
+        const transactionService =
+            ServiceRegistry.get('Transactions') as TransactionServiceImplementation;
+
+        const categoryService =
+            ServiceRegistry.get('Categories') as CategoryServiceImplementation;
+
+        const cards = [
+            ...new Map(
+                rows.map(r => [r.CardID, { ID: r.CardID }])
+            ).values()
+        ];
+
+        const invoices = [
+            ...new Map(
+                rows.map(r => [r.InvoiceID, { ID: r.InvoiceID, Card: { ID: r.CardID}  }])
+            ).values()
+        ];
+
+        const transactions = [
+            ...new Map(
+                rows.map(r => [r.TransactionID, { ID: r.TransactionID, Invoice: { ID: r.InvoiceID} }])
+            ).values()
+        ];
+
+        const categories = [
+            ...new Map(
+                rows
+                    .filter(r => r.CategoryID)
+                    .map(r => [r.CategoryID, { ID: r.CategoryID }])
+            ).values()
+        ];
+
+        const resultAuthCard = await cardService.afterRead([cards[0]] as any, user);
+
+        if (resultAuthCard.isLeft()) return resultAuthCard as any;
+        else if (!resultAuthCard.value?.length) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), cardService.entityCode()) ||
+                'error.modificationPermissionDenied';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
+
+        const resultAuthInvoice = await invoiceService.afterRead([invoices[0]] as any, user);
+
+        if (resultAuthInvoice.isLeft()) return resultAuthInvoice as any;
+        else if (!resultAuthInvoice.value?.length) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), invoiceService.entityCode()) ||
+                'error.modificationPermissionDenied';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
+
+        const resultAuthTransaction = await transactionService.afterRead([transactions[0]] as any, user);
+
+        if (resultAuthTransaction.isLeft()) return resultAuthTransaction as any;
+        else if (!resultAuthTransaction.value?.length) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), transactionService.entityCode()) ||
+                'error.modificationPermissionDenied';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
+
+        const resultAuthCategory = await categoryService.afterRead([categories[0]] as any, user);
+
+        if (resultAuthCategory.isLeft()) return resultAuthCategory as any;
+        else if (!resultAuthCategory.value?.length) {
+
+            const oStack = new Error().stack as string;
+
+            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), categoryService.entityCode()) ||
+                'error.modificationPermissionDenied';
+
+            return left(new PermissionDenied(message, 403, oStack));
+
+        }
+
+        return right(true);
+    }
 
 
 }

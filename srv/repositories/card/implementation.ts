@@ -48,7 +48,7 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
             oCardEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids }, ...additionalFilters  });
+            oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids }, ...additionalFilters });
 
             const additionalCardts = await cds.run(oSql) || [];
             oCards = [...(oCards || []), ...additionalCardts];
@@ -138,6 +138,61 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
         const oCardsModel = this.mapCardResult(oCards);
 
         return oCardsModel;
+
+    }
+
+
+    public async retrieveCompleteInvoiceTransactions(
+        PersonId: string,
+        Year: number,
+        Month: number
+    ): Promise<any[]> {
+
+        const { Cards } = cds.entities;
+
+        let rows = await SELECT.from(Cards)
+            .columns(
+
+                'ID as CardID',
+                'Name as CardName',
+                'ImageType as CardImageType',
+
+                'Invoices.ID as InvoiceID',
+
+                'Invoices.Transactions.ID as TransactionID',
+                'Invoices.Transactions.Identifier as Identifier',
+                'Invoices.Transactions.Date as Date',
+                'Invoices.Transactions.Amount as Amount',
+                'Invoices.Transactions.TotalAmount as TotalAmount',
+                'Invoices.Transactions.Installment as Installment',
+                'Invoices.Transactions.TotalInstallments as TotalInstallments',
+                'Invoices.Transactions.Description as Description',
+
+                'Invoices.Transactions.Category_ID as CategoryID',
+                'Invoices.Transactions.Category.Name as CategoryName',
+                'Invoices.Transactions.Category.ImageType as CategoryImageType',
+
+                'Currency_code as CurrencyCode'
+
+            )
+            .where({
+                Person_ID: PersonId,
+                'Invoices.Year': Year,
+                'Invoices.Month': Month
+            })
+            .orderBy([
+                { ref: ['ID'], sort: 'asc' },
+                {
+                    ref: [
+                        'Invoices',
+                        'Transactions',
+                        'Date'
+                    ],
+                    sort: 'asc'
+                }
+            ] as any);
+
+        return rows || [];
 
     }
 

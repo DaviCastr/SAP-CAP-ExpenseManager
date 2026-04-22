@@ -115,7 +115,7 @@ export class CategoryServiceImplementation extends BaseServiceImplementation<Cat
     }
 
 
-    protected entityCode(): number {
+    public entityCode(): number {
 
         return 4;
 

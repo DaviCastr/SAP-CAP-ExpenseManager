@@ -136,7 +136,7 @@ export class ShareServiceImplementation extends BaseServiceImplementation<Share>
     }
 
 
-    protected entityCode(): number {
+    public entityCode(): number {
 
         return 2;
 

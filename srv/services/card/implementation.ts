@@ -276,7 +276,7 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
     }
 
 
-    protected entityCode(): number {
+    public entityCode(): number {
 
         return 5;
 

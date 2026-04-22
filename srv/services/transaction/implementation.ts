@@ -242,7 +242,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
     }
 
 
-    protected entityCode(): number {
+    public entityCode(): number {
 
         return 7;
 

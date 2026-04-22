@@ -31,6 +31,7 @@ export class PersonRouteImplementation extends BaseRouteImplementation<Person> i
         Service.on('SimulateExpenses', this.simulateExpenses.bind(this));
         Service.on('SimulateFinancialFuture', this.simulateFinancialFuture.bind(this));
         Service.on('RetrieveTransactionsByCategory', this.retrieveTransactionsByCategory.bind(this));
+        Service.on('RetrieveCompleteInvoice', this.retrieveCompleteInvoice.bind(this));
 
     }
 
@@ -113,6 +114,21 @@ export class PersonRouteImplementation extends BaseRouteImplementation<Person> i
     private async retrieveTransactionsByCategory(Request: Request): Promise<BaseControllerResponse> {
 
          const oResult = await this.Controller.retrieveTransactionsByCategory();
+
+        if (oResult.status != 200) {
+
+            return this.returnRejectMessage(Request, oResult);
+
+        }
+
+        return oResult;
+
+    }
+
+
+    private async retrieveCompleteInvoice(Request: Request): Promise<BaseControllerResponse> {
+
+         const oResult = await this.Controller.retrieveCompleteInvoice();
 
         if (oResult.status != 200) {
 

@@ -288,7 +288,7 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
     }
 
 
-    protected entityCode(): number {
+    public entityCode(): number {
 
         return 8;
 

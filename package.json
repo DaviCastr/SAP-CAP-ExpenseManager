@@ -1,5 +1,5 @@
 {
-    "name": "GestorDeGastos-Mvc-Ts",
+    "name": "ExpenseManager",
     "version": "1.0.0",
     "description": "Gestor de Gastos",
     "dependencies": {

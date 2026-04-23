@@ -1,4 +1,4 @@
-# CAP GestorDeGastos
+# CAP ExpenseManager
 _out
 *.db
 *.sqlite

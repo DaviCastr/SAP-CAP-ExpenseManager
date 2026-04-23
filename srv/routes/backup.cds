@@ -1,6 +1,6 @@
-using {apps.dflc.gestordegastos.entities as entities} from '../../db/entities';
+using {apps.dflc.expensemanager.entities as entities} from '../../db/entities';
 
-@path    : '/apps/dflc/cap/GestorDeGastos/Backup'
+@path    : '/apps/dflc/cap/ExpenseManager/Backup'
 @requires: 'authenticated-user'
 
 service BackupService {

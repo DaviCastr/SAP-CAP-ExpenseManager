@@ -5,19 +5,19 @@
 
 ### Invoices
 # @name Invoices_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices?$select=InvoiceSent
+GET {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices?$select=InvoiceSent
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Invoices Drafts GET
 # @name Invoices_Drafts_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
+GET {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Invoices Drafts GET
 # @name Invoices_Drafts_and_Actives_merge
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+GET {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
 Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
 Accept-Language:pt-BR
 Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
@@ -26,7 +26,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Invoices Draft POST
 # @name Invoices_Draft_POST
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices
+POST {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -82,7 +82,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Invoices Draft PATCH
 # @name Invoices_Draft_Patch
-PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)
+PATCH {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -102,7 +102,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Invoices Draft Prepare
 # @name Invoices_Draft_Prepare
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)/InvoiceService.draftPrepare
+POST {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)/InvoiceService.draftPrepare
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -111,7 +111,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Invoices Draft Activate
 # @name Invoices_Draft_Activate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)/draftActivate
+POST {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)/draftActivate
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -120,7 +120,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Invoices Draft Inactivate
 # @name Invoices_Draft_Inactivate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=true)/draftEdit
+POST {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices(ID={{draftID}},IsActiveEntity=true)/draftEdit
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -129,7 +129,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Invoices Delete
 # @name Invoices_DELETE_Active
-DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=true)
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices(ID={{draftID}},IsActiveEntity=true)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -138,7 +138,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Invoices Delete Draft
 # @name Invoices_DELETE_draft
-DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/Invoice/Invoices(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 

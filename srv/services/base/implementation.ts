@@ -437,7 +437,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
         return {
             SELECT: {
-                from: { ref: ['apps.dflc.gestordegastos.entities.Shares'], as: 'S' },
+                from: { ref: ['apps.dflc.expensemanager.entities.Shares'], as: 'S' },
                 columns: [{ ref: ['S', 'Person_ID'] }],
                 where: [
                     { ref: ['S', 'User'] }, '=', { val: oUserId },
@@ -447,7 +447,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
                             'exists',
                             {
                                 SELECT: {
-                                    from: { ref: ['apps.dflc.gestordegastos.entities.Entities'], as: 'E' },
+                                    from: { ref: ['apps.dflc.expensemanager.entities.Entities'], as: 'E' },
                                     columns: [{ val: 1 }],
                                     where: [
                                         { ref: ['E', 'Share_ID'] }, '=', { ref: ['S', 'ID'] },

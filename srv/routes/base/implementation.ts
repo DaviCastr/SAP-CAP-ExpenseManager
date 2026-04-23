@@ -1,7 +1,6 @@
 import cds, { entity, Request, Service } from "@sap/cds";
 import { BaseRoute } from "./protocols";
 import { BaseController, BaseControllerResponse } from "@/controllers/base";
-import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 

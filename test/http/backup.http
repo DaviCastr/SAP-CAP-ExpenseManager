@@ -5,19 +5,19 @@
 
 ### Backups
 # @name Backups_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Backup/Backups
+GET {{server}}/apps/dflc/cap/ExpenseManager/Backup/Backups
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Backups Drafts GET
 # @name Backups_Drafts_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Backup/Backups?$filter=(IsActiveEntity eq false)
+GET {{server}}/apps/dflc/cap/ExpenseManager/Backup/Backups?$filter=(IsActiveEntity eq false)
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Backups Drafts GET
 # @name Backups_Drafts_and_Actives_merge
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Backup/Backups?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+GET {{server}}/apps/dflc/cap/ExpenseManager/Backup/Backups?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
 Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
 Accept-Language:pt-BR
 Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
@@ -26,7 +26,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Backups Draft POST
 # @name Backups_Draft_POST
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Backup/Backups
+POST {{server}}/apps/dflc/cap/ExpenseManager/Backup/Backups
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -41,7 +41,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Backups Draft PATCH
 # @name Backups_Draft_Patch
-PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Backup/Backups(ID={{draftID}},IsActiveEntity=false)
+PATCH {{server}}/apps/dflc/cap/ExpenseManager/Backup/Backups(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -52,7 +52,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Backups Draft Prepare
 # @name Backups_Draft_Prepare
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Backup/Backups(ID={{draftID}},IsActiveEntity=false)/BackupService.draftPrepare
+POST {{server}}/apps/dflc/cap/ExpenseManager/Backup/Backups(ID={{draftID}},IsActiveEntity=false)/BackupService.draftPrepare
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -61,7 +61,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Backups Draft Activate
 # @name Backups_Draft_Activate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Backup/Backups(ID={{draftID}},IsActiveEntity=false)/BackupService.draftActivate
+POST {{server}}/apps/dflc/cap/ExpenseManager/Backup/Backups(ID={{draftID}},IsActiveEntity=false)/BackupService.draftActivate
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -70,7 +70,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Backups Draft Activate
 # @name Backups_Draft_Inactivate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Backup/Backups(ID={{draftID}},IsActiveEntity=true)/draftEdit
+POST {{server}}/apps/dflc/cap/ExpenseManager/Backup/Backups(ID={{draftID}},IsActiveEntity=true)/draftEdit
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 

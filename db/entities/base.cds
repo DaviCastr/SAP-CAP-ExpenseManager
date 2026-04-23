@@ -1,4 +1,4 @@
-namespace apps.dflc.gestordegastos.entities;
+namespace apps.dflc.expensemanager.entities;
 
 using {
     Currency,
@@ -198,6 +198,10 @@ type EntitiesCodes : Integer enum {
     Invoices = 6;
     Transactions = 7;
     Backups = 8;
+    Liabilities = 9;
+    LiabilityTransactions = 10;
+    Financings = 11;
+    FinancingInstallments = 12;
 }
 
 type SimulationReturn {

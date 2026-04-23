@@ -5,19 +5,19 @@
 
 ### Transactions
 # @name Transactions_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions
+GET {{server}}/apps/dflc/cap/ExpenseManager/Transaction/Transactions
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Transactions Drafts GET
 # @name Transactions_Drafts_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions?$filter=(IsActiveEntity eq false)
+GET {{server}}/apps/dflc/cap/ExpenseManager/Transaction/Transactions?$filter=(IsActiveEntity eq false)
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Transactions Drafts GET
 # @name Transactions_Drafts_and_Actives_merge
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+GET {{server}}/apps/dflc/cap/ExpenseManager/Transaction/Transactions?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
 Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
 Accept-Language:pt-BR
 Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
@@ -26,7 +26,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Transactions Draft POST
 # @name Transactions_Draft_POST
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions
+POST {{server}}/apps/dflc/cap/ExpenseManager/Transaction/Transactions
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -58,7 +58,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Transactions Draft PATCH
 # @name Transactions_Draft_Patch
-PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions(ID={{draftID}},IsActiveEntity=false)
+PATCH {{server}}/apps/dflc/cap/ExpenseManager/Transaction/Transactions(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -85,7 +85,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Transactions Draft Prepare
 # @name Transactions_Draft_Prepare
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions(ID={{draftID}},IsActiveEntity=false)/TransactionService.draftPrepare
+POST {{server}}/apps/dflc/cap/ExpenseManager/Transaction/Transactions(ID={{draftID}},IsActiveEntity=false)/TransactionService.draftPrepare
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -94,7 +94,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Transactions Draft Activate
 # @name Transactions_Draft_Activate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions(ID={{draftID}},IsActiveEntity=false)/TransactionService.draftActivate
+POST {{server}}/apps/dflc/cap/ExpenseManager/Transaction/Transactions(ID={{draftID}},IsActiveEntity=false)/TransactionService.draftActivate
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -103,7 +103,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Transactions Draft Activate
 # @name Transactions_Draft_Inactivate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Transaction/Transactions(ID={{draftID}},IsActiveEntity=true)/draftEdit
+POST {{server}}/apps/dflc/cap/ExpenseManager/Transaction/Transactions(ID={{draftID}},IsActiveEntity=true)/draftEdit
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 

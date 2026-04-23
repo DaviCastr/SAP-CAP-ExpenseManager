@@ -5,25 +5,25 @@
 
 ### Persons
 # @name Persons_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons?$expand=Cards($expand=Invoices($expand=Transactions)),Shares($expand=Entities),Categories
+GET {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons?$expand=Cards($expand=Invoices($expand=Transactions)),Shares($expand=Entities),Categories
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Persons
 # @name Persons_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID=370cadc8-2305-4ec7-8fe2-ddf4b7214a0e, IsActiveEntity=true)/Image
+GET {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons(ID=370cadc8-2305-4ec7-8fe2-ddf4b7214a0e, IsActiveEntity=true)/Image
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Persons Drafts GET
 # @name Persons_Drafts_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
+GET {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Persons Drafts GET
 # @name Persons_Drafts_and_Actives_merge
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+GET {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
 Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
 Accept-Language:pt-BR
 Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
@@ -32,7 +32,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Persons Draft POST
 # @name Persons_Draft_POST
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons
+POST {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -309,7 +309,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Persons Draft PATCH
 # @name Persons_Draft_Patch
-PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=false)
+PATCH {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -328,7 +328,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Persons Draft Prepare
 # @name Persons_Draft_Prepare
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=false)/PersonService.draftPrepare
+POST {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons(ID={{draftID}},IsActiveEntity=false)/PersonService.draftPrepare
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -337,7 +337,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Persons Draft Activate
 # @name Persons_Draft_Activate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=false)/draftActivate
+POST {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons(ID={{draftID}},IsActiveEntity=false)/draftActivate
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -346,7 +346,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Persons Draft Inactivate
 # @name Persons_Draft_Inactivate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=true)/draftEdit
+POST {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons(ID={{draftID}},IsActiveEntity=true)/draftEdit
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -355,7 +355,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Persons Delete
 # @name Persons_DELETE_Active
-DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=true)
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons(ID={{draftID}},IsActiveEntity=true)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -364,7 +364,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Persons Delete Draft
 # @name Persons_DELETE_draft
-DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Person/Persons(ID={{draftID}},IsActiveEntity=false)
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 

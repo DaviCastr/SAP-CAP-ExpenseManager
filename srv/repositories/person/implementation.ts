@@ -1,5 +1,4 @@
-import cds, { entity, Request } from "@sap/cds";
-
+import cds, { entity } from "@sap/cds";
 import { PersonModel } from "@/models/person";
 import { Person, Persons } from "@models/apps/dflc/gestordegastos/entities";
 import { PersonRepository } from "./protocols";

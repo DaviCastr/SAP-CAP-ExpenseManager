@@ -1,6 +1,6 @@
-using {apps.dflc.gestordegastos.entities as entities} from '../../db/entities';
+using {apps.dflc.expensemanager.entities as entities} from '../../db/entities';
 
-@path    : '/apps/dflc/cap/GestorDeGastos/Person'
+@path    : '/apps/dflc/cap/ExpenseManager/Person'
 @requires: 'authenticated-user'
 
 service PersonService {

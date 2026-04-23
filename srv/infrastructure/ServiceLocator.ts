@@ -32,7 +32,7 @@ export class ServiceLocator {
 
         if (!this.GestorService) {
 
-            throw new Error("GestorDeGastos service not initialized");
+            throw new Error("ExpenseManager service not initialized");
 
         }
 

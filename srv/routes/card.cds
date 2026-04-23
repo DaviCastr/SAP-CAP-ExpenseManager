@@ -1,6 +1,6 @@
-using {apps.dflc.gestordegastos.entities as entities} from '../../db/entities';
+using {apps.dflc.expensemanager.entities as entities} from '../../db/entities';
 
-@path    : '/apps/dflc/cap/GestorDeGastos/Card'
+@path    : '/apps/dflc/cap/ExpenseManager/Card'
 @requires: 'authenticated-user'
 
 service CardService {
@@ -11,8 +11,8 @@ service CardService {
             grant: 'READ',
             where: `Person.createdBy = $user or
                     exists (
-                        select 1 from apps.dflc.gestordegastos.entities.Shares as S
-                        inner join apps.dflc.gestordegastos.entities.Entities as E
+                        select 1 from apps.dflc.expensemanager.entities.Shares as S
+                        inner join apps.dflc.expensemanager.entities.Entities as E
                             on E.Share_ID = S.ID
                         where 
                         S.Person_ID = Person.ID and

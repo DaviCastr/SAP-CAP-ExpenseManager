@@ -1,9 +1,9 @@
-using {apps.dflc.gestordegastos.entities as entities} from '../../db/entities';
+using {apps.dflc.expensemanager.entities as entities} from '../../db/entities';
 
-@path    : '/service/GestorDeGastos'
+@path    : '/service/ExpenseManager'
 @requires: 'authenticated-user'
 
-service GestorDeGastos {
+service ExpenseManager {
 
     @odata.draft.enabled: true
     entity Persons      as projection on entities.Persons;
@@ -29,19 +29,21 @@ service GestorDeGastos {
 
     entity Backups      as projection on entities.Backups;
 
+    entity Liabilities  as projection on entities.Liabilities;
+
     action   AddCardExpense(CardId: UUID, CategoryId: UUID, Description: String, Value: Decimal, Currency: String, TransactionDate: Date, Installments: Integer, FixedExpense: Boolean) returns entities.ActionResult;
     action   ExportBackup()                                                                                                                                                             returns entities.ActionResult;
     action   SendInvoices(Year: Integer, Month: Integer)                                                                                                                                returns entities.ActionResult;
-    action   SimulateExpenses(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                      returns entities.ActionResult;
-    action   SimulateFinancialFuture(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                      returns entities.ActionResult;
+    action   SimulateExpenses(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                            returns entities.ActionResult;
+    action   SimulateFinancialFuture(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                     returns entities.ActionResult;
 
     function CardExpensesByCategories(PersonId: UUID, CardId: UUID, InvoiceId: UUID, Year: Integer, Month: Integer, TotalOnwards: Boolean)                                              returns entities.CategoriesReturn;
-    function RetrieveTransactionsByCategory(PersonId: UUID, CategoryId: UUID, Total: Boolean, Year: Integer, Month: Integer)                                                                returns entities.TransactionsReturn;
-    function RetrieveCompleteInvoice(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                        returns entities.CompleteInvoiceReturn;
+    function RetrieveTransactionsByCategory(PersonId: UUID, CategoryId: UUID, Total: Boolean, Year: Integer, Month: Integer)                                                            returns entities.TransactionsReturn;
+    function RetrieveCompleteInvoice(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                     returns entities.CompleteInvoiceReturn;
 
 }
 
-annotate GestorDeGastos with @requires: [
+annotate ExpenseManager with @requires: [
     'authenticated-user',
     'any'
 ];

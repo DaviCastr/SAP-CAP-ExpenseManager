@@ -5,19 +5,19 @@
 
 ### Cards
 # @name Cards_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards?$expand=Invoices
+GET {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards?$expand=Invoices
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Cards Drafts GET
 # @name Cards_Drafts_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
+GET {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Cards Drafts GET
 # @name Cards_Drafts_and_Actives_merge
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
+GET {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards?$count=true&$expand=DraftAdministrativeData($select=DraftUUID,InProcessByUser)&$filter=(IsActiveEntity eq false or SiblingEntity/IsActiveEntity eq null)&$skip=0&$top=30 
 Accept:application/json;odata.metadata=minimal;IEEE754Compatible=true
 Accept-Language:pt-BR
 Content-Type:application/json;charset=UTF-8;IEEE754Compatible=true
@@ -26,7 +26,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Cards Draft POST
 # @name Cards_Draft_POST
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards
+POST {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -136,7 +136,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Cards Draft PATCH
 # @name Cards_Draft_Patch
-PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=false)
+PATCH {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -157,7 +157,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Cards Draft Prepare
 # @name Cards_Draft_Prepare
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=false)/CardService.draftPrepare
+POST {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards(ID={{draftID}},IsActiveEntity=false)/CardService.draftPrepare
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -166,7 +166,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Cards Draft Activate
 # @name Cards_Draft_Activate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=false)/draftActivate
+POST {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards(ID={{draftID}},IsActiveEntity=false)/draftActivate
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -175,7 +175,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Cards Draft Inactivate
 # @name Cards_Draft_Inactivate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=true)/draftEdit
+POST {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards(ID={{draftID}},IsActiveEntity=true)/draftEdit
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -184,7 +184,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Cards Delete
 # @name Cards_DELETE_Active
-DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=true)
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards(ID={{draftID}},IsActiveEntity=true)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -193,7 +193,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Cards Delete Draft
 # @name Cards_DELETE_draft
-DELETE {{server}}/apps/dflc/cap/GestorDeGastos/Card/Cards(ID={{draftID}},IsActiveEntity=false)
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/Card/Cards(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 

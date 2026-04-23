@@ -1,7 +1,6 @@
 import cds, { entity } from "@sap/cds";
 import { BaseRepository } from "./protocols";
 import { Readable } from "stream";
-import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 
 export abstract class BaseRepositoryImplementation implements BaseRepository {
 

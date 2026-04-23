@@ -5,19 +5,19 @@
 
 ### Entities
 # @name Entities_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities
+GET {{server}}/apps/dflc/cap/ExpenseManager/Entity/Entities
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Entities Drafts GET
 # @name Entities_Drafts_GET
-GET {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities?$filter=(IsActiveEntity eq false)
+GET {{server}}/apps/dflc/cap/ExpenseManager/Entity/Entities?$filter=(IsActiveEntity eq false)
 Authorization: Basic {{username}}:{{password}}
 
 
 ### Entities Draft POST
 # @name Entities_Draft_POST
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities
+POST {{server}}/apps/dflc/cap/ExpenseManager/Entity/Entities
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -40,7 +40,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Entities Draft PATCH
 # @name Entities_Draft_Patch
-PATCH {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities(ID={{draftID}},IsActiveEntity=false)
+PATCH {{server}}/apps/dflc/cap/ExpenseManager/Entity/Entities(ID={{draftID}},IsActiveEntity=false)
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -55,7 +55,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Entities Draft Prepare
 # @name Entities_Draft_Prepare
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities(ID={{draftID}},IsActiveEntity=false)/EntityService.draftPrepare
+POST {{server}}/apps/dflc/cap/ExpenseManager/Entity/Entities(ID={{draftID}},IsActiveEntity=false)/EntityService.draftPrepare
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 
@@ -64,7 +64,7 @@ Authorization: Basic {{username}}:{{password}}
 
 ### Entities Draft Activate
 # @name Entities_Draft_Activate
-POST {{server}}/apps/dflc/cap/GestorDeGastos/Entity/Entities(ID={{draftID}},IsActiveEntity=false)/EntityService.draftActivate
+POST {{server}}/apps/dflc/cap/ExpenseManager/Entity/Entities(ID={{draftID}},IsActiveEntity=false)/EntityService.draftActivate
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 

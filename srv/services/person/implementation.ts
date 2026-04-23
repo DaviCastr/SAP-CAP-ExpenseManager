@@ -1,12 +1,12 @@
 import { AbstractError } from "@/errors";
-import { Persons, Person, Cards, Invoice, Transaction, Transactions } from "@models/apps/dflc/gestordegastos/entities";
+import { Persons, Person, Cards, Invoice, Transaction } from "@models/apps/dflc/gestordegastos/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { PersonService } from "./protocols";
 import { PersonModel } from "@/models/person";
 import { PersonRepository } from "@/repositories/person";
 import { BaseServiceImplementation } from "../base/implementation";
 import { ShareRepository } from "@/repositories/share";
-import cds, { User } from "@sap/cds";
+import { User } from "@sap/cds";
 import { EntityRepository } from '@/repositories/entity';
 import { PermissionDenied } from "@/errors/permission-denied";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
@@ -24,6 +24,11 @@ import { CategoryModel } from "@/models/category";
 import { CardServiceImplementation } from "../card/implementation";
 import { CardExpensesByCategoryModel, CardExpensesByCategoryReturnProperties, CategoryExpenses } from "@/models/card-expenses-by-category";
 import { CategoryServiceImplementation } from "../category/implementation";
+import { SimulateExpenseModel, SimulateExpenseReturnProperties } from "@/models/simulate-expense";
+import { CurrencyModel } from "@/models/currency";
+import { FinancialFutureReturn, FinancialRecommendation } from "@/models/financial-future";
+import { CategoryTransactionsModel, CategoryTransactionsReturnProperties } from "@/models/transactions-by-category";
+import { CompleteInvoiceModel, CompleteInvoiceReturnProperties } from "@/models/complete-invoice";
 import { PassThrough } from "stream";
 import Decimal from "decimal.js";
 import axios from "axios";
@@ -32,12 +37,6 @@ import fs from "fs";
 import handlebars from "handlebars";
 import PDFDocument from "pdfkit";
 import nodemailer from "nodemailer";
-import { SimulateExpenseModel, SimulateExpenseReturnProperties } from "@/models/simulate-expense";
-import { CurrencyModel } from "@/models/currency";
-import { FinancialFutureReturn, FinancialRecommendation } from "@/models/financial-future";
-import { CategoryTransactionsModel, CategoryTransactionsReturnProperties } from "@/models/transactions-by-category";
-import { CompleteInvoiceModel, CompleteInvoiceReturnProperties } from "@/models/complete-invoice";
-
 
 export class PersonServiceImplementation extends BaseServiceImplementation<Person> implements PersonService {
 
@@ -1688,7 +1687,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .moveDown(2)
                         .fillColor("black")
                         .fontSize(20)
-                        .text("invoice gerada automaticamente", 45, doc.y, { align: "center" });;
+                        .text("Fatura gerada", 45, doc.y, { align: "center" });;
 
                 };
 

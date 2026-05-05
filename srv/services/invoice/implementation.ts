@@ -1,5 +1,5 @@
 import { AbstractError } from "@/errors";
-import { Invoices, Invoice } from "@models/apps/dflc/gestordegastos/entities";
+import { Invoices, Invoice } from "@models/apps/dflc/expensemanager/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { InvoiceService } from "./protocols";
 import { InvoiceModel } from "@/models/invoice";

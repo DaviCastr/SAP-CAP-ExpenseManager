@@ -2,7 +2,7 @@ import { BaseControllerResponse } from "../base";
 import { BaseControllerImplementation } from "../base/implementation";
 import { PersonController } from "./protocols";
 import { PersonService } from "@/services/person";
-import { Person } from "@models/apps/dflc/gestordegastos/entities";
+import { Person } from "@models/apps/dflc/expensemanager/entities";
 
 export class PersonControllerImplementation extends BaseControllerImplementation<Person> implements PersonController {
 

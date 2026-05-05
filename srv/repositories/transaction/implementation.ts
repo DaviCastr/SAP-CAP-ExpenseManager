@@ -1,7 +1,7 @@
 import cds, { entity } from "@sap/cds";
 
 import { TransactionModel } from "@/models/transaction";
-import { Transaction, Transactions } from "@models/apps/dflc/gestordegastos/entities";
+import { Transaction, Transactions } from "@models/apps/dflc/expensemanager/entities";
 import { TransactionRepository } from "./protocols";
 import { CurrencyModel } from "@/models/currency";
 import Decimal from "decimal.js";

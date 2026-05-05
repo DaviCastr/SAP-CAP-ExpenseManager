@@ -1,6 +1,6 @@
 import { ApplicationService } from "@sap/cds";
 import { InvoiceRoute } from "./protocols";
-import { Invoice } from "@models/apps/dflc/gestordegastos/entities";
+import { Invoice } from "@models/apps/dflc/expensemanager/entities";
 import { InvoiceController } from "@/controllers/invoice";
 import { BaseRouteImplementation } from "../base/implementation";
 

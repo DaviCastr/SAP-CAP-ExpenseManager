@@ -1,7 +1,7 @@
 import { ApplicationService, entity } from "@sap/cds";
 import { EntityRoute } from "./protocols";
 import { BaseRouteImplementation } from "../base/implementation";
-import { Entity } from "@models/apps/dflc/gestordegastos/entities";
+import { Entity } from "@models/apps/dflc/expensemanager/entities";
 import { BaseController } from "@/controllers/base";
 import { EntityController } from "@/controllers/entity/protocols";
 

@@ -1,5 +1,5 @@
 import { AbstractError } from "@/errors";
-import { Cards, Card } from "@models/apps/dflc/gestordegastos/entities";
+import { Cards, Card } from "@models/apps/dflc/expensemanager/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { CardService } from "./protocols";
 import { CardModel } from "@/models/card";

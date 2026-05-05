@@ -1,9 +1,9 @@
-import { Invoices } from "@models/apps/dflc/gestordegastos/entities";
+import { Invoices } from "@models/apps/dflc/expensemanager/entities";
 import { BaseControllerResponse } from "../base";
 import { BaseControllerImplementation } from "../base/implementation";
 import { InvoiceController } from "./protocols";
 import { InvoiceService } from "@/services/invoice";
-import { Invoice } from "@models/apps/dflc/gestordegastos/entities";
+import { Invoice } from "@models/apps/dflc/expensemanager/entities";
 
 export class InvoiceControllerImplementation extends BaseControllerImplementation<Invoice> implements InvoiceController {
 

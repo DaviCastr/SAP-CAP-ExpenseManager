@@ -1,5 +1,5 @@
 import { BaseController, BaseControllerResponse } from "../base/";
-import { Person } from "@models/apps/dflc/gestordegastos/entities";
+import { Person } from "@models/apps/dflc/expensemanager/entities";
 
 export interface PersonController extends BaseController<Person> {
     addCardExpense(): Promise<BaseControllerResponse>;

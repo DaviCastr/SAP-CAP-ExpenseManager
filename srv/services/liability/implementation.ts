@@ -16,7 +16,7 @@ import {
 
 import {
     Liability
-} from "@models/apps/dflc/gestordegastos/entities";
+} from "@models/apps/dflc/expensemanager/entities";
 
 import { AbstractError } from "@/errors";
 import { PermissionDenied } from "@/errors/permission-denied";

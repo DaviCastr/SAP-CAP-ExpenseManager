@@ -1,7 +1,7 @@
 import { BaseControllerImplementation } from "../base/implementation";
 import { CardController } from "./protocols";
 import { CardService } from "@/services/card";
-import { Card } from "@models/apps/dflc/gestordegastos/entities";
+import { Card } from "@models/apps/dflc/expensemanager/entities";
 
 export class CardControllerImplementation extends BaseControllerImplementation<Card> implements CardController {
 

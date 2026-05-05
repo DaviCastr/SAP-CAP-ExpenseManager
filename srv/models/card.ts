@@ -2,7 +2,7 @@ import { Readable } from "stream";
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
 import { InvoiceModel } from '@/models/invoice';
-import { Card, Card as CardEntityType, Cards } from '@models/apps/dflc/gestordegastos/entities';
+import { Card, Card as CardEntityType, Cards } from '@models/apps/dflc/expensemanager/entities';
 import { BaseModel } from "./base";
 
 type CardProperties = {

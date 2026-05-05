@@ -1,5 +1,5 @@
 import { InvoiceModel } from "@/models/invoice";
-import { Invoice, Invoices, Transaction } from "@models/apps/dflc/gestordegastos/entities";
+import { Invoice, Invoices, Transaction } from "@models/apps/dflc/expensemanager/entities";
 import { BaseRepository } from "../base";
 
 export interface InvoiceRepository extends BaseRepository {

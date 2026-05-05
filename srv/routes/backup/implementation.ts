@@ -1,7 +1,7 @@
 import { ApplicationService, Request } from "@sap/cds";
 import { BackupRoute } from "./protocols";
 import { BaseRouteImplementation } from "../base/implementation";
-import { Backup } from "@models/apps/dflc/gestordegastos/entities";
+import { Backup } from "@models/apps/dflc/expensemanager/entities";
 import { BackupController } from "@/controllers/backup/protocols";
 import { BaseControllerResponse } from "@/controllers/base";
 

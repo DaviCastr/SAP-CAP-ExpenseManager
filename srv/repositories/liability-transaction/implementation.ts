@@ -10,7 +10,7 @@ import {
     Liability,
     LiabilityTransaction,
     LiabilityTransactions
-} from "@models/apps/dflc/gestordegastos/entities";
+} from "@models/apps/dflc/expensemanager/entities";
 
 export class LiabilityTransactionRepositoryImplementation
     extends BaseRepositoryImplementation

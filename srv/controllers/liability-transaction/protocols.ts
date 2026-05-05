@@ -5,7 +5,7 @@ import {
 
 import {
     LiabilityTransaction
-} from "@models/apps/dflc/gestordegastos/entities";
+} from "@models/apps/dflc/expensemanager/entities";
 
 export interface LiabilityTransactionController
     extends BaseController<LiabilityTransaction> {

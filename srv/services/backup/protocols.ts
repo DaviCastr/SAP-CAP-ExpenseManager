@@ -1,4 +1,4 @@
-import { Backup } from "@models/apps/dflc/gestordegastos/entities";
+import { Backup } from "@models/apps/dflc/expensemanager/entities";
 import { BaseService } from "../base";
 import { AbstractError } from "@/errors";
 import { Either } from "@sweet-monads/either";

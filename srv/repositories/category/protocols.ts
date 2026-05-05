@@ -1,7 +1,7 @@
 import { CategoryModel, CategoryProperties } from "@/models/category"
 import { BaseRepository } from "../base";
 import { Request } from "@sap/cds";
-import { Categories, Category } from "@models/apps/dflc/gestordegastos/entities";
+import { Categories, Category } from "@models/apps/dflc/expensemanager/entities";
 
 
 export interface CategoryRepository extends BaseRepository {

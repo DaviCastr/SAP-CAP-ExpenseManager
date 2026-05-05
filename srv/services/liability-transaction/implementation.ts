@@ -17,7 +17,7 @@ import {
 
 import {
     LiabilityTransaction
-} from "@models/apps/dflc/gestordegastos/entities";
+} from "@models/apps/dflc/expensemanager/entities";
 
 import {
     AbstractError

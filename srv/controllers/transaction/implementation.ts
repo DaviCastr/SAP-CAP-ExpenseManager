@@ -1,9 +1,9 @@
-import { Transactions } from "@models/apps/dflc/gestordegastos/entities";
+import { Transactions } from "@models/apps/dflc/expensemanager/entities";
 import { BaseControllerResponse } from "../base";
 import { BaseControllerImplementation } from "../base/implementation";
 import { TransactionController } from "./protocols";
 import { TransactionService } from "@/services/transaction";
-import { Transaction } from "@models/apps/dflc/gestordegastos/entities";
+import { Transaction } from "@models/apps/dflc/expensemanager/entities";
 
 export class TransactionControllerImplementation extends BaseControllerImplementation<Transaction> implements TransactionController {
 

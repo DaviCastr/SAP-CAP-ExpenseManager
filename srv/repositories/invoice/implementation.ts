@@ -1,4 +1,4 @@
-import { Invoice, Invoices, Transaction } from "@models/apps/dflc/gestordegastos/entities";
+import { Invoice, Invoices, Transaction } from "@models/apps/dflc/expensemanager/entities";
 import { InvoiceRepository } from "./protocols";
 import cds, { entity } from "@sap/cds";
 import { BaseRepositoryImplementation } from "../base/implementation";

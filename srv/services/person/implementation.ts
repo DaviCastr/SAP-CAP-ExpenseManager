@@ -1,5 +1,5 @@
 import { AbstractError } from "@/errors";
-import { Persons, Person, Cards, Invoice, Transaction } from "@models/apps/dflc/gestordegastos/entities";
+import { Persons, Person, Cards, Invoice, Transaction } from "@models/apps/dflc/expensemanager/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { PersonService } from "./protocols";
 import { PersonModel } from "@/models/person";
@@ -531,7 +531,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 });
 
                 await cache._smtpInstance.sendMail({
-                    from: `"Gestor de Gastos" <${process.env.SMTPAddres}>`,
+                    from: `"Expense Manager" <${process.env.SMTPAddres}>`,
                     to: person.Email,
                     subject:
                         Year || Month
@@ -1619,7 +1619,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     doc
                         .fillColor("white")
                         .fontSize(30)
-                        .text("Gestor de Gastos", 40, 30, { align: "center" });
+                        .text("Expense Manager", 40, 30, { align: "center" });
 
                     doc.moveDown(2);
                 };

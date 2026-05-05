@@ -1,6 +1,6 @@
 import { User } from '@sap/cds';
 import { AbstractError } from '@/errors';
-import { Entity } from '@models/apps/dflc/gestordegastos/entities';
+import { Entity } from '@models/apps/dflc/expensemanager/entities';
 import { Either, left, right } from '@sweet-monads/either';
 import { EntityService } from './protocols';
 import { BaseServiceImplementation } from '../base/implementation';

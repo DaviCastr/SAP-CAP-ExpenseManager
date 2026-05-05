@@ -1,6 +1,6 @@
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
-import { Transaction, Transactions } from '@models/apps/dflc/gestordegastos/entities';
+import { Transaction, Transactions } from '@models/apps/dflc/expensemanager/entities';
 import { BaseModel } from './base';
 
 type TransactionProperties = {

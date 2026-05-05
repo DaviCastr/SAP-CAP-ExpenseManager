@@ -1,6 +1,6 @@
 import { ApplicationService } from "@sap/cds";
 import { CardRoute } from "./protocols";
-import { Card } from "@models/apps/dflc/gestordegastos/entities";
+import { Card } from "@models/apps/dflc/expensemanager/entities";
 import { CardController } from "@/controllers/card";
 import { BaseRouteImplementation } from "../base/implementation";
 

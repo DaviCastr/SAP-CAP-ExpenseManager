@@ -2,8 +2,8 @@ import cds, { entity } from "@sap/cds";
 
 import { CardModel } from "@/models/card";
 import { CardRepository } from "./protocols";
-import { Card } from "@models/apps/dflc/gestordegastos/entities";
-import { Cards } from "@models/apps/dflc/gestordegastos/entities";
+import { Card } from "@models/apps/dflc/expensemanager/entities";
+import { Cards } from "@models/apps/dflc/expensemanager/entities";
 import { BaseRepositoryImplementation } from "../base/implementation";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 

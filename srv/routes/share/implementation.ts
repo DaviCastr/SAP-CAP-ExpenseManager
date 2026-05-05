@@ -1,7 +1,7 @@
 import { ApplicationService, entity } from "@sap/cds";
 import { ShareRoute } from "./protocols";
 import { BaseRouteImplementation } from "../base/implementation";
-import { Share } from "@models/apps/dflc/gestordegastos/entities";
+import { Share } from "@models/apps/dflc/expensemanager/entities";
 import { BaseController } from "@/controllers/base";
 import { ShareController } from "@/controllers/share/protocols";
 

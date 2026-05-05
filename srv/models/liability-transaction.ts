@@ -5,7 +5,7 @@ import { CurrencyModel } from './currency';
 import {
     LiabilityTransaction,
     LiabilityTransactions
-} from '@models/apps/dflc/gestordegastos/entities';
+} from '@models/apps/dflc/expensemanager/entities';
 
 export type LiabilityTransactionProperties = {
     Id: string;

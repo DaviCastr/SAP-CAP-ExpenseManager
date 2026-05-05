@@ -1,5 +1,5 @@
 import { PersonModel } from "@/models/person";
-import { Card, Person, Persons } from "@models/apps/dflc/gestordegastos/entities";
+import { Card, Person, Persons } from "@models/apps/dflc/expensemanager/entities";
 import { BaseRepository } from "../base";
 
 export interface PersonRepository extends BaseRepository {

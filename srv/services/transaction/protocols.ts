@@ -1,5 +1,5 @@
 import { AbstractError } from "@/errors";
-import { Transaction, Transactions } from "@models/apps/dflc/gestordegastos/entities";
+import { Transaction, Transactions } from "@models/apps/dflc/expensemanager/entities";
 import { Request, User } from "@sap/cds";
 import { Either } from "@sweet-monads/either";
 import { BaseService } from "../base";

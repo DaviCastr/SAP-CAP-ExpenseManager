@@ -4,7 +4,7 @@ import { AbstractError } from "@/errors";
 
 import {
     LiabilityTransaction
-} from "@models/apps/dflc/gestordegastos/entities";
+} from "@models/apps/dflc/expensemanager/entities";
 
 export interface LiabilityTransactionService
     extends BaseService<LiabilityTransaction> {

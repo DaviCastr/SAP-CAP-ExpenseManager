@@ -4,7 +4,7 @@ import { CategoryModel } from '@/models/category';
 import { CardModel } from '@/models/card';
 import { Readable } from 'stream';
 import { CurrencyModel } from './currency';
-import { Person, Persons } from '@models/apps/dflc/gestordegastos/entities';
+import { Person, Persons } from '@models/apps/dflc/expensemanager/entities';
 import { BaseModel } from './base';
 
 type PersonProperties = {

@@ -1,5 +1,5 @@
 import { TransactionModel } from '@/models/transaction';
-import { Categories, Category, Transactions } from '@models/apps/dflc/gestordegastos/entities';
+import { Categories, Category, Transactions } from '@models/apps/dflc/expensemanager/entities';
 import { Readable } from 'stream';
 import { BaseModel } from './base';
 

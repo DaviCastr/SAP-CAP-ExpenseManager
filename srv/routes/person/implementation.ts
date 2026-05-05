@@ -1,7 +1,7 @@
 import { ApplicationService, Request } from "@sap/cds";
 import { PersonRoute } from "./protocols";
 import { BaseRouteImplementation } from "../base/implementation";
-import { Person } from "@models/apps/dflc/gestordegastos/entities";
+import { Person } from "@models/apps/dflc/expensemanager/entities";
 import { BaseControllerResponse } from "@/controllers/base";
 import { PersonController } from "@/controllers/person";
 

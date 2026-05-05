@@ -1,9 +1,9 @@
 import Decimal from 'decimal.js';
 import { BaseModel } from './base';
 import { CurrencyModel } from './currency';
-import { Liability, Liabilities } from '@models/apps/dflc/gestordegastos/entities';
+import { Liability, Liabilities } from '@models/apps/dflc/expensemanager/entities';
 import { LiabilityTransactionModel } from './liability-transaction';
-import { InterestMode, LiabilityStatus, LiabilityType } from '@models/apps/dflc/gestordegastos/types';
+import { InterestMode, LiabilityStatus, LiabilityType } from '@models/apps/dflc/expensemanager/types';
 
 type LiabilityProperties = {
     Id: string;

@@ -1,4 +1,4 @@
-import { Share } from "@models/apps/dflc/gestordegastos/entities";
+import { Share } from "@models/apps/dflc/expensemanager/entities";
 import { BaseControllerImplementation } from "../base/implementation";
 import { ShareController } from "./protocols";
 import { ShareService } from "@/services/share";

@@ -2,8 +2,8 @@ import cds, { entity, Request } from "@sap/cds";
 
 import { EntityModel } from "@/models/entity";
 import { EntityRepository } from "./protocols";
-import { Entity } from "@models/apps/dflc/gestordegastos/entities";
-import { Entities } from "@models/apps/dflc/gestordegastos/entities";
+import { Entity } from "@models/apps/dflc/expensemanager/entities";
+import { Entities } from "@models/apps/dflc/expensemanager/entities";
 import { BaseRepositoryImplementation } from "../base/implementation";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 

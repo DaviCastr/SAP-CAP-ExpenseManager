@@ -2,9 +2,9 @@ import cds, { entity, Request } from "@sap/cds";
 
 import { ShareModel } from "@/models/share";
 import { ShareRepository } from "./protocols";
-import { Share } from "@models/apps/dflc/gestordegastos/entities";
+import { Share } from "@models/apps/dflc/expensemanager/entities";
 import { oShareRouteFactory } from "@/factories/routes/share";
-import { Shares } from "@models/apps/dflc/gestordegastos/entities";
+import { Shares } from "@models/apps/dflc/expensemanager/entities";
 import { BaseRepositoryImplementation } from "../base/implementation";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 

@@ -1,4 +1,4 @@
-import { Share, Shares } from "@models/apps/dflc/gestordegastos/entities";
+import { Share, Shares } from "@models/apps/dflc/expensemanager/entities";
 import { EntityModel } from "./entity";
 import { BaseModel } from "./base";
 

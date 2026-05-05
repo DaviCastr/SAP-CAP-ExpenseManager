@@ -1,6 +1,6 @@
-import { Transactions } from "@models/apps/dflc/gestordegastos/entities";
+import { Transactions } from "@models/apps/dflc/expensemanager/entities";
 import { BaseController, BaseControllerResponse } from "../base/";
-import { Transaction } from "@models/apps/dflc/gestordegastos/entities";
+import { Transaction } from "@models/apps/dflc/expensemanager/entities";
 
 export interface TransactionController extends BaseController<Transaction> {
     onDelete(Transaction: Transaction): Promise<BaseControllerResponse>;

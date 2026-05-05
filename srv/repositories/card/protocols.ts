@@ -1,5 +1,5 @@
 import { CardModel } from "@/models/card";
-import { Card, Cards } from "@models/apps/dflc/gestordegastos/entities";
+import { Card, Cards } from "@models/apps/dflc/expensemanager/entities";
 import { BaseRepository } from "../base";
 
 export interface CardRepository extends BaseRepository{

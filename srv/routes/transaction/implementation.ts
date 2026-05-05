@@ -1,6 +1,6 @@
 import { ApplicationService, entity, Request } from "@sap/cds";
 import { TransactionRoute } from "./protocols";
-import { Transaction, Transactions } from "@models/apps/dflc/gestordegastos/entities";
+import { Transaction, Transactions } from "@models/apps/dflc/expensemanager/entities";
 import { TransactionController } from "@/controllers/transaction";
 import { BaseRouteImplementation } from "../base/implementation";
 

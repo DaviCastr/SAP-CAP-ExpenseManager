@@ -1,5 +1,5 @@
 import { AbstractError } from "@/errors";
-import { Transactions, Transaction } from "@models/apps/dflc/gestordegastos/entities";
+import { Transactions, Transaction } from "@models/apps/dflc/expensemanager/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { TransactionService } from "./protocols";
 import { TransactionModel } from "@/models/transaction";

@@ -4,7 +4,7 @@ import {
     Liability,
     Liabilities,
     Person
-} from "@models/apps/dflc/gestordegastos/entities";
+} from "@models/apps/dflc/expensemanager/entities";
 import Decimal from "decimal.js";
 
 export interface LiabilityRepository extends BaseRepository {

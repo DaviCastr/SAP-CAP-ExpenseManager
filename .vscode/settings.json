@@ -11,5 +11,6 @@
         "*.rule": "default",
         "*.properties": "default",
         "*.fragment": "default"
-    }
+    },
+    "SAP HANA Database Explorer.ShowXsAdvancedConnections": true
 }

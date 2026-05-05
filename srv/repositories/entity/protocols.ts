@@ -1,5 +1,5 @@
 import { EntityModel } from "@/models/entity";
-import { Entities, Entity } from "@models/apps/dflc/gestordegastos/entities";
+import { Entities, Entity } from "@models/apps/dflc/expensemanager/entities";
 import { BaseRepository } from "../base";
 
 export interface EntityRepository extends BaseRepository {

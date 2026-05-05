@@ -1,5 +1,5 @@
 import { BackupModel } from "@/models/backup";
-import { Backup, Backups } from "@models/apps/dflc/gestordegastos/entities";
+import { Backup, Backups } from "@models/apps/dflc/expensemanager/entities";
 import { BaseRepository } from "../base";
 
 export interface BackupRepository extends BaseRepository {

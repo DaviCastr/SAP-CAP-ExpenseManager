@@ -2,8 +2,8 @@ import cds, { entity } from "@sap/cds";
 
 import { BackupModel } from "@/models/backup";
 import { BackupRepository } from "./protocols";
-import { Backup, Backups } from "@models/apps/dflc/gestordegastos/entities";
-import { Entities } from "@models/apps/dflc/gestordegastos/entities";
+import { Backup, Backups } from "@models/apps/dflc/expensemanager/entities";
+import { Entities } from "@models/apps/dflc/expensemanager/entities";
 import { BaseRepositoryImplementation } from "../base/implementation";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 

@@ -1,4 +1,4 @@
-import { Backup, Backups } from "@models/apps/dflc/gestordegastos/entities";
+import { Backup, Backups } from "@models/apps/dflc/expensemanager/entities";
 import { Readable } from "stream";
 import { BaseModel } from "./base";
 

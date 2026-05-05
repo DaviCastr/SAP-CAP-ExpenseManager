@@ -1,4 +1,4 @@
-import { Entities, EntitiesCodes, Entity, Permissions } from '@models/apps/dflc/gestordegastos/entities';
+import { Entities, EntitiesCodes, Entity, Permissions } from '@models/apps/dflc/expensemanager/entities';
 import { BaseModel } from './base';
 
 type EntityProperties = {

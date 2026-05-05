@@ -1,6 +1,6 @@
 import cds, { entity } from "@sap/cds";
 import { PersonModel } from "@/models/person";
-import { Person, Persons } from "@models/apps/dflc/gestordegastos/entities";
+import { Person, Persons } from "@models/apps/dflc/expensemanager/entities";
 import { PersonRepository } from "./protocols";
 import { BaseRepositoryImplementation } from "../base/implementation";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";

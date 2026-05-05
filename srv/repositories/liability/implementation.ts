@@ -9,7 +9,7 @@ import {
     Liability,
     Liabilities,
     Person
-} from "@models/apps/dflc/gestordegastos/entities";
+} from "@models/apps/dflc/expensemanager/entities";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 import Decimal from "decimal.js";
 

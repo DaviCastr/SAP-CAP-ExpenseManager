@@ -1,4 +1,4 @@
-import { Backup } from "@models/apps/dflc/gestordegastos/entities";
+import { Backup } from "@models/apps/dflc/expensemanager/entities";
 import { BaseController, BaseControllerResponse } from '@/controllers/base';
 import { User } from "@sap/cds";
 

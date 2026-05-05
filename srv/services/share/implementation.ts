@@ -1,6 +1,6 @@
 import { Request, User } from '@sap/cds';
 import { AbstractError } from '@/errors';
-import { Share } from '@models/apps/dflc/gestordegastos/entities';
+import { Share } from '@models/apps/dflc/expensemanager/entities';
 import { Either, left, right } from '@sweet-monads/either';
 import { ShareService } from './protocols';
 import { BaseServiceImplementation } from '../base/implementation';

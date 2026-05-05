@@ -1,0 +1,22 @@
+{
+    "CreateLinks": [],
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Date": "#Page:Transactions_Create/#Control:Date/#Value",
+        "TotalAmount": "#Page:Transactions_Create/#Control:TotalAmount/#Value",
+        "Amount": "#Page:Transactions_Create/#Control:Amount/#Value",
+        "Currency_code": "#Page:Transactions_Create/#Control:Currency_code/#SelectedValue",
+        "TotalInstallments": "#Page:Transactions_Create/#Control:TotalInstallments/#Value",
+        "Installment": "#Page:Transactions_Create/#Control:Installment/#Value",
+        "Description": "#Page:Transactions_Create/#Control:Description/#Value"
+    },
+    "Target": {
+        "EntitySet": "Transactions",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateEntity"
+}

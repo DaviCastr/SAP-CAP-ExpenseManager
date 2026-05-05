@@ -1,0 +1,220 @@
+import {
+    BaseControllerResponse
+} from "../base";
+
+import {
+    BaseControllerImplementation
+} from "../base/implementation";
+
+import {
+    LiabilityController
+} from "./protocols";
+
+import {
+    LiabilityService
+} from "@/services/liability";
+
+import {
+    Liability
+} from "@models/apps/dflc/gestordegastos/entities";
+
+export class LiabilityControllerImplementation
+    extends BaseControllerImplementation<Liability>
+    implements LiabilityController {
+
+    protected Service:
+        LiabilityService;
+
+    constructor(
+        Service:
+            LiabilityService
+    ) {
+
+        super();
+
+        this.Service =
+            Service;
+
+    }
+
+
+    public async createLiability():
+        Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .createLiability();
+
+        if (result.isLeft()) {
+
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+
+        }
+
+        return this.success(
+            201,
+            result.value
+        );
+
+    }
+
+
+    public async dashboard():
+        Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .dashboard();
+
+        if (result.isLeft()) {
+
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+
+        }
+
+        return this.success(
+            200,
+            result.value
+        );
+
+    }
+
+
+    public async analytics():
+        Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .analytics();
+
+        if (result.isLeft()) {
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+        }
+
+        return this.success(
+            200,
+            result.value
+        );
+
+    }
+
+
+    public async paymentSchedule():
+        Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .paymentSchedule();
+
+        if (result.isLeft()) {
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+        }
+
+        return this.success(
+            200,
+            result.value
+        );
+
+    }
+
+
+    public async renegotiate():
+        Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .renegotiate();
+
+        if (result.isLeft()) {
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+        }
+
+        return this.success(
+            201,
+            result.value
+        );
+
+    }
+
+
+    public async futureImpact():
+        Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .futureImpact();
+
+        if (result.isLeft()) {
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+        }
+
+        return this.success(
+            200,
+            result.value
+        );
+
+    }
+
+
+    public async payLiability():
+        Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .payLiability();
+
+        if (result.isLeft()) {
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+        }
+
+        return this.success(
+            201,
+            result.value
+        );
+
+    }
+
+
+    public async closeLiability():
+        Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .closeLiability();
+
+        if (result.isLeft()) {
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+        }
+
+        return this.success(
+            200,
+            result.value
+        );
+
+    }
+
+}

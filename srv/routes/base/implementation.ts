@@ -10,19 +10,24 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
         //Before
         Service.before("*", this.beforeAll.bind(this));
-        Service.before("READ", EntityDB?.drafts as entity, this.beforeRead.bind(this));
         Service.before("READ", EntityDB as entity, this.beforeRead.bind(this));
-        Service.before("CREATE", EntityDB?.drafts as entity, this.beforeCreate.bind(this));
         Service.before("UPDATE", EntityDB as entity, this.beforeUpdate.bind(this));
         Service.before("PATCH", EntityDB as entity, this.beforeUpdate.bind(this));
-        Service.before("PATCH", EntityDB?.drafts as entity, this.beforeUpdate.bind(this));
         Service.before("EDIT", EntityDB as entity, this.beforeEdit.bind(this));
         Service.before("DELETE", EntityDB as entity, this.beforeDelete.bind(this));
-        Service.before("DELETE", EntityDB?.drafts as entity, this.beforeDelete.bind(this));
 
         //After
         Service.after("READ", EntityDB as entity, this.afterRead.bind(this));
-        Service.after("READ", EntityDB?.drafts as entity, this.afterRead.bind(this));
+
+        if (EntityDB?.drafts) {
+
+            Service.before("READ", EntityDB?.drafts as entity, this.beforeRead.bind(this));
+            Service.before("CREATE", EntityDB?.drafts as entity, this.beforeCreate.bind(this));
+            Service.before("PATCH", EntityDB?.drafts as entity, this.beforeUpdate.bind(this));
+            Service.before("DELETE", EntityDB?.drafts as entity, this.beforeDelete.bind(this));
+            Service.after("READ", EntityDB?.drafts as entity, this.afterRead.bind(this));
+
+        }
 
         // Service.on("READ", EntityDB, async (req, next) => {
 
@@ -190,7 +195,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         if (oResult.status >= 400) {
             return this.returnRejectMessage(Request, oResult);
         }
- 
+
         const oResultData = oResult.data as Entity[];
 
         if (oEntities != oResultData) {

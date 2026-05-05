@@ -1,0 +1,6 @@
+{
+    "ModalPageFullscreen": false,
+    "ModalPage": true,
+    "PageToOpen": "/ExpenseManager/Pages/ExpenseManager_Categories/Categories_CreateTransactions.page",
+    "_Type": "Action.Type.Navigation"
+}

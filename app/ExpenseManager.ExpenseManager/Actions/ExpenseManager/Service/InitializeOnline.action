@@ -1,0 +1,9 @@
+{
+    "Service": "/ExpenseManager/Services/ExpenseManager.service",
+    "_Type": "Action.Type.ODataService.Initialize",
+    "ShowActivityIndicator": true,
+    "OnFailure": "/ExpenseManager/Actions/ExpenseManager/Service/InitializeOnlineFailureMessage.action",
+    "ActionResult": {
+        "_Name": "init"
+    }
+}

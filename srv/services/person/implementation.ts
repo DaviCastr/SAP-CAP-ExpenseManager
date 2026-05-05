@@ -61,6 +61,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
     public async beforeCreate(Person: Person, User: User): Promise<Either<AbstractError, boolean>> {
 
+        const result = await this.processBeforeCreate(Person, User);
+
+        if (result.isLeft()) return result;
+
         return this.checkPerson(Person);
 
     }

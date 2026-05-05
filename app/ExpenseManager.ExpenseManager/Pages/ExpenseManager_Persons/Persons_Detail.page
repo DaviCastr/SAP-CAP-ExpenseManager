@@ -1,0 +1,269 @@
+{
+	"DesignTimeTarget": {
+		"Service": "/ExpenseManager/Services/ExpenseManager.service",
+		"EntitySet": "Persons",
+		"QueryOptions": ""
+	},
+	"ActionBar": {
+		"Items": [
+			{
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Persons/NavToPersons_Edit.js",
+				"Position": "Right",
+				"SystemItem": "Edit",
+				"_Type": "Control.Type.ActionBarItem"
+			},
+			{
+				"OnPress": "/ExpenseManager/Actions/ExpenseManager/Persons/Persons_DetailPopover.action",
+				"Position": "Right",
+				"Caption": "More",
+				"_Type": "Control.Type.ActionBarItem"
+			}
+		],
+		"Caption": "$(L,Persons_Detail)",
+		"_Type": "Control.Type.ActionBar"
+	},
+	"Controls": [
+		{
+			"Sections": [
+				{
+					"ObjectHeader": {
+						"Tags": [],
+						"DetailImage": "/ExpenseManager/Services/ExpenseManager.service/{@odata.readLink}/Image",
+						"HeadlineText": "{Name}",
+						"Subhead": "{createdAt}",
+						"BodyText": "",
+						"Footnote": "{modifiedAt}",
+						"Description": "{createdBy}",
+						"StatusText": "{modifiedBy}",
+						"StatusImage": "",
+						"SubstatusImage": "",
+						"SubstatusText": "{ImageType}"
+					},
+					"_Type": "Section.Type.ObjectHeader"
+				},
+				{
+					"KeyAndValues": [
+						{
+							"KeyName": "$(L,CreatedAt)",
+							"Value": "{createdAt}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,CreatedBy)",
+							"Value": "{createdBy}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,ChangedAt)",
+							"Value": "{modifiedAt}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,ChangedBy)",
+							"Value": "{modifiedBy}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Name",
+							"Value": "{Name}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "ImageType",
+							"Value": "{ImageType}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Income",
+							"Value": "{Income}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,Currency)",
+							"Value": "{Currency_code}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Email",
+							"Value": "{Email}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Phone",
+							"Value": "{Phone}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "ExpenseTarget",
+							"Value": "{ExpenseTarget}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "AmountToSave",
+							"Value": "{AmountToSave}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "TotalExpenses",
+							"Value": "{TotalExpenses}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "TotalExpensesMonth",
+							"Value": "{TotalExpensesMonth}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "TotalExpensesPayed",
+							"Value": "{TotalExpensesPayed}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "TotalExpensesToPay",
+							"Value": "{TotalExpensesToPay}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "TotalExpensesClosed",
+							"Value": "{TotalExpensesClosed}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "MonthCriticallity",
+							"Value": "{MonthCriticallity}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "CriticallityToPay",
+							"Value": "{CriticallityToPay}",
+							"_Type": "KeyValue.Type.Item"
+						}
+					],
+					"Layout": {
+						"NumberOfColumns": 2
+					},
+					"MaxItemCount": 1,
+					"_Name": "SectionKeyValue0",
+					"_Type": "Section.Type.KeyValue"
+				},
+				{
+					"Header": {
+						"Caption": "Shares",
+						"_Type": "SectionCommon.Type.Header"
+					},
+					"ObjectCell": {
+						"AccessoryType": "DisclosureIndicator",
+						"Description": "{createdBy}",
+						"AvatarStack": {
+							"Avatars": [
+								{
+									"Image": ""
+								}
+							],
+							"ImageIsCircular": false
+						},
+						"Icons": [],
+						"StatusImage": "",
+						"Title": "{ID}",
+						"Footnote": "{modifiedAt}",
+						"PreserveIconStackSpacing": false,
+						"StatusText": "{modifiedBy}",
+						"Subhead": "{createdAt}",
+						"SubstatusText": "{User}",
+						"OnPress": "/ExpenseManager/Actions/ExpenseManager/Shares/NavToShares_Detail.action",
+						"_Type": "ObjectTable.Type.ObjectCell"
+					},
+					"EmptySection": {
+						"Caption": "No record found!"
+					},
+					"Target": {
+						"EntitySet": "{@odata.readLink}/Shares",
+						"Service": "/ExpenseManager/Services/ExpenseManager.service"
+					},
+					"_Type": "Section.Type.ObjectTable"
+				},
+				{
+					"Header": {
+						"Caption": "Categories",
+						"_Type": "SectionCommon.Type.Header"
+					},
+					"ObjectCell": {
+						"AccessoryType": "DisclosureIndicator",
+						"Description": "{createdBy}",
+						"AvatarStack": {
+							"Avatars": [
+								{
+									"Image": "/ExpenseManager/Services/ExpenseManager.service/{@odata.readLink}/Image"
+								}
+							],
+							"ImageIsCircular": false
+						},
+						"Icons": [],
+						"StatusImage": "",
+						"Title": "{Name}",
+						"Footnote": "{modifiedAt}",
+						"PreserveIconStackSpacing": false,
+						"StatusText": "{modifiedBy}",
+						"Subhead": "{createdAt}",
+						"SubstatusText": "{ImageType}",
+						"OnPress": "/ExpenseManager/Actions/ExpenseManager/Categories/NavToCategories_Detail.action",
+						"_Type": "ObjectTable.Type.ObjectCell"
+					},
+					"EmptySection": {
+						"Caption": "No record found!"
+					},
+					"Target": {
+						"EntitySet": "{@odata.readLink}/Categories",
+						"Service": "/ExpenseManager/Services/ExpenseManager.service"
+					},
+					"_Type": "Section.Type.ObjectTable"
+				},
+				{
+					"Header": {
+						"Caption": "Cards",
+						"_Type": "SectionCommon.Type.Header"
+					},
+					"ObjectCell": {
+						"AccessoryType": "DisclosureIndicator",
+						"Description": "{createdBy}",
+						"AvatarStack": {
+							"Avatars": [
+								{
+									"Image": "/ExpenseManager/Services/ExpenseManager.service/{@odata.readLink}/Image"
+								}
+							],
+							"ImageIsCircular": false
+						},
+						"Icons": [],
+						"StatusImage": "",
+						"Title": "{Name}",
+						"Footnote": "{modifiedAt}",
+						"PreserveIconStackSpacing": false,
+						"StatusText": "{modifiedBy}",
+						"Subhead": "{createdAt}",
+						"SubstatusText": "{ImageType}",
+						"OnPress": "/ExpenseManager/Actions/ExpenseManager/Cards/NavToCards_Detail.action",
+						"_Type": "ObjectTable.Type.ObjectCell"
+					},
+					"EmptySection": {
+						"Caption": "No record found!"
+					},
+					"Target": {
+						"EntitySet": "{@odata.readLink}/Cards",
+						"Service": "/ExpenseManager/Services/ExpenseManager.service"
+					},
+					"_Type": "Section.Type.ObjectTable"
+				}
+			],
+			"DataSubscriptions": [
+				"Shares",
+				"Categories",
+				"Cards"
+			],
+			"_Type": "Control.Type.SectionedTable",
+			"_Name": "SectionedTable"
+		}
+	],
+	"_Type": "Page",
+	"_Name": "Persons_Detail"
+}

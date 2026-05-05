@@ -1,0 +1,23 @@
+{
+    "ParentLink": {
+        "Property": "Entities",
+        "Target": {
+            "EntitySet": "Shares",
+            "ReadLink": "{@odata.readLink}"
+        }
+    },
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Entity": "#Page:Shares_CreateEntities/#Control:Entity/#Value",
+        "Permission": "#Page:Shares_CreateEntities/#Control:Permission/#Value"
+    },
+    "Target": {
+        "EntitySet": "Entities",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateRelatedEntity"
+}

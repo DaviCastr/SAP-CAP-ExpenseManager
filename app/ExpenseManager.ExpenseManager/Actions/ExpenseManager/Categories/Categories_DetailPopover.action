@@ -1,0 +1,16 @@
+{
+    "PopoverItems": [{
+            "Title": "Open Document",
+            "OnPress": "/ExpenseManager/Actions/ExpenseManager/Categories/Categories_OpenDocument.action"
+        },
+        {
+            "Title": "Add Transactions",
+            "OnPress": "/ExpenseManager/Rules/ExpenseManager/Categories/NavToCategories_CreateTransactions.js"
+        },
+        {
+            "Title": "Delete",
+            "OnPress": "/ExpenseManager/Rules/ExpenseManager/Categories/Categories_DeleteConfirmation.js"
+        }
+    ],
+    "_Type": "Action.Type.PopoverMenu"
+}

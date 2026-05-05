@@ -11,6 +11,7 @@ import {
     Person
 } from "@models/apps/dflc/gestordegastos/entities";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
+import Decimal from "decimal.js";
 
 export class LiabilityRepositoryImplementation
     extends BaseRepositoryImplementation
@@ -200,6 +201,59 @@ export class LiabilityRepositoryImplementation
     }
 
 
+    public async updateEntry(
+        Id: Liability["ID"],
+        data: Partial<Liability>
+    ): Promise<boolean> {
+
+        await UPDATE(
+            this.getEntity(true)
+        )
+            .set(data)
+            .where({ ID: Id });
+
+        return true;
+
+    }
+
+
+    public async updateAmounts(
+        Id: Liability["ID"],
+        data: {
+            CurrentBalance?: number | Decimal;
+            PaidAmount?: number | Decimal;
+            Status?: string;
+        }
+    ): Promise<boolean> {
+
+        await UPDATE(
+            this.getEntity(true)
+        )
+            .set({
+
+                CurrentBalance:
+                    data.CurrentBalance instanceof Decimal
+                        ? data.CurrentBalance.toNumber()
+                        : data.CurrentBalance,
+
+                PaidAmount:
+                    data.PaidAmount instanceof Decimal
+                        ? data.PaidAmount.toNumber()
+                        : data.PaidAmount,
+
+                Status:
+                    data.Status
+
+            })
+            .where({
+                ID: Id
+            });
+
+        return true;
+
+    }
+
+
     public async closeLiability(
         Id: Liability["ID"]
     ): Promise<boolean> {
@@ -210,6 +264,49 @@ export class LiabilityRepositoryImplementation
                 CurrentBalance: 0
             })
             .where({ ID: Id });
+
+        return true;
+
+    }
+
+
+    public async renegotiate(
+        Id: Liability["ID"],
+        data: {
+            CurrentBalance: number;
+            Installments: number;
+            RemainingInstallments: number;
+            InstallmentAmount: number;
+            InterestRate: number;
+            Status: string;
+        }
+    ): Promise<boolean> {
+
+        await UPDATE(
+            this.getEntity(true)
+        )
+            .set({
+                CurrentBalance:
+                    data.CurrentBalance,
+
+                Installments:
+                    data.Installments,
+
+                RemainingInstallments:
+                    data.RemainingInstallments,
+
+                InstallmentAmount:
+                    data.InstallmentAmount,
+
+                InterestRate:
+                    data.InterestRate,
+
+                Status:
+                    data.Status
+            })
+            .where({
+                ID: Id
+            });
 
         return true;
 

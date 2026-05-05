@@ -1,0 +1,6 @@
+{
+    "ModalPageFullscreen": false,
+    "ModalPage": true,
+    "PageToOpen": "/ExpenseManager/Pages/ExpenseManager_Currencies_texts/Currencies_texts_Create.page",
+    "_Type": "Action.Type.Navigation"
+}

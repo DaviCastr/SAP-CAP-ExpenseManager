@@ -1,0 +1,16 @@
+{
+    "CreateLinks": [],
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "BackupType": "#Page:Backups_Create/#Control:BackupType/#Value"
+    },
+    "Target": {
+        "EntitySet": "Backups",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateEntity"
+}

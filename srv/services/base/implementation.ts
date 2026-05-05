@@ -112,7 +112,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
             }
 
             if (oEntityCode == 8) {
-                right(true);
+                return right(true);
             }
 
             Request.query.where([
@@ -196,7 +196,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
             return result;
         }
 
-        return Orchestrator.processBeforeCreate(Entity, User);
+        return Orchestrator.processBeforeUpdate(Entity, User);
 
     }
 

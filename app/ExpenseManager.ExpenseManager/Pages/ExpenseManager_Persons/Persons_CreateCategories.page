@@ -1,0 +1,63 @@
+{
+	"ActionBar": {
+		"Items": [
+			{
+				"OnPress": "/ExpenseManager/Actions/CloseModalPage_Cancel.action",
+				"Position": "Left",
+				"SystemItem": "Cancel",
+				"_Type": "Control.Type.ActionBarItem"
+			},
+			{
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Persons/Persons_CreateCategories.js",
+				"Position": "Right",
+				"SystemItem": "Save",
+				"_Type": "Control.Type.ActionBarItem"
+			}
+		],
+		"Caption": "$(L,Create_Categories)",
+		"_Type": "Control.Type.ActionBar"
+	},
+	"Controls": [
+		{
+			"Sections": [
+				{
+					"_Type": "Section.Type.FormCell",
+					"_Name": "SectionFormCell0",
+					"Visible": true,
+					"Controls": [
+						{
+							"Caption": "Name",
+							"_Name": "Name",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"AttachmentTitle": "Image",
+							"AttachmentAddTitle": "Browse",
+							"AttachmentActionType": [
+								"AddPhoto",
+								"TakePhoto",
+								"SelectFile"
+							],
+							"AllowedFileTypes": [
+								"jpg",
+								"png",
+								"gif"
+							],
+							"_Name": "Image",
+							"_Type": "Control.Type.FormCell.Attachment"
+						},
+						{
+							"Caption": "ImageType",
+							"_Name": "ImageType",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						}
+					]
+				}
+			],
+			"_Name": "SectionedTable0",
+			"_Type": "Control.Type.SectionedTable"
+		}
+	],
+	"_Type": "Page",
+	"_Name": "Persons_CreateCategories"
+}

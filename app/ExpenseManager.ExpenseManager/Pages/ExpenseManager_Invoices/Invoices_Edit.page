@@ -1,0 +1,93 @@
+{
+	"DesignTimeTarget": {
+		"Service": "/ExpenseManager/Services/ExpenseManager.service",
+		"EntitySet": "Invoices",
+		"QueryOptions": ""
+	},
+	"ActionBar": {
+		"Items": [
+			{
+				"Position": "Left",
+				"Caption": "Cancel",
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Invoices/Invoices_Cancel.js",
+				"_Type": "Control.Type.ActionBarItem"
+			},
+			{
+				"Position": "Right",
+				"SystemItem": "Save",
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Invoices/Invoices_UpdateEntity.js",
+				"_Type": "Control.Type.ActionBarItem"
+			}
+		],
+		"Caption": "$(L,Update_Invoices_Detail)",
+		"_Type": "Control.Type.ActionBar"
+	},
+	"Controls": [
+		{
+			"Sections": [
+				{
+					"_Type": "Section.Type.FormCell",
+					"_Name": "SectionFormCell0",
+					"Visible": true,
+					"Controls": [
+						{
+							"Caption": "Year",
+							"_Name": "Year",
+							"Value": "{Year}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Month",
+							"_Name": "Month",
+							"Value": "{Month}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Description",
+							"_Name": "Description",
+							"Value": "{Description}",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "TotalAmount",
+							"_Name": "TotalAmount",
+							"Value": "{TotalAmount}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "$(L,Currency)",
+							"AllowMultipleSelection": false,
+							"AllowEmptySelection": true,
+							"IsPickerDismissedOnSelection": true,
+							"IsSelectedSectionEnabled": true,
+							"PickerItems": {
+								"DisplayValue": "{code}",
+								"ReturnValue": "{code}",
+								"Target": {
+									"EntitySet": "Currencies",
+									"Service": "/ExpenseManager/Services/ExpenseManager.service"
+								}
+							},
+							"Value": "{Currency_code}",
+							"_Name": "Currency_code",
+							"_Type": "Control.Type.FormCell.ListPicker"
+						},
+						{
+							"_Name": "InvoiceSent",
+							"Caption": "InvoiceSent",
+							"Value": "{InvoiceSent}",
+							"_Type": "Control.Type.FormCell.Switch"
+						}
+					]
+				}
+			],
+			"_Name": "SectionedTable0",
+			"_Type": "Control.Type.SectionedTable"
+		}
+	],
+	"_Type": "Page",
+	"_Name": "Invoices_Edit"
+}

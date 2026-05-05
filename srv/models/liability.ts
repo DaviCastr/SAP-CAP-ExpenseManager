@@ -124,11 +124,47 @@ export class LiabilityModel extends BaseModel {
 
     public get Id() { return this.props.Id; }
     public get Name() { return this.props.Name; }
-    public get OriginalAmount() { return this.props.OriginalAmount }
-    public get CurrentBalance() { return this.props.CurrentBalance }
-    public get PaidAmount() { return this.props.PaidAmount }
+    public get Creditor() { return this.props.Creditor; }
+    public get Description() { return this.props.Description; }
+
+    public get Type() { return this.props.Type; }
+    public get Status() { return this.props.Status; }
+
+    public get OriginalAmount() { return this.props.OriginalAmount; }
+    public get CurrentBalance() { return this.props.CurrentBalance; }
+    public get PaidAmount() { return this.props.PaidAmount; }
+
     public get Currency() { return this.props.Currency; }
+
+    public get InterestMode() { return this.props.InterestMode; }
+    public get InterestRate() { return this.props.InterestRate; }
+
+    public get Installments() { return this.props.Installments; }
+    public get InstallmentAmount() { return this.props.InstallmentAmount; }
+
+    public get StartDate() { return this.props.StartDate; }
+    public get FirstDueDate() { return this.props.FirstDueDate; }
+    public get EndDate() { return this.props.EndDate; }
+    public get LastPaymentDate() { return this.props.LastPaymentDate; }
+
+    public get ExternalReference() { return this.props.ExternalReference; }
+
+    public get RemainingAmount() { return this.props.RemainingAmount; }
+    public get ProgressPercent() { return this.props.ProgressPercent; }
+    public get PaidInstallments() { return this.props.PaidInstallments; }
+    public get RemainingInstallments() { return this.props.RemainingInstallments; }
+    public get NextDueDate() { return this.props.NextDueDate; }
+    public get IsOverdue() { return this.props.IsOverdue; }
+    public get HealthScore() { return this.props.HealthScore; }
+
+    public get PersonId() { return this.props.PersonId; }
+
     public get Transactions() { return this.props.Transactions || []; }
+
+    public get CreatedAt() { return this.props.CreatedAt; }
+    public get CreatedBy() { return this.props.CreatedBy; }
+    public get ModifiedAt() { return this.props.ModifiedAt; }
+    public get ModifiedBy() { return this.props.ModifiedBy; }
 
     public toObject(): LiabilityProperties {
         return this.props;

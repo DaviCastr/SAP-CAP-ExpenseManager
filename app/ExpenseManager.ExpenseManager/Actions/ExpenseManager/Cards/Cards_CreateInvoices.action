@@ -1,0 +1,27 @@
+{
+    "ParentLink": {
+        "Property": "Invoices",
+        "Target": {
+            "EntitySet": "Cards",
+            "ReadLink": "{@odata.readLink}"
+        }
+    },
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Year": "#Page:Cards_CreateInvoices/#Control:Year/#Value",
+        "Month": "#Page:Cards_CreateInvoices/#Control:Month/#Value",
+        "Description": "#Page:Cards_CreateInvoices/#Control:Description/#Value",
+        "TotalAmount": "#Page:Cards_CreateInvoices/#Control:TotalAmount/#Value",
+        "Currency_code": "#Page:Cards_CreateInvoices/#Control:Currency_code/#SelectedValue",
+        "InvoiceSent": "#Page:Cards_CreateInvoices/#Control:InvoiceSent/#Value"
+    },
+    "Target": {
+        "EntitySet": "Invoices",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateRelatedEntity"
+}

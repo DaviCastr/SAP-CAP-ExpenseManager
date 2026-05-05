@@ -1,0 +1,28 @@
+{
+    "ParentLink": {
+        "Property": "Transactions",
+        "Target": {
+            "EntitySet": "Categories",
+            "ReadLink": "{@odata.readLink}"
+        }
+    },
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Date": "#Page:Categories_CreateTransactions/#Control:Date/#Value",
+        "TotalAmount": "#Page:Categories_CreateTransactions/#Control:TotalAmount/#Value",
+        "Amount": "#Page:Categories_CreateTransactions/#Control:Amount/#Value",
+        "Currency_code": "#Page:Categories_CreateTransactions/#Control:Currency_code/#SelectedValue",
+        "TotalInstallments": "#Page:Categories_CreateTransactions/#Control:TotalInstallments/#Value",
+        "Installment": "#Page:Categories_CreateTransactions/#Control:Installment/#Value",
+        "Description": "#Page:Categories_CreateTransactions/#Control:Description/#Value"
+    },
+    "Target": {
+        "EntitySet": "Transactions",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateRelatedEntity"
+}

@@ -1,0 +1,33 @@
+{
+    "CreateLinks": [],
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Name": "#Page:Liabilities_Create/#Control:Name/#Value",
+        "Creditor": "#Page:Liabilities_Create/#Control:Creditor/#Value",
+        "Description": "#Page:Liabilities_Create/#Control:Description/#Value",
+        "Type": "#Page:Liabilities_Create/#Control:Type/#Value",
+        "Status": "#Page:Liabilities_Create/#Control:Status/#Value",
+        "OriginalAmount": "#Page:Liabilities_Create/#Control:OriginalAmount/#Value",
+        "CurrentBalance": "#Page:Liabilities_Create/#Control:CurrentBalance/#Value",
+        "PaidAmount": "#Page:Liabilities_Create/#Control:PaidAmount/#Value",
+        "Currency_code": "#Page:Liabilities_Create/#Control:Currency_code/#SelectedValue",
+        "InterestMode": "#Page:Liabilities_Create/#Control:InterestMode/#Value",
+        "InterestRate": "#Page:Liabilities_Create/#Control:InterestRate/#Value",
+        "Installments": "#Page:Liabilities_Create/#Control:Installments/#Value",
+        "InstallmentAmount": "#Page:Liabilities_Create/#Control:InstallmentAmount/#Value",
+        "StartDate": "#Page:Liabilities_Create/#Control:StartDate/#Value",
+        "FirstDueDate": "#Page:Liabilities_Create/#Control:FirstDueDate/#Value",
+        "EndDate": "#Page:Liabilities_Create/#Control:EndDate/#Value",
+        "LastPaymentDate": "#Page:Liabilities_Create/#Control:LastPaymentDate/#Value",
+        "ExternalReference": "#Page:Liabilities_Create/#Control:ExternalReference/#Value"
+    },
+    "Target": {
+        "EntitySet": "Liabilities",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateEntity"
+}

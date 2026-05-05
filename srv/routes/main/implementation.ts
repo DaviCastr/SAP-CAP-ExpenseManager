@@ -8,6 +8,10 @@ import { oTransactionRouteFactory } from "@/factories/routes/transaction";
 import { oShareRouteFactory } from "@/factories/routes/share";
 import { oEntityRouteFactory } from "@/factories/routes/entity";
 import { oInvoiceRouteFactory } from "@/factories/routes/invoice";
+import { oLiabilityRouteFactory } from "@/factories/routes/liability";
+import { oLiabilityTransactionRouteFactory } from "@/factories/routes/liability-transaction";
+import { oCardRouteFactory } from "@/factories/routes/card";
+import { oPersonRouteFactory } from "@/factories/routes/person";
 
 export class MainRouteImplementation extends BaseRouteImplementation<any> implements MainRoute {
 
@@ -26,15 +30,23 @@ export class MainRouteImplementation extends BaseRouteImplementation<any> implem
 
         ServiceLocator.setGestorService(Service);
 
+        oPersonRouteFactory.main(Service);
+
         oShareRouteFactory.main(Service);
 
         oEntityRouteFactory.main(Service);
-        
+
         oCategoryRouteFactory.main(Service);
+
+        oCardRouteFactory.main(Service);
 
         oInvoiceRouteFactory.main(Service);
 
         oTransactionRouteFactory.main(Service);
+
+        oLiabilityRouteFactory.main(Service);
+
+        oLiabilityTransactionRouteFactory.main(Service);
 
     }
 

@@ -1,0 +1,4 @@
+{
+    "_Type": "Action.Type.Navigation",
+    "PageToOpen": "/ExpenseManager/Pages/ExpenseManager_Invoices/Invoices_List.page"
+}

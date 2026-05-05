@@ -1,0 +1,31 @@
+{
+    "ParentLink": {
+        "Property": "Transactions",
+        "Target": {
+            "EntitySet": "Liabilities",
+            "ReadLink": "{@odata.readLink}"
+        }
+    },
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Type": "#Page:Liabilities_CreateLiabilityTransactions/#Control:Type/#Value",
+        "Description": "#Page:Liabilities_CreateLiabilityTransactions/#Control:Description/#Value",
+        "MovementDate": "#Page:Liabilities_CreateLiabilityTransactions/#Control:MovementDate/#Value",
+        "Installment": "#Page:Liabilities_CreateLiabilityTransactions/#Control:Installment/#Value",
+        "TotalInstallments": "#Page:Liabilities_CreateLiabilityTransactions/#Control:TotalInstallments/#Value",
+        "Amount": "#Page:Liabilities_CreateLiabilityTransactions/#Control:Amount/#Value",
+        "Currency_code": "#Page:Liabilities_CreateLiabilityTransactions/#Control:Currency_code/#SelectedValue",
+        "BalanceAfter": "#Page:Liabilities_CreateLiabilityTransactions/#Control:BalanceAfter/#Value",
+        "IsAutomatic": "#Page:Liabilities_CreateLiabilityTransactions/#Control:IsAutomatic/#Value",
+        "ExternalReference": "#Page:Liabilities_CreateLiabilityTransactions/#Control:ExternalReference/#Value"
+    },
+    "Target": {
+        "EntitySet": "LiabilityTransactions",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateRelatedEntity"
+}

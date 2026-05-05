@@ -1,0 +1,26 @@
+{
+    "_Type": "Action.Type.ODataService.UpdateEntity",
+    "Target": {
+        "EntitySet": "LiabilityTransactions",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service",
+        "ReadLink": "{@odata.readLink}"
+    },
+    "Properties": {
+        "Type": "#Page:LiabilityTransactions_Edit/#Control:Type/#Value",
+        "Description": "#Page:LiabilityTransactions_Edit/#Control:Description/#Value",
+        "MovementDate": "#Page:LiabilityTransactions_Edit/#Control:MovementDate/#Value",
+        "Installment": "#Page:LiabilityTransactions_Edit/#Control:Installment/#Value",
+        "TotalInstallments": "#Page:LiabilityTransactions_Edit/#Control:TotalInstallments/#Value",
+        "Amount": "#Page:LiabilityTransactions_Edit/#Control:Amount/#Value",
+        "Currency_code": "#Page:LiabilityTransactions_Edit/#Control:Currency_code/#SelectedValue",
+        "BalanceAfter": "#Page:LiabilityTransactions_Edit/#Control:BalanceAfter/#Value",
+        "IsAutomatic": "#Page:LiabilityTransactions_Edit/#Control:IsAutomatic/#Value",
+        "ExternalReference": "#Page:LiabilityTransactions_Edit/#Control:ExternalReference/#Value"
+    },
+    "UpdateLinks": [],
+    "ActionResult": {
+        "_Name": "update"
+    },
+    "OnSuccess": "/ExpenseManager/Actions/UpdateEntitySuccessMessage.action",
+    "OnFailure": "/ExpenseManager/Actions/UpdateEntityFailureMessage.action"
+}

@@ -9,7 +9,7 @@ import { oCardRepositoryFactory } from "../repositories/card";
 import { oCategoryRepositoryFactory } from "../repositories/category";
 import { oTransactionRepositoryFactory } from "../repositories/transaction";
 
-const makeCustomerService = (): PersonService => {
+const makePersonService = (): PersonService => {
 
     const service = new PersonServiceImplementation(
         oShareRepositoryFactory,
@@ -27,4 +27,4 @@ const makeCustomerService = (): PersonService => {
 
 }
 
-export const oPersonServiceFactory = makeCustomerService();
+export const oPersonServiceFactory = makePersonService();

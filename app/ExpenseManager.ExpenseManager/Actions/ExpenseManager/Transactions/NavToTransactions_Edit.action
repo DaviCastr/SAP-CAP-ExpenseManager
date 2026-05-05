@@ -1,0 +1,6 @@
+{
+    "ModalPageFullscreen": false,
+    "ModalPage": true,
+    "PageToOpen": "/ExpenseManager/Pages/ExpenseManager_Transactions/Transactions_Edit.page",
+    "_Type": "Action.Type.Navigation"
+}

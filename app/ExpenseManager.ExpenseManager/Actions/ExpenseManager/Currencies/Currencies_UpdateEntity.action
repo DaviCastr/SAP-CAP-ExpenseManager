@@ -1,0 +1,21 @@
+{
+    "_Type": "Action.Type.ODataService.UpdateEntity",
+    "Target": {
+        "EntitySet": "Currencies",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service",
+        "ReadLink": "{@odata.readLink}"
+    },
+    "Properties": {
+        "name": "#Page:Currencies_Edit/#Control:name/#Value",
+        "descr": "#Page:Currencies_Edit/#Control:descr/#Value",
+        "code": "#Page:Currencies_Edit/#Control:code/#Value",
+        "symbol": "#Page:Currencies_Edit/#Control:symbol/#Value",
+        "minorUnit": "#Page:Currencies_Edit/#Control:minorUnit/#Value"
+    },
+    "UpdateLinks": [],
+    "ActionResult": {
+        "_Name": "update"
+    },
+    "OnSuccess": "/ExpenseManager/Actions/UpdateEntitySuccessMessage.action",
+    "OnFailure": "/ExpenseManager/Actions/UpdateEntityFailureMessage.action"
+}

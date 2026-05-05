@@ -1,0 +1,82 @@
+{
+	"DesignTimeTarget": {
+		"Service": "/ExpenseManager/Services/ExpenseManager.service",
+		"EntitySet": "Currencies_texts",
+		"QueryOptions": ""
+	},
+	"ActionBar": {
+		"Items": [
+			{
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Currencies_texts/NavToCurrencies_texts_Edit.js",
+				"Position": "Right",
+				"SystemItem": "Edit",
+				"_Type": "Control.Type.ActionBarItem"
+			},
+			{
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Currencies_texts/Currencies_texts_DeleteConfirmation.js",
+				"Position": "Right",
+				"SystemItem": "Trash",
+				"_Type": "Control.Type.ActionBarItem"
+			}
+		],
+		"Caption": "$(L,Currencies_texts_Detail)",
+		"_Type": "Control.Type.ActionBar"
+	},
+	"Controls": [
+		{
+			"Sections": [
+				{
+					"ObjectHeader": {
+						"Tags": [],
+						"DetailImage": "",
+						"HeadlineText": "{name}",
+						"Subhead": "{locale}",
+						"BodyText": "",
+						"Footnote": "{code}",
+						"Description": "{descr}",
+						"StatusText": "",
+						"StatusImage": "",
+						"SubstatusImage": "",
+						"SubstatusText": ""
+					},
+					"_Type": "Section.Type.ObjectHeader"
+				},
+				{
+					"KeyAndValues": [
+						{
+							"KeyName": "$(L,LanguageCode)",
+							"Value": "{locale}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,Name)",
+							"Value": "{name}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,Description)",
+							"Value": "{descr}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,CurrencyCode)",
+							"Value": "{code}",
+							"_Type": "KeyValue.Type.Item"
+						}
+					],
+					"Layout": {
+						"NumberOfColumns": 2
+					},
+					"MaxItemCount": 1,
+					"_Name": "SectionKeyValue0",
+					"_Type": "Section.Type.KeyValue"
+				}
+			],
+			"DataSubscriptions": [],
+			"_Type": "Control.Type.SectionedTable",
+			"_Name": "SectionedTable"
+		}
+	],
+	"_Type": "Page",
+	"_Name": "Currencies_texts_Detail"
+}

@@ -1,0 +1,132 @@
+{
+	"DesignTimeTarget": {
+		"Service": "/ExpenseManager/Services/ExpenseManager.service",
+		"EntitySet": "LiabilityTransactions",
+		"QueryOptions": ""
+	},
+	"ActionBar": {
+		"Items": [
+			{
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/LiabilityTransactions/NavToLiabilityTransactions_Edit.js",
+				"Position": "Right",
+				"SystemItem": "Edit",
+				"_Type": "Control.Type.ActionBarItem"
+			},
+			{
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/LiabilityTransactions/LiabilityTransactions_DeleteConfirmation.js",
+				"Position": "Right",
+				"SystemItem": "Trash",
+				"_Type": "Control.Type.ActionBarItem"
+			}
+		],
+		"Caption": "$(L,LiabilityTransactions_Detail)",
+		"_Type": "Control.Type.ActionBar"
+	},
+	"Controls": [
+		{
+			"Sections": [
+				{
+					"ObjectHeader": {
+						"Tags": [],
+						"DetailImage": "",
+						"HeadlineText": "{ID}",
+						"Subhead": "{createdAt}",
+						"BodyText": "",
+						"Footnote": "{modifiedAt}",
+						"Description": "{createdBy}",
+						"StatusText": "{modifiedBy}",
+						"StatusImage": "",
+						"SubstatusImage": "",
+						"SubstatusText": "{Type}"
+					},
+					"_Type": "Section.Type.ObjectHeader"
+				},
+				{
+					"KeyAndValues": [
+						{
+							"KeyName": "$(L,CreatedAt)",
+							"Value": "{createdAt}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,CreatedBy)",
+							"Value": "{createdBy}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,ChangedAt)",
+							"Value": "{modifiedAt}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,ChangedBy)",
+							"Value": "{modifiedBy}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Type",
+							"Value": "{Type}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Description",
+							"Value": "{Description}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "MovementDate",
+							"Value": "{MovementDate}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Installment",
+							"Value": "{Installment}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "TotalInstallments",
+							"Value": "{TotalInstallments}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Amount",
+							"Value": "{Amount}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,Currency)",
+							"Value": "{Currency_code}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "BalanceAfter",
+							"Value": "{BalanceAfter}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "IsAutomatic",
+							"Value": "{IsAutomatic}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "ExternalReference",
+							"Value": "{ExternalReference}",
+							"_Type": "KeyValue.Type.Item"
+						}
+					],
+					"Layout": {
+						"NumberOfColumns": 2
+					},
+					"MaxItemCount": 1,
+					"_Name": "SectionKeyValue0",
+					"_Type": "Section.Type.KeyValue"
+				}
+			],
+			"DataSubscriptions": [],
+			"_Type": "Control.Type.SectionedTable",
+			"_Name": "SectionedTable"
+		}
+	],
+	"_Type": "Page",
+	"_Name": "LiabilityTransactions_Detail"
+}

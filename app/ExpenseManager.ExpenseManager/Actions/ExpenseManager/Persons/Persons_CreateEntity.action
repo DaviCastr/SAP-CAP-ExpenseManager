@@ -1,0 +1,22 @@
+{
+    "CreateLinks": [],
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Name": "#Page:Persons_Create/#Control:Name/#Value",
+        "ImageType": "#Page:Persons_Create/#Control:ImageType/#Value",
+        "Income": "#Page:Persons_Create/#Control:Income/#Value",
+        "Currency_code": "#Page:Persons_Create/#Control:Currency_code/#SelectedValue",
+        "Email": "#Page:Persons_Create/#Control:Email/#Value",
+        "Phone": "#Page:Persons_Create/#Control:Phone/#Value",
+        "ExpenseTarget": "#Page:Persons_Create/#Control:ExpenseTarget/#Value"
+    },
+    "Target": {
+        "EntitySet": "Persons",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateEntity"
+}

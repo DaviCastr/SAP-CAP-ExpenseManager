@@ -25,3 +25,9 @@ using from './routes/transaction';
 
 //Backup
 using from './routes/backup';
+
+//Liability
+using from './routes/liability';
+
+//Liability-Transaction
+using from './routes/liability-transaction';

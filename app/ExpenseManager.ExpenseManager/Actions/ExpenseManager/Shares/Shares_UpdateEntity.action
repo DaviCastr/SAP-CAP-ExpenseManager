@@ -1,0 +1,17 @@
+{
+    "_Type": "Action.Type.ODataService.UpdateEntity",
+    "Target": {
+        "EntitySet": "Shares",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service",
+        "ReadLink": "{@odata.readLink}"
+    },
+    "Properties": {
+        "User": "#Page:Shares_Edit/#Control:User/#Value"
+    },
+    "UpdateLinks": [],
+    "ActionResult": {
+        "_Name": "update"
+    },
+    "OnSuccess": "/ExpenseManager/Actions/UpdateEntitySuccessMessage.action",
+    "OnFailure": "/ExpenseManager/Actions/UpdateEntityFailureMessage.action"
+}

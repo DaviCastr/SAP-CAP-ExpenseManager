@@ -1,0 +1,17 @@
+{
+    "CreateLinks": [],
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Entity": "#Page:Entities_Create/#Control:Entity/#Value",
+        "Permission": "#Page:Entities_Create/#Control:Permission/#Value"
+    },
+    "Target": {
+        "EntitySet": "Entities",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateEntity"
+}

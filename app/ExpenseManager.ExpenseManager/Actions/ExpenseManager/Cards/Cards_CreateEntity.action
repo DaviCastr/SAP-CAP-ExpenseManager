@@ -1,0 +1,21 @@
+{
+    "CreateLinks": [],
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Name": "#Page:Cards_Create/#Control:Name/#Value",
+        "ImageType": "#Page:Cards_Create/#Control:ImageType/#Value",
+        "Limit": "#Page:Cards_Create/#Control:Limit/#Value",
+        "Currency_code": "#Page:Cards_Create/#Control:Currency_code/#SelectedValue",
+        "DueDay": "#Page:Cards_Create/#Control:DueDay/#Value",
+        "ClosingDay": "#Page:Cards_Create/#Control:ClosingDay/#Value"
+    },
+    "Target": {
+        "EntitySet": "Cards",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateEntity"
+}

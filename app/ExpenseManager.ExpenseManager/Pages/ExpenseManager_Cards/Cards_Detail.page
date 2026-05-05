@@ -1,0 +1,165 @@
+{
+	"DesignTimeTarget": {
+		"Service": "/ExpenseManager/Services/ExpenseManager.service",
+		"EntitySet": "Cards",
+		"QueryOptions": ""
+	},
+	"ActionBar": {
+		"Items": [
+			{
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Cards/NavToCards_Edit.js",
+				"Position": "Right",
+				"SystemItem": "Edit",
+				"_Type": "Control.Type.ActionBarItem"
+			},
+			{
+				"OnPress": "/ExpenseManager/Actions/ExpenseManager/Cards/Cards_DetailPopover.action",
+				"Position": "Right",
+				"Caption": "More",
+				"_Type": "Control.Type.ActionBarItem"
+			}
+		],
+		"Caption": "$(L,Cards_Detail)",
+		"_Type": "Control.Type.ActionBar"
+	},
+	"Controls": [
+		{
+			"Sections": [
+				{
+					"ObjectHeader": {
+						"Tags": [],
+						"DetailImage": "/ExpenseManager/Services/ExpenseManager.service/{@odata.readLink}/Image",
+						"HeadlineText": "{Name}",
+						"Subhead": "{createdAt}",
+						"BodyText": "",
+						"Footnote": "{modifiedAt}",
+						"Description": "{createdBy}",
+						"StatusText": "{modifiedBy}",
+						"StatusImage": "",
+						"SubstatusImage": "",
+						"SubstatusText": "{ImageType}"
+					},
+					"_Type": "Section.Type.ObjectHeader"
+				},
+				{
+					"KeyAndValues": [
+						{
+							"KeyName": "$(L,CreatedAt)",
+							"Value": "{createdAt}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,CreatedBy)",
+							"Value": "{createdBy}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,ChangedAt)",
+							"Value": "{modifiedAt}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,ChangedBy)",
+							"Value": "{modifiedBy}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Name",
+							"Value": "{Name}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "ImageType",
+							"Value": "{ImageType}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Limit",
+							"Value": "{Limit}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,Currency)",
+							"Value": "{Currency_code}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "AvailableLimit",
+							"Value": "{AvailableLimit}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "DueDay",
+							"Value": "{DueDay}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "ClosingDay",
+							"Value": "{ClosingDay}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "InvoiceAmountForPayment",
+							"Value": "{InvoiceAmountForPayment}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "InvoiceAmountToPay",
+							"Value": "{InvoiceAmountToPay}",
+							"_Type": "KeyValue.Type.Item"
+						}
+					],
+					"Layout": {
+						"NumberOfColumns": 2
+					},
+					"MaxItemCount": 1,
+					"_Name": "SectionKeyValue0",
+					"_Type": "Section.Type.KeyValue"
+				},
+				{
+					"Header": {
+						"Caption": "Invoices",
+						"_Type": "SectionCommon.Type.Header"
+					},
+					"ObjectCell": {
+						"AccessoryType": "DisclosureIndicator",
+						"Description": "{createdBy}",
+						"AvatarStack": {
+							"Avatars": [
+								{
+									"Image": ""
+								}
+							],
+							"ImageIsCircular": false
+						},
+						"Icons": [],
+						"StatusImage": "",
+						"Title": "{ID}",
+						"Footnote": "{modifiedAt}",
+						"PreserveIconStackSpacing": false,
+						"StatusText": "{modifiedBy}",
+						"Subhead": "{createdAt}",
+						"SubstatusText": "{Year}",
+						"OnPress": "/ExpenseManager/Actions/ExpenseManager/Invoices/NavToInvoices_Detail.action",
+						"_Type": "ObjectTable.Type.ObjectCell"
+					},
+					"EmptySection": {
+						"Caption": "No record found!"
+					},
+					"Target": {
+						"EntitySet": "{@odata.readLink}/Invoices",
+						"Service": "/ExpenseManager/Services/ExpenseManager.service"
+					},
+					"_Type": "Section.Type.ObjectTable"
+				}
+			],
+			"DataSubscriptions": [
+				"Invoices"
+			],
+			"_Type": "Control.Type.SectionedTable",
+			"_Name": "SectionedTable"
+		}
+	],
+	"_Type": "Page",
+	"_Name": "Cards_Detail"
+}

@@ -1,0 +1,245 @@
+{
+	"DesignTimeTarget": {
+		"Service": "/ExpenseManager/Services/ExpenseManager.service",
+		"EntitySet": "Liabilities",
+		"QueryOptions": ""
+	},
+	"ActionBar": {
+		"Items": [
+			{
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Liabilities/NavToLiabilities_Edit.js",
+				"Position": "Right",
+				"SystemItem": "Edit",
+				"_Type": "Control.Type.ActionBarItem"
+			},
+			{
+				"OnPress": "/ExpenseManager/Actions/ExpenseManager/Liabilities/Liabilities_DetailPopover.action",
+				"Position": "Right",
+				"Caption": "More",
+				"_Type": "Control.Type.ActionBarItem"
+			}
+		],
+		"Caption": "$(L,Liabilities_Detail)",
+		"_Type": "Control.Type.ActionBar"
+	},
+	"Controls": [
+		{
+			"Sections": [
+				{
+					"ObjectHeader": {
+						"Tags": [],
+						"DetailImage": "",
+						"HeadlineText": "{Name}",
+						"Subhead": "{createdAt}",
+						"BodyText": "",
+						"Footnote": "{modifiedAt}",
+						"Description": "{createdBy}",
+						"StatusText": "{modifiedBy}",
+						"StatusImage": "",
+						"SubstatusImage": "",
+						"SubstatusText": "{Creditor}"
+					},
+					"_Type": "Section.Type.ObjectHeader"
+				},
+				{
+					"KeyAndValues": [
+						{
+							"KeyName": "$(L,CreatedAt)",
+							"Value": "{createdAt}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,CreatedBy)",
+							"Value": "{createdBy}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,ChangedAt)",
+							"Value": "{modifiedAt}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,ChangedBy)",
+							"Value": "{modifiedBy}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Name",
+							"Value": "{Name}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Creditor",
+							"Value": "{Creditor}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Description",
+							"Value": "{Description}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Type",
+							"Value": "{Type}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Status",
+							"Value": "{Status}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "OriginalAmount",
+							"Value": "{OriginalAmount}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "CurrentBalance",
+							"Value": "{CurrentBalance}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "PaidAmount",
+							"Value": "{PaidAmount}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "$(L,Currency)",
+							"Value": "{Currency_code}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "InterestMode",
+							"Value": "{InterestMode}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "InterestRate",
+							"Value": "{InterestRate}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "Installments",
+							"Value": "{Installments}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "InstallmentAmount",
+							"Value": "{InstallmentAmount}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "StartDate",
+							"Value": "{StartDate}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "FirstDueDate",
+							"Value": "{FirstDueDate}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "EndDate",
+							"Value": "{EndDate}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "LastPaymentDate",
+							"Value": "{LastPaymentDate}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "ExternalReference",
+							"Value": "{ExternalReference}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "RemainingAmount",
+							"Value": "{RemainingAmount}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "ProgressPercent",
+							"Value": "{ProgressPercent}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "PaidInstallments",
+							"Value": "{PaidInstallments}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "RemainingInstallments",
+							"Value": "{RemainingInstallments}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "NextDueDate",
+							"Value": "{NextDueDate}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "IsOverdue",
+							"Value": "{IsOverdue}",
+							"_Type": "KeyValue.Type.Item"
+						},
+						{
+							"KeyName": "HealthScore",
+							"Value": "{HealthScore}",
+							"_Type": "KeyValue.Type.Item"
+						}
+					],
+					"Layout": {
+						"NumberOfColumns": 2
+					},
+					"MaxItemCount": 1,
+					"_Name": "SectionKeyValue0",
+					"_Type": "Section.Type.KeyValue"
+				},
+				{
+					"Header": {
+						"Caption": "Transactions",
+						"_Type": "SectionCommon.Type.Header"
+					},
+					"ObjectCell": {
+						"AccessoryType": "DisclosureIndicator",
+						"Description": "{createdBy}",
+						"AvatarStack": {
+							"Avatars": [
+								{
+									"Image": ""
+								}
+							],
+							"ImageIsCircular": false
+						},
+						"Icons": [],
+						"StatusImage": "",
+						"Title": "{ID}",
+						"Footnote": "{modifiedAt}",
+						"PreserveIconStackSpacing": false,
+						"StatusText": "{modifiedBy}",
+						"Subhead": "{createdAt}",
+						"SubstatusText": "{Type}",
+						"OnPress": "/ExpenseManager/Actions/ExpenseManager/LiabilityTransactions/NavToLiabilityTransactions_Detail.action",
+						"_Type": "ObjectTable.Type.ObjectCell"
+					},
+					"EmptySection": {
+						"Caption": "No record found!"
+					},
+					"Target": {
+						"EntitySet": "{@odata.readLink}/Transactions",
+						"Service": "/ExpenseManager/Services/ExpenseManager.service"
+					},
+					"_Type": "Section.Type.ObjectTable"
+				}
+			],
+			"DataSubscriptions": [
+				"LiabilityTransactions"
+			],
+			"_Type": "Control.Type.SectionedTable",
+			"_Name": "SectionedTable"
+		}
+	],
+	"_Type": "Page",
+	"_Name": "Liabilities_Detail"
+}

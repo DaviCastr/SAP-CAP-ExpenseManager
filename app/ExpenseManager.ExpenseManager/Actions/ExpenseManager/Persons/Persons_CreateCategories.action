@@ -1,0 +1,23 @@
+{
+    "ParentLink": {
+        "Property": "Categories",
+        "Target": {
+            "EntitySet": "Persons",
+            "ReadLink": "{@odata.readLink}"
+        }
+    },
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "Name": "#Page:Persons_CreateCategories/#Control:Name/#Value",
+        "ImageType": "#Page:Persons_CreateCategories/#Control:ImageType/#Value"
+    },
+    "Target": {
+        "EntitySet": "Categories",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateRelatedEntity"
+}

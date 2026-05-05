@@ -1,0 +1,12 @@
+{
+    "PopoverItems": [{
+            "Title": "Add Transactions",
+            "OnPress": "/ExpenseManager/Rules/ExpenseManager/Invoices/NavToInvoices_CreateTransactions.js"
+        },
+        {
+            "Title": "Delete",
+            "OnPress": "/ExpenseManager/Rules/ExpenseManager/Invoices/Invoices_DeleteConfirmation.js"
+        }
+    ],
+    "_Type": "Action.Type.PopoverMenu"
+}

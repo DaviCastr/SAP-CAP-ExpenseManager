@@ -1,0 +1,22 @@
+{
+    "ParentLink": {
+        "Property": "Shares",
+        "Target": {
+            "EntitySet": "Persons",
+            "ReadLink": "{@odata.readLink}"
+        }
+    },
+    "OnFailure": "/ExpenseManager/Actions/CreateEntityFailureMessage.action",
+    "OnSuccess": "/ExpenseManager/Actions/CreateEntitySuccessMessage.action",
+    "Properties": {
+        "User": "#Page:Persons_CreateShares/#Control:User/#Value"
+    },
+    "Target": {
+        "EntitySet": "Shares",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service"
+    },
+    "ActionResult": {
+        "_Name": "create"
+    },
+    "_Type": "Action.Type.ODataService.CreateRelatedEntity"
+}

@@ -1,0 +1,23 @@
+{
+    "_Type": "Action.Type.ODataService.UpdateEntity",
+    "Target": {
+        "EntitySet": "Persons",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service",
+        "ReadLink": "{@odata.readLink}"
+    },
+    "Properties": {
+        "Name": "#Page:Persons_Edit/#Control:Name/#Value",
+        "ImageType": "#Page:Persons_Edit/#Control:ImageType/#Value",
+        "Income": "#Page:Persons_Edit/#Control:Income/#Value",
+        "Currency_code": "#Page:Persons_Edit/#Control:Currency_code/#SelectedValue",
+        "Email": "#Page:Persons_Edit/#Control:Email/#Value",
+        "Phone": "#Page:Persons_Edit/#Control:Phone/#Value",
+        "ExpenseTarget": "#Page:Persons_Edit/#Control:ExpenseTarget/#Value"
+    },
+    "UpdateLinks": [],
+    "ActionResult": {
+        "_Name": "update"
+    },
+    "OnSuccess": "/ExpenseManager/Actions/UpdateEntitySuccessMessage.action",
+    "OnFailure": "/ExpenseManager/Actions/UpdateEntityFailureMessage.action"
+}

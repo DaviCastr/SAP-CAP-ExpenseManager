@@ -1,0 +1,1 @@
+export type { LiabilityTransactionService } from './protocols';

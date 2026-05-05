@@ -1,0 +1,13 @@
+{
+    "Target": {
+        "EntitySet": "LiabilityTransactions",
+        "Service": "/ExpenseManager/Services/ExpenseManager.service",
+        "ReadLink": "{@odata.readLink}"
+    },
+    "OnSuccess": "/ExpenseManager/Actions/DeleteEntitySuccessMessage.action",
+    "OnFailure": "/ExpenseManager/Actions/DeleteEntityFailureMessage.action",
+    "ActionResult": {
+        "_Name": "delete"
+    },
+    "_Type": "Action.Type.ODataService.DeleteEntity"
+}

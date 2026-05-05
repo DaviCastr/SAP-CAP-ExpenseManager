@@ -6,40 +6,100 @@ using {apps.dflc.expensemanager.entities as entities} from '../../db/entities';
 service ExpenseManager {
 
     @odata.draft.enabled: true
-    entity Persons      as projection on entities.Persons;
+    entity Persons               as projection on entities.Persons;
 
     @cds.redirection.target
-    entity Shares       as projection on entities.Shares;
+    entity Shares                as projection on entities.Shares;
 
     @cds.redirection.target
-    entity Entities     as projection on entities.Entities;
+    entity Entities              as projection on entities.Entities;
 
     @cds.redirection.target
-    entity Categories   as projection on entities.Categories;
+    entity Categories            as projection on entities.Categories;
 
     @cds.redirection.target
-    entity Cards        as projection on entities.Cards;
+    entity Cards                 as projection on entities.Cards;
 
     @readonly
     @cds.redirection.target
-    entity Invoices     as projection on entities.Invoices;
+    entity Invoices              as projection on entities.Invoices;
 
     @cds.redirection.target
-    entity Transactions as projection on entities.Transactions;
+    entity Transactions          as projection on entities.Transactions;
 
-    entity Backups      as projection on entities.Backups;
+    entity Backups               as projection on entities.Backups;
 
-    entity Liabilities  as projection on entities.Liabilities;
+    @cds.redirection.target
+    entity Liabilities           as projection on entities.Liabilities;
 
-    action   AddCardExpense(CardId: UUID, CategoryId: UUID, Description: String, Value: Decimal, Currency: String, TransactionDate: Date, Installments: Integer, FixedExpense: Boolean) returns entities.ActionResult;
-    action   ExportBackup()                                                                                                                                                             returns entities.ActionResult;
-    action   SendInvoices(Year: Integer, Month: Integer)                                                                                                                                returns entities.ActionResult;
-    action   SimulateExpenses(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                            returns entities.ActionResult;
-    action   SimulateFinancialFuture(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                     returns entities.ActionResult;
+    @cds.redirection.target
+    entity LiabilityTransactions as projection on entities.LiabilityTransactions;
 
-    function CardExpensesByCategories(PersonId: UUID, CardId: UUID, InvoiceId: UUID, Year: Integer, Month: Integer, TotalOnwards: Boolean)                                              returns entities.CategoriesReturn;
-    function RetrieveTransactionsByCategory(PersonId: UUID, CategoryId: UUID, Total: Boolean, Year: Integer, Month: Integer)                                                            returns entities.TransactionsReturn;
-    function RetrieveCompleteInvoice(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                     returns entities.CompleteInvoiceReturn;
+    action   AddCardExpense(CardId: UUID,
+                            CategoryId: UUID,
+                            Description: String,
+                            Value: Decimal,
+                            Currency: String,
+                            TransactionDate: Date,
+                            Installments: Integer,
+                            FixedExpense: Boolean)           returns entities.ActionResult;
+
+    action   ExportBackup()                                  returns entities.ActionResult;
+
+    action   SendInvoices(Year: Integer,
+                          Month: Integer)                    returns entities.ActionResult;
+
+    action   SimulateExpenses(PersonId: UUID,
+                              Year: Integer,
+                              Month: Integer)                returns entities.ActionResult;
+
+    action   SimulateFinancialFuture(PersonId: UUID,
+                                     Year: Integer,
+                                     Month: Integer)         returns entities.ActionResult;
+
+    //Liabilities
+    action   CreateLiability(PersonId: UUID,
+                             Name: String,
+                             OriginalAmount: Decimal,
+                             Currency: String)               returns entities.ActionResult;
+
+    action   PayLiability(LiabilityId: UUID,
+                          Amount: Decimal,
+                          Notes: String)                     returns entities.ActionResult;
+
+    action   CloseLiability(LiabilityId: UUID)               returns entities.ActionResult;
+
+    action   RenegotiateLiability(LiabilityId: UUID,
+                                  NewBalance: Decimal,
+                                  NewInstallments: Integer,
+                                  NewInterestRate: Decimal)  returns entities.ActionResult;
+
+    //Liability-Transaction
+    action   ReverseTransaction(TransactionId: UUID)         returns entities.ActionResult;
+    action   RecalculateLiability(LiabilityId: UUID)         returns entities.ActionResult;
+
+    function CardExpensesByCategories(PersonId: UUID,
+                                      CardId: UUID,
+                                      InvoiceId: UUID,
+                                      Year: Integer,
+                                      Month: Integer,
+                                      TotalOnwards: Boolean) returns entities.CategoriesReturn;
+
+    function RetrieveTransactionsByCategory(PersonId: UUID,
+                                            CategoryId: UUID,
+                                            Total: Boolean,
+                                            Year: Integer,
+                                            Month: Integer)  returns entities.TransactionsReturn;
+
+    function RetrieveCompleteInvoice(PersonId: UUID,
+                                     Year: Integer,
+                                     Month: Integer)         returns entities.CompleteInvoiceReturn;
+
+    //Liabilities
+    function Dashboard(PersonId: UUID)                       returns entities.ActionResult;
+    function Analytics(PersonId: UUID)                       returns entities.ActionResult;
+    function PaymentSchedule(LiabilityId: UUID)              returns entities.ActionResult;
+    function FutureImpact(PersonId: UUID)                    returns entities.ActionResult;
 
 }
 

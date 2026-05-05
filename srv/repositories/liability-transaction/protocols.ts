@@ -38,4 +38,16 @@ export interface LiabilityTransactionRepository extends BaseRepository {
     createEntry(
         data: LiabilityTransaction | LiabilityTransactions
     ): Promise<LiabilityTransactionModel[] | null>;
+
+    updateEntry(
+        Id: LiabilityTransaction["ID"],
+        data: Partial<LiabilityTransaction>
+    ): Promise<boolean>;
+
+    findByExternalReference(
+        ExternalReference: string
+    ): Promise<
+        LiabilityTransactionModel | null
+    > 
+    
 }

@@ -1,0 +1,101 @@
+{
+	"DesignTimeTarget": {
+		"Service": "/ExpenseManager/Services/ExpenseManager.service",
+		"EntitySet": "Transactions",
+		"QueryOptions": ""
+	},
+	"ActionBar": {
+		"Items": [
+			{
+				"Position": "Left",
+				"Caption": "Cancel",
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Transactions/Transactions_Cancel.js",
+				"_Type": "Control.Type.ActionBarItem"
+			},
+			{
+				"Position": "Right",
+				"SystemItem": "Save",
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Transactions/Transactions_UpdateEntity.js",
+				"_Type": "Control.Type.ActionBarItem"
+			}
+		],
+		"Caption": "$(L,Update_Transactions_Detail)",
+		"_Type": "Control.Type.ActionBar"
+	},
+	"Controls": [
+		{
+			"Sections": [
+				{
+					"_Type": "Section.Type.FormCell",
+					"_Name": "SectionFormCell0",
+					"Visible": true,
+					"Controls": [
+						{
+							"Mode": "Date",
+							"_Name": "Date",
+							"Value": "{Date}",
+							"Caption": "Date",
+							"_Type": "Control.Type.FormCell.DatePicker"
+						},
+						{
+							"Caption": "TotalAmount",
+							"_Name": "TotalAmount",
+							"Value": "{TotalAmount}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Amount",
+							"_Name": "Amount",
+							"Value": "{Amount}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "$(L,Currency)",
+							"AllowMultipleSelection": false,
+							"AllowEmptySelection": true,
+							"IsPickerDismissedOnSelection": true,
+							"IsSelectedSectionEnabled": true,
+							"PickerItems": {
+								"DisplayValue": "{code}",
+								"ReturnValue": "{code}",
+								"Target": {
+									"EntitySet": "Currencies",
+									"Service": "/ExpenseManager/Services/ExpenseManager.service"
+								}
+							},
+							"Value": "{Currency_code}",
+							"_Name": "Currency_code",
+							"_Type": "Control.Type.FormCell.ListPicker"
+						},
+						{
+							"Caption": "TotalInstallments",
+							"_Name": "TotalInstallments",
+							"Value": "{TotalInstallments}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Installment",
+							"_Name": "Installment",
+							"Value": "{Installment}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Description",
+							"_Name": "Description",
+							"Value": "{Description}",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						}
+					]
+				}
+			],
+			"_Name": "SectionedTable0",
+			"_Type": "Control.Type.SectionedTable"
+		}
+	],
+	"_Type": "Page",
+	"_Name": "Transactions_Edit"
+}

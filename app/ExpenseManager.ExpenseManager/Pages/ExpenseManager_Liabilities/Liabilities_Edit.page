@@ -1,0 +1,172 @@
+{
+	"DesignTimeTarget": {
+		"Service": "/ExpenseManager/Services/ExpenseManager.service",
+		"EntitySet": "Liabilities",
+		"QueryOptions": ""
+	},
+	"ActionBar": {
+		"Items": [
+			{
+				"Position": "Left",
+				"Caption": "Cancel",
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Liabilities/Liabilities_Cancel.js",
+				"_Type": "Control.Type.ActionBarItem"
+			},
+			{
+				"Position": "Right",
+				"SystemItem": "Save",
+				"OnPress": "/ExpenseManager/Rules/ExpenseManager/Liabilities/Liabilities_UpdateEntity.js",
+				"_Type": "Control.Type.ActionBarItem"
+			}
+		],
+		"Caption": "$(L,Update_Liabilities_Detail)",
+		"_Type": "Control.Type.ActionBar"
+	},
+	"Controls": [
+		{
+			"Sections": [
+				{
+					"_Type": "Section.Type.FormCell",
+					"_Name": "SectionFormCell0",
+					"Visible": true,
+					"Controls": [
+						{
+							"Caption": "Name",
+							"_Name": "Name",
+							"Value": "{Name}",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Creditor",
+							"_Name": "Creditor",
+							"Value": "{Creditor}",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Description",
+							"_Name": "Description",
+							"Value": "{Description}",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Type",
+							"_Name": "Type",
+							"Value": "{Type}",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Status",
+							"_Name": "Status",
+							"Value": "{Status}",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "OriginalAmount",
+							"_Name": "OriginalAmount",
+							"Value": "{OriginalAmount}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "CurrentBalance",
+							"_Name": "CurrentBalance",
+							"Value": "{CurrentBalance}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "PaidAmount",
+							"_Name": "PaidAmount",
+							"Value": "{PaidAmount}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "$(L,Currency)",
+							"AllowMultipleSelection": false,
+							"AllowEmptySelection": true,
+							"IsPickerDismissedOnSelection": true,
+							"IsSelectedSectionEnabled": true,
+							"PickerItems": {
+								"DisplayValue": "{code}",
+								"ReturnValue": "{code}",
+								"Target": {
+									"EntitySet": "Currencies",
+									"Service": "/ExpenseManager/Services/ExpenseManager.service"
+								}
+							},
+							"Value": "{Currency_code}",
+							"_Name": "Currency_code",
+							"_Type": "Control.Type.FormCell.ListPicker"
+						},
+						{
+							"Caption": "InterestMode",
+							"_Name": "InterestMode",
+							"Value": "{InterestMode}",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "InterestRate",
+							"_Name": "InterestRate",
+							"Value": "{InterestRate}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "Installments",
+							"_Name": "Installments",
+							"Value": "{Installments}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Caption": "InstallmentAmount",
+							"_Name": "InstallmentAmount",
+							"Value": "{InstallmentAmount}",
+							"KeyboardType": "Number",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						},
+						{
+							"Mode": "Date",
+							"_Name": "StartDate",
+							"Value": "{StartDate}",
+							"Caption": "StartDate",
+							"_Type": "Control.Type.FormCell.DatePicker"
+						},
+						{
+							"Mode": "Date",
+							"_Name": "FirstDueDate",
+							"Value": "{FirstDueDate}",
+							"Caption": "FirstDueDate",
+							"_Type": "Control.Type.FormCell.DatePicker"
+						},
+						{
+							"Mode": "Date",
+							"_Name": "EndDate",
+							"Value": "{EndDate}",
+							"Caption": "EndDate",
+							"_Type": "Control.Type.FormCell.DatePicker"
+						},
+						{
+							"Mode": "Date",
+							"_Name": "LastPaymentDate",
+							"Value": "{LastPaymentDate}",
+							"Caption": "LastPaymentDate",
+							"_Type": "Control.Type.FormCell.DatePicker"
+						},
+						{
+							"Caption": "ExternalReference",
+							"_Name": "ExternalReference",
+							"Value": "{ExternalReference}",
+							"_Type": "Control.Type.FormCell.SimpleProperty"
+						}
+					]
+				}
+			],
+			"_Name": "SectionedTable0",
+			"_Type": "Control.Type.SectionedTable"
+		}
+	],
+	"_Type": "Page",
+	"_Name": "Liabilities_Edit"
+}

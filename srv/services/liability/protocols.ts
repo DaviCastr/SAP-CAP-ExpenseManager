@@ -1,8 +1,3 @@
-// ======================================================
-// FILE:
-// src/services/liability/protocols.ts
-// ======================================================
-
 import { BaseService } from "../base";
 import { AbstractError } from "@/errors";
 import { Either } from "@sweet-monads/either";

@@ -23,19 +23,29 @@ export class LiabilityTransactionRepositoryImplementation
 
         let Entity = this.getEntity(ignoreDraft);
 
-        let sql = SELECT.from(Entity).where({ ID: Id });
+        let sql =
+            SELECT.from(Entity)
+                .where({ ID: Id });
 
-        let rows = await cds.run(sql);
+        let rows =
+            await cds.run(sql);
 
         if ((Entity as any)?.isDraft) {
 
-            Entity = this.getEntity(true);
+            Entity =
+                this.getEntity(true);
 
-            sql = SELECT.from(Entity).where({ ID: Id });
+            sql =
+                SELECT.from(Entity)
+                    .where({ ID: Id });
 
-            const activeRows = await cds.run(sql) || [];
+            const activeRows =
+                await cds.run(sql) || [];
 
-            rows = [...(rows || []), ...activeRows];
+            rows = [
+                ...(rows || []),
+                ...activeRows
+            ];
 
         }
 
@@ -46,30 +56,41 @@ export class LiabilityTransactionRepositoryImplementation
 
     }
 
- 
+
     public async findByIds(
         Ids: LiabilityTransaction["ID"][]
     ): Promise<LiabilityTransactionModel[] | null> {
 
-        let Entity = this.getEntity();
+        let Entity =
+            this.getEntity();
 
-        let sql = SELECT.from(Entity).where({
-            ID: { in: Ids }
-        });
+        let sql =
+            SELECT.from(Entity)
+                .where({
+                    ID: { in: Ids }
+                });
 
-        let rows = await cds.run(sql);
+        let rows =
+            await cds.run(sql);
 
         if ((Entity as any)?.isDraft) {
 
-            Entity = this.getEntity(true);
+            Entity =
+                this.getEntity(true);
 
-            sql = SELECT.from(Entity).where({
-                ID: { in: Ids }
-            });
+            sql =
+                SELECT.from(Entity)
+                    .where({
+                        ID: { in: Ids }
+                    });
 
-            const activeRows = await cds.run(sql) || [];
+            const activeRows =
+                await cds.run(sql) || [];
 
-            rows = [...(rows || []), ...activeRows];
+            rows = [
+                ...(rows || []),
+                ...activeRows
+            ];
 
         }
 
@@ -82,7 +103,9 @@ export class LiabilityTransactionRepositoryImplementation
         LiabilityId: Liability["ID"]
     ): Promise<LiabilityTransactionModel[] | null> {
 
-        return this.findByLiabilityIds([LiabilityId]);
+        return this.findByLiabilityIds(
+            [LiabilityId]
+        );
 
     }
 
@@ -91,25 +114,40 @@ export class LiabilityTransactionRepositoryImplementation
         LiabilityIds: Liability["ID"][]
     ): Promise<LiabilityTransactionModel[] | null> {
 
-        let Entity = this.getEntity();
+        let Entity =
+            this.getEntity();
 
-        let sql = SELECT.from(Entity).where({
-            Liability_ID: { in: LiabilityIds }
-        });
+        let sql =
+            SELECT.from(Entity)
+                .where({
+                    Liability_ID: {
+                        in: LiabilityIds
+                    }
+                });
 
-        let rows = await cds.run(sql);
+        let rows =
+            await cds.run(sql);
 
         if ((Entity as any)?.isDraft) {
 
-            Entity = this.getEntity(true);
+            Entity =
+                this.getEntity(true);
 
-            sql = SELECT.from(Entity).where({
-                Liability_ID: { in: LiabilityIds }
-            });
+            sql =
+                SELECT.from(Entity)
+                    .where({
+                        Liability_ID: {
+                            in: LiabilityIds
+                        }
+                    });
 
-            const activeRows = await cds.run(sql) || [];
+            const activeRows =
+                await cds.run(sql) || [];
 
-            rows = [...(rows || []), ...activeRows];
+            rows = [
+                ...(rows || []),
+                ...activeRows
+            ];
 
         }
 
@@ -122,31 +160,93 @@ export class LiabilityTransactionRepositoryImplementation
         LiabilityId: Liability["ID"]
     ): Promise<LiabilityTransactionModel[] | null> {
 
-        let Entity = this.getEntity();
+        let Entity =
+            this.getEntity();
 
-        let sql = SELECT.from(Entity).where({
-            Liability_ID: LiabilityId,
-            Type: "PAYMENT"
-        });
+        let sql =
+            SELECT.from(Entity)
+                .where({
+                    Liability_ID:
+                        LiabilityId,
+                    Type:
+                        "PAYMENT"
+                });
 
-        let rows = await cds.run(sql);
+        let rows =
+            await cds.run(sql);
 
         if ((Entity as any)?.isDraft) {
 
-            Entity = this.getEntity(true);
+            Entity =
+                this.getEntity(true);
 
-            sql = SELECT.from(Entity).where({
-                Liability_ID: LiabilityId,
-                Type: "PAYMENT"
-            });
+            sql =
+                SELECT.from(Entity)
+                    .where({
+                        Liability_ID:
+                            LiabilityId,
+                        Type:
+                            "PAYMENT"
+                    });
 
-            const activeRows = await cds.run(sql) || [];
+            const activeRows =
+                await cds.run(sql) || [];
 
-            rows = [...(rows || []), ...activeRows];
+            rows = [
+                ...(rows || []),
+                ...activeRows
+            ];
 
         }
 
         return LiabilityTransactionModel.mapModel(rows);
+
+    }
+
+
+    public async findByExternalReference(
+        ExternalReference: string
+    ): Promise<
+        LiabilityTransactionModel | null
+    > {
+
+        let Entity =
+            this.getEntity();
+
+        let sql =
+            SELECT.from(Entity)
+                .where({
+                    ExternalReference
+                });
+
+        let rows =
+            await cds.run(sql);
+
+        if ((Entity as any)?.isDraft) {
+
+            Entity =
+                this.getEntity(true);
+
+            sql =
+                SELECT.from(Entity)
+                    .where({
+                        ExternalReference
+                    });
+
+            const activeRows =
+                await cds.run(sql) || [];
+
+            rows = [
+                ...(rows || []),
+                ...activeRows
+            ];
+
+        }
+
+        const models =
+            LiabilityTransactionModel.mapModel(rows);
+
+        return models?.[0] || null;
 
     }
 
@@ -160,30 +260,62 @@ export class LiabilityTransactionRepositoryImplementation
                 LiabilityId
             ) || [];
 
-        return rows.reduce((sum, item) => {
+        return rows.reduce(
+            (sum, item) => {
 
-            return sum +
-                Number(item.Amount?.toNumber() || 0);
+                return sum +
+                    Number(
+                        item.Amount
+                            ?.toNumber() || 0
+                    );
 
-        }, 0);
+            },
+            0
+        );
 
     }
 
 
     public async createEntry(
-        data: LiabilityTransaction | LiabilityTransactions
-    ): Promise<LiabilityTransactionModel[] | null> {
+        data:
+            LiabilityTransaction |
+            LiabilityTransactions
+    ): Promise<
+        LiabilityTransactionModel[] | null
+    > {
 
         const payload =
-            Array.isArray(data) ? data : [data];
+            Array.isArray(data)
+                ? data
+                : [data];
 
-        await INSERT.into(
-            this.getEntity(true)
-        ).entries(payload);
+        await INSERT
+            .into(this.getEntity(true))
+            .entries(payload);
 
         return this.findByIds(
-            payload.map(x => x.ID)
+            payload.map(
+                item => item.ID
+            )
         );
+
+    }
+
+
+    public async updateEntry(
+        Id: LiabilityTransaction["ID"],
+        data: Partial<LiabilityTransaction>
+    ): Promise<boolean> {
+
+        await UPDATE(
+            this.getEntity(true)
+        )
+            .set(data)
+            .where({
+                ID: Id
+            });
+
+        return true;
 
     }
 

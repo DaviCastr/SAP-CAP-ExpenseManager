@@ -12,5 +12,13 @@
         "*.properties": "default",
         "*.fragment": "default"
     },
-    "SAP HANA Database Explorer.ShowXsAdvancedConnections": true
+    "SAP HANA Database Explorer.ShowXsAdvancedConnections": true,
+    "mdk.uieditor": {
+        "left": {
+            "visible": true
+        },
+        "right": {
+            "visible": true
+        }
+    }
 }

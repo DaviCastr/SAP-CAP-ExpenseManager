@@ -1,0 +1,1 @@
+{"version":3,"file":"liability-transaction.js","sourceRoot":"","sources":["../../../srv/routes/liability-transaction.ts"],"names":[],"mappings":";;;;;AAAA,oFAEkD;AAElD,mDAA2B;AAE3B,MAAM,oBACF,SAAQ,aAAG,CAAC,kBAAkB;IAE9B,IAAI;QAEA,yDAAiC,CAAC,IAAI,CAAC,IAAI,CAAC,CAAC;QAE7C,OAAO,KAAK,CAAC,IAAI,EAAE,CAAC;IAExB,CAAC;CAEJ;AAED,MAAM,CAAC,OAAO,GAAG,oBAAoB,CAAC"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"permission-denied.js","sourceRoot":"","sources":["../../../srv/errors/permission-denied.ts"],"names":[],"mappings":";;;AAAA,gDAAkD;AAElD,MAAa,gBAAiB,SAAQ,wBAAa;IAE/C,YAAY,OAAe,EAAE,YAAoB,GAAG,EAAE,KAAa;QAE/D,KAAK,CAAC,OAAO,EAAE,SAAS,EAAE,KAAK,CAAC,CAAC;IAErC,CAAC;IAED,IAAW,OAAO;QACd,OAAO,IAAI,CAAC,OAAO,CAAC;IACxB,CAAC;CACJ;AAXD,4CAWC"}

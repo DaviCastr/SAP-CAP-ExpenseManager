@@ -1,0 +1,1 @@
+{"version":3,"file":"invoice.js","sourceRoot":"","sources":["../../../../srv/factories/controllers/invoice.ts"],"names":[],"mappings":";;;AACA,yEAAuF;AACvF,iDAA6D;AAE7D,MAAM,qBAAqB,GAAG,GAAsB,EAAE;IAElD,OAAO,IAAI,gDAA+B,CAAC,gCAAsB,CAAC,CAAC;AAEvE,CAAC,CAAA;AAEY,QAAA,yBAAyB,GAAG,qBAAqB,EAAE,CAAC"}

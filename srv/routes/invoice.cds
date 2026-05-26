@@ -18,7 +18,7 @@ service InvoiceService {
                         S.Person_ID = Person.ID and
                         S.User = $user and
                         E.Entity = 6 and
-                        E.Permission is not null
+                        E.Permission <> null null
                     )`
         },
 
@@ -37,5 +37,6 @@ service InvoiceService {
 
 annotate InvoiceService with @requires: [
     'authenticated-user',
+    'ExpenseManagerUser',
     'any'
 ];

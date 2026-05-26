@@ -1,3 +1,4 @@
+import '../configs/module-alias';
 import { oBackupRouteFactory } from '@/factories/routes/backup';
 import cds from '@sap/cds';
 

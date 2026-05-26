@@ -1,3 +1,4 @@
+import '../configs/module-alias';
 import { oTransactionRouteFactory } from '@/factories/routes/transaction';
 import cds from '@sap/cds';
 

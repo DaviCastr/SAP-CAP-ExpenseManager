@@ -6,6 +6,6 @@ export type FullRequestParams<ExpectedResults> = Request & {
 };
 
 export interface BaseRoute {
-    returnRejectMessage(Request: Request, Result: BaseControllerResponse): never
+    returnRejectMessage(Request: Request, Result: BaseControllerResponse): any
     returnErrorMessage(Request: Request, Result: BaseControllerResponse): Error
 }

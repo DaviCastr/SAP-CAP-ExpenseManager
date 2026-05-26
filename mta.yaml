@@ -15,14 +15,17 @@ modules:
     type: nodejs
     path: gen/srv
     parameters:
-      instances: 1
       buildpack: nodejs_buildpack
+      disk-quota: 256M
+      memory: 512M
     build-parameters:
       builder: custom
       commands:
         - cp ../../.cdsrc.json .
-      ignore:
+      ignore: 
         - node_modules
+    properties:
+      OPTIMIZE_MEMORY: true
     provides:
       - name: srv-api # required by consumers of CAP services (e.g. approuter)
         properties:
@@ -63,11 +66,6 @@ modules:
           name: srv-api
           url: "~{srv-url}"
           forwardAuthToken: true
-    provides:
-      - name: app-api
-        properties:
-          app-protocol: ${protocol}
-          app-uri: ${default-uri}
 
 resources:
   - name: ExpenseManager-db
@@ -81,6 +79,7 @@ resources:
     properties:
       hdi-container-name: '${service-name}'
       hdi-service-name: '${service-name}'
+
   - name: ExpenseManager-uaa
     type: org.cloudfoundry.managed-service
     parameters:

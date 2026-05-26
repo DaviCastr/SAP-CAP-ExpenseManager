@@ -1,3 +1,4 @@
+import '../configs/module-alias';
 import { oCardRouteFactory } from '@/factories/routes/card';
 import { oCategoryRouteFactory } from '@/factories/routes/category';
 import { oEntityRouteFactory } from '@/factories/routes/entity';

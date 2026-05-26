@@ -18,7 +18,7 @@ service ShareService {
                         S.Person_ID = Person.ID and
                         S.User = $user and
                         E.Entity = 2 and
-                        E.Permission is not null
+                        E.Permission <> null null
                     )`
         },
 

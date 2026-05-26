@@ -19,7 +19,7 @@ service LiabilityTransactionService {
                             S.Person_ID = Liability.Person.ID and
                             S.User = $user and
                             E.Entity = 10 and
-                            E.Permission is not null
+                            E.Permission <> null null
                     )`
         },
 
@@ -43,5 +43,6 @@ service LiabilityTransactionService {
 
 annotate LiabilityTransactionService with @requires: [
     'authenticated-user',
+    'ExpenseManagerUser',
     'any'
 ];

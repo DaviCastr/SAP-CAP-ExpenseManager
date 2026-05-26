@@ -1,5 +1,6 @@
+import '../configs/module-alias';
 import { oMainRouteFactory } from '@/factories/routes/main';
-import cds, { Request, Service } from '@sap/cds';
+import cds from '@sap/cds';
 
 class GestaoGastos extends cds.ApplicationService {
 

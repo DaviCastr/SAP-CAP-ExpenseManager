@@ -49,7 +49,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
     }
 
-    public returnRejectMessage(Request: Request, Result: BaseControllerResponse): never {
+    public returnRejectMessage(Request: Request, Result: BaseControllerResponse): any {
 
         const oMessages = cds.i18n.messages;
 

@@ -21,7 +21,7 @@ service LiabilityService {
                             S.Person_ID = Person.ID and
                             S.User = $user and
                             E.Entity = 9 and
-                            E.Permission is not null
+                            E.Permission <> null null
                     )`
         },
 
@@ -64,5 +64,6 @@ service LiabilityService {
 
 annotate LiabilityService with @requires: [
     'authenticated-user',
+    'ExpenseManagerUser',
     'any'
 ];

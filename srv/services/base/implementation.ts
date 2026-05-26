@@ -225,7 +225,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     }
 
-    
+
     public abstract entityCode(): number;
 
 
@@ -454,7 +454,12 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
                                         'and',
                                         { ref: ['E', 'Entity'] }, '=', { val: oEntityCode },
                                         'and',
-                                        { ref: ['E', 'Permission'] }, 'is not', { val: null }
+                                        {
+                                            xpr: [
+                                                { ref: ['E', 'Permission'] },
+                                                'is not null'
+                                            ]
+                                        }
                                     ]
                                 }
                             }

@@ -1,3 +1,4 @@
+import '../configs/module-alias';
 import {
     oLiabilityRouteFactory
 } from "@/factories/routes/liability";

@@ -1,3 +1,4 @@
+import '../configs/module-alias';
 import { oCategoryRouteFactory } from '@/factories/routes/category';
 import cds, { Request, Service } from '@sap/cds';
 

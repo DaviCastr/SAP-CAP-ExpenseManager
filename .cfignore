@@ -1,0 +1,7 @@
+node_modules
+gen
+dist
+coverage
+.git
+.vscode
+mta_archives

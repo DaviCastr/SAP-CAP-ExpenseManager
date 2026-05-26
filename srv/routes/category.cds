@@ -18,7 +18,7 @@ service CategoryService {
                         S.Person_ID = Person.ID and
                         S.User = $user and
                         E.Entity = 4 and
-                        E.Permission is not null
+                        E.Permission <> null null
                     )`
         },
 
@@ -34,5 +34,6 @@ service CategoryService {
 
 annotate CategoryService with @requires: [
     'authenticated-user',
+    'ExpenseManagerUser',
     'any'
 ];

@@ -1,5 +1,54 @@
 {
-  "scopes": [],
-  "attributes": [],
-  "role-templates": []
+  "xsappname": "ExpenseManager-${space}",
+  "tenant-mode": "dedicated",
+  "scopes": [
+    {
+      "name": "uaa.user",
+      "description": "UAA User"
+    },
+    {
+      "name": "$XSAPPNAME.ExpenseManagerUser",
+      "description": "User scope"
+    }
+  ],
+  "attributes": [
+    {
+      "name": "id",
+      "description": "User id",
+      "valueType": "string",
+      "valueRequired": false
+    },
+    {
+      "name": "groups",
+      "description": "User group",
+      "valueType": "string",
+      "valueRequired": false
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "Token_Exchange",
+      "description": "UAA",
+      "scope-references": [
+        "uaa.user"
+      ]
+    },
+    {
+      "name": "ExpenseManagerUser",
+      "description": "Application User",
+      "scope-references": [
+        "$XSAPPNAME.ExpenseManagerUser"
+      ]
+    }
+  ],
+  "oauth2-configuration": {
+    "credential-types": [
+      "binding-secret",
+      "x509"
+    ],
+    "redirect-uris": [
+      "https://*.applicationstudio.cloud.sap/**",
+      "https://*.cfapps.us10-001.hana.ondemand.com/**"
+    ]
+  }
 }

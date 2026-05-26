@@ -1,3 +1,4 @@
+import '../configs/module-alias';
 import { oEntityRouteFactory } from '@/factories/routes/entity';
 import cds from '@sap/cds';
 

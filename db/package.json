@@ -1,7 +1,7 @@
 {
   "name": "deploy",
   "dependencies": {
-    "@sap/hana-client": "^2.25.31",
+    "@sap/hana-client": "^2.28.20",
     "@sap/hdi-deploy": "^5.5.0"
   },
   "engines": {

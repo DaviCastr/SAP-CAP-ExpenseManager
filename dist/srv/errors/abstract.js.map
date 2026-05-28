@@ -1,1 +1,0 @@
-{"version":3,"file":"abstract.js","sourceRoot":"","sources":["../../../srv/errors/abstract.ts"],"names":[],"mappings":";;;AAAA,MAAa,aAAc,SAAQ,KAAK;IAC7B,IAAI,CAAS;IAEpB,YAAY,OAAe,EAAE,SAAiB,EAAE,KAAa;QACzD,KAAK,CAAC,OAAO,CAAC,CAAC;QAEf,IAAI,CAAC,IAAI,GAAG,SAAS,CAAC;QACtB,IAAI,CAAC,OAAO,GAAG,OAAO,CAAC;QACvB,IAAI,CAAC,KAAK,GAAG,KAAK,CAAC;IACvB,CAAC;CACJ;AAVD,sCAUC"}

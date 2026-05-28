@@ -1,6 +1,0 @@
-{
-    "ModalPageFullscreen": false,
-    "ModalPage": true,
-    "PageToOpen": "/ExpenseManager/Pages/ExpenseManager_Shares/Shares_Create.page",
-    "_Type": "Action.Type.Navigation"
-}

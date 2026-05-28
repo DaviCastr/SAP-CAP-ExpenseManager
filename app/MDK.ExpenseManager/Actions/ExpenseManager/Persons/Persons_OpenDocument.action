@@ -1,5 +1,0 @@
-{
-    "_Type": "Action.Type.OpenDocument",
-    "Path": "/ExpenseManager/Services/ExpenseManager.service/{@odata.readLink}/Image",
-    "MimeType": "image/jpeg"
-}

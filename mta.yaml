@@ -8,24 +8,18 @@ build-parameters:
   before-all:
     - builder: custom
       commands:
-        - yarn
+        - npm ci
         - npx cds build --production
 modules:
+
   - name: ExpenseManager-srv
     type: nodejs
     path: gen/srv
     parameters:
+      instances: 1
       buildpack: nodejs_buildpack
-      disk-quota: 256M
-      memory: 512M
     build-parameters:
-      builder: custom
-      commands:
-        - cp ../../.cdsrc.json .
-      ignore: 
-        - node_modules
-    properties:
-      OPTIMIZE_MEMORY: true
+      builder: npm-ci
     provides:
       - name: srv-api # required by consumers of CAP services (e.g. approuter)
         properties:
@@ -41,44 +35,36 @@ modules:
       buildpack: nodejs_buildpack
     requires:
       - name: ExpenseManager-db
-    build-parameters:
-      ignore:
-        - node_modules
 
-  - name: ExpenseManager-app-router
+  - name: ExpenseManager
     type: approuter.nodejs
     path: app/router
     parameters:
+      keep-existing-routes: true
       disk-quota: 256M
       memory: 256M
-      keep-existing-routes: true
-    build-parameters:
-      builder: custom
-      commands:
-        - yarn
-      ignore:
-        - node_modules
     requires:
-      - name: ExpenseManager-uaa
       - name: srv-api
-        group: descriptions
+        group: destinations
         properties:
-          name: srv-api
-          url: "~{srv-url}"
+          name: srv-api # must be used in xs-app.json as well
+          url: ~{srv-url}
           forwardAuthToken: true
+      - name: ExpenseManager-uaa
+
+    provides:
+      - name: app-api
+        properties:
+          app-protocol: ${protocol}
+          app-uri: ${default-uri}
 
 resources:
+
   - name: ExpenseManager-db
     type: com.sap.xs.hdi-container
     parameters:
       service: hana
       service-plan: hdi-shared
-      config:
-        schema: EXPENSEMANAGERDB
-        makeUniqueName: false
-    properties:
-      hdi-container-name: '${service-name}'
-      hdi-service-name: '${service-name}'
 
   - name: ExpenseManager-uaa
     type: org.cloudfoundry.managed-service

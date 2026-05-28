@@ -1,6 +1,0 @@
-{
-    "ModalPageFullscreen": false,
-    "ModalPage": true,
-    "PageToOpen": "/ExpenseManager/Pages/ExpenseManager_Persons/Persons_CreateCategories.page",
-    "_Type": "Action.Type.Navigation"
-}

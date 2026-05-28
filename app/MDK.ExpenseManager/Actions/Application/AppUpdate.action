@@ -1,8 +1,0 @@
-{
-    "_Type": "Action.Type.ApplicationUpdate",
-    "ActionResult": {
-        "_Name": "AppUpdate"
-    },
-    "OnFailure": "/ExpenseManager/Rules/Application/AppUpdateFailure.js",
-    "OnSuccess": "/ExpenseManager/Rules/Application/AppUpdateSuccess.js"
-}

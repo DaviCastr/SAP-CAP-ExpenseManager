@@ -454,12 +454,7 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
                                         'and',
                                         { ref: ['E', 'Entity'] }, '=', { val: oEntityCode },
                                         'and',
-                                        {
-                                            xpr: [
-                                                { ref: ['E', 'Permission'] },
-                                                'is not null'
-                                            ]
-                                        }
+                                        { ref: ['E', 'Permission'] }, '>', { val: 0 },
                                     ]
                                 }
                             }

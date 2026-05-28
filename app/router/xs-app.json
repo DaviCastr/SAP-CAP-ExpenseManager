@@ -28,12 +28,6 @@
       "destination": "srv-api",
       "csrfProtection": true,
       "authenticationType": "xsuaa"
-    },
-    {
-      "source": "^/service/ExpenseManager/(.*)$",
-      "target": "$1",
-      "destination": "srv-api",
-      "csrfProtection": true
     }
   ]
 }

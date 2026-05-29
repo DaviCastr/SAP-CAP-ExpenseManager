@@ -104,7 +104,7 @@ service ExpenseManager {
 }
 
 annotate ExpenseManager with @requires: [
-    'authenticated-user',
+    //'authenticated-user',
     'ExpenseManagerUser',
-    'any'
+    //'any'
 ];

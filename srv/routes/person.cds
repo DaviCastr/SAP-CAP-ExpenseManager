@@ -20,6 +20,7 @@ service PersonService {
 }
 
 annotate PersonService with @requires: [
-    'authenticated-user',
-    'any'
+    //'authenticated-user',
+    'ExpenseManagerUser',
+    //'any'
 ];

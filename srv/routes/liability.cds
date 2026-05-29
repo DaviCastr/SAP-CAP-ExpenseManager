@@ -7,31 +7,31 @@ service LiabilityService {
 
     @odata.draft.enabled
 
-    @restrict: [
+    // @restrict: [
 
-        {
-            grant: 'READ',
-            where: `Person.createdBy = $user or
-                    exists (
-                        select 1
-                        from apps.dflc.expensemanager.entities.Shares as S
-                        inner join apps.dflc.expensemanager.entities.Entities as E
-                            on E.Share_ID = S.ID
-                        where
-                            S.Person_ID = Person.ID and
-                            S.User = $user and
-                            E.Entity = 9 and
-                            E.Permission <> null null
-                    )`
-        },
+    //     {
+    //         grant: 'READ',
+    //         where: `Person.createdBy = $user or
+    //                 exists (
+    //                     select 1
+    //                     from apps.dflc.expensemanager.entities.Shares as S
+    //                     inner join apps.dflc.expensemanager.entities.Entities as E
+    //                         on E.Share_ID = S.ID
+    //                     where
+    //                         S.Person_ID = Person.ID and
+    //                         S.User = $user and
+    //                         E.Entity = 9 and
+    //                         E.Permission <> null 
+    //                 )`
+    //     },
 
-        {grant: [
-            'CREATE',
-            'UPDATE',
-            'DELETE'
-        ]}
+    //     {grant: [
+    //         'CREATE',
+    //         'UPDATE',
+    //         'DELETE'
+    //     ]}
 
-    ]
+    // ]
 
     entity Liabilities as projection on entities.Liabilities;
 
@@ -63,7 +63,7 @@ service LiabilityService {
 }
 
 annotate LiabilityService with @requires: [
-    'authenticated-user',
+    //'authenticated-user',
     'ExpenseManagerUser',
-    'any'
+    //'any'
 ];

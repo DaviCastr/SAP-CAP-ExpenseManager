@@ -25,7 +25,7 @@ service BackupService {
 }
 
 annotate BackupService with @requires: [
-    'authenticated-user',
+    //'authenticated-user',
     'ExpenseManagerUser',
-    'any'
+    //'any'
 ];

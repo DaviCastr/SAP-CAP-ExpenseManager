@@ -6,34 +6,34 @@ using {apps.dflc.expensemanager.entities as entities} from '../../db/entities';
 service CategoryService {
 
     @odata.draft.enabled
-    @restrict: [
-        {
-            grant: 'READ',
-            where: `Person.createdBy = $user or 
-                    exists (
-                        select 1 from apps.dflc.expensemanager.entities.Shares as S
-                        inner join apps.dflc.expensemanager.entities.Entities as E
-                            on E.Share_ID = S.ID
-                        where 
-                        S.Person_ID = Person.ID and
-                        S.User = $user and
-                        E.Entity = 4 and
-                        E.Permission <> null null
-                    )`
-        },
+    // @restrict: [
+    //     {
+    //         grant: 'READ',
+    //         where: `Person.createdBy = $user or 
+    //                 exists (
+    //                     select 1 from apps.dflc.expensemanager.entities.Shares as S
+    //                     inner join apps.dflc.expensemanager.entities.Entities as E
+    //                         on E.Share_ID = S.ID
+    //                     where 
+    //                     S.Person_ID = Person.ID and
+    //                     S.User = $user and
+    //                     E.Entity = 4 and
+    //                     E.Permission <> null
+    //                 )`
+    //     },
 
-        {grant: [
-            'CREATE',
-            'UPDATE',
-            'DELETE'
-        ]}
-    ]
+    //     {grant: [
+    //         'CREATE',
+    //         'UPDATE',
+    //         'DELETE'
+    //     ]}
+    // ]
     entity Categories as projection on entities.Categories;
 
 }
 
 annotate CategoryService with @requires: [
-    'authenticated-user',
+    //'authenticated-user',
     'ExpenseManagerUser',
-    'any'
+    //'any'
 ];

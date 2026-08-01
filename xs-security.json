@@ -21,7 +21,8 @@
       "https://*.cfapps.us10-001.hana.ondemand.com/**",
       "https://*.cfapps.us10-003.hana.ondemand.com/**",
       "https://freebuff.com/**",
-      "*localhost**"
+      "*localhost**",
+      "https://*.github.io/**"
     ]
   }
 }

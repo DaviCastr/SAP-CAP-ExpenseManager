@@ -1,7 +1,6 @@
 using {apps.dflc.expensemanager.entities as entities} from '../../db/entities';
 
 @path    : '/service/ExpenseManager'
-@requires: 'authenticated-user'
 
 service ExpenseManager {
 

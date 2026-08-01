@@ -6,7 +6,6 @@
     "@cap-js/hana": "^2.8.0",
     "@sap/cds": "^9.2.0",
     "@sap/hana-client": "^2.28.20",
-    "@sap/mdk-tools": "^1.15.0",
     "@sap/xssec": "^4.13.0",
     "@sweet-monads/either": "^3.3.1",
     "adm-zip": "^0.5.17",

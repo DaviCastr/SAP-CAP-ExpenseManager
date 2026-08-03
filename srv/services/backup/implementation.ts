@@ -62,6 +62,13 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
     }
 
 
+    public async beforeDelete(Backup: Backup, User: User): Promise<Either<AbstractError, boolean>> {
+
+        return right(true);
+
+    }
+
+
     public async processBackupDelete(Backup: Backup): Promise<Either<AbstractError, boolean>> {
 
         try {

@@ -68,6 +68,12 @@ export class ServiceLocator {
 
         }
 
+        if (!oEntity && this.GestorService) {
+
+            oEntity = (this.GestorService as any).entities?.[EntityName];
+
+        }
+
         return oEntity as entity;
 
     }

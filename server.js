@@ -55,7 +55,7 @@ cds.on('bootstrap', (app) => {
       res.set('Access-Control-Allow-Origin', origin)
       res.set('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS')
       res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-csrf-token, Prefer, If-Match, If-None-Match, sap-context-token, sap-cancel-on-close, sap-correlationid, mime-version, odata-version, odata-maxversion')
-      res.set('Access-Control-Expose-Headers', 'x-csrf-token')
+      res.set('Access-Control-Expose-Headers', 'x-csrf-token, OData-Version, odata-version, SAP-Message, sap-message, ETag, Location')
       res.set('Vary', 'Origin')
       if (req.method === 'OPTIONS') {
         return res.status(204).end()

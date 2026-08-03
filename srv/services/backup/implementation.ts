@@ -1,4 +1,4 @@
-import { User } from '@sap/cds';
+import cds, { User } from '@sap/cds';
 import { AbstractError } from '@/errors';
 import { Backup, Card, Category, Entity, Invoice, Person, Share, Transaction } from '@models/apps/dflc/expensemanager/entities';
 import { Either, left, right } from '@sweet-monads/either';
@@ -345,17 +345,11 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
             const tables = ['Persons', 'Shares', 'Entities', 'Categories', 'Cards', 'Invoices', 'Transactions'];
 
-            const promises: Promise<any>[] = [];
-
             for (const table of tables) {
 
-                promises.push(this.processTable(table, workbook, binaryFiles));
+                await this.processTable(table, workbook, binaryFiles);
 
             }
-
-            await Promise.all(
-                promises
-            );
 
             return right(true);
 
@@ -430,7 +424,7 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
         }
 
-        await this.batchInsert(service, inserts);
+        await this.batchInsert(table, inserts);
 
     }
 
@@ -481,17 +475,17 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
     }
 
 
-    private async batchInsert(service: BaseServiceImplementation<any>, inserts: any[]) {
+    private async batchInsert(table: string, inserts: any[]) {
 
         if (!inserts.length) return;
 
-        const chunkSize = 1;
+        const entity = ServiceLocator.getEntity(table);
 
-        for (let i = 0; i < inserts.length; i += chunkSize) {
+        if (!entity) return;
 
-            const chunk = inserts.slice(i, i + chunkSize);
+        for (const item of inserts) {
 
-            await service.Repository.createEntry(chunk);
+            await cds.run(cds.ql.UPSERT.into(entity).entries(item));
 
         }
 

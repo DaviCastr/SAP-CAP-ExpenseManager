@@ -12,6 +12,7 @@ import { oLiabilityRouteFactory } from "@/factories/routes/liability";
 import { oLiabilityTransactionRouteFactory } from "@/factories/routes/liability-transaction";
 import { oCardRouteFactory } from "@/factories/routes/card";
 import { oPersonRouteFactory } from "@/factories/routes/person";
+import { oBackupRouteFactory } from "@/factories/routes/backup";
 
 export class MainRouteImplementation extends BaseRouteImplementation<any> implements MainRoute {
 
@@ -47,6 +48,8 @@ export class MainRouteImplementation extends BaseRouteImplementation<any> implem
         oLiabilityRouteFactory.main(Service);
 
         oLiabilityTransactionRouteFactory.main(Service);
+
+        oBackupRouteFactory.main(Service);
 
     }
 

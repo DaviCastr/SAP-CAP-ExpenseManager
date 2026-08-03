@@ -19,7 +19,8 @@
   "oauth2-configuration": {
     "redirect-uris": [
       "https://*.cfapps.us10-003.hana.ondemand.com/**",
-      "http://localhost:*/**"
+      "http://localhost:*/**",
+      "https://davicastr.github.io/**"
     ]
   }
 }

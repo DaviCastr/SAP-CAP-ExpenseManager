@@ -10,6 +10,7 @@ build-parameters:
       commands:
         - npm ci
         - npx cds build --production
+        - node -e "require('fs').copyFileSync('server.js', 'gen/srv/server.js')"
 modules:
 
   - name: ExpenseManager-srv

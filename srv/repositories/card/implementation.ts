@@ -148,9 +148,9 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
         Month: number
     ): Promise<any[]> {
 
-        const { Cards } = cds.entities;
+        const oCardsEntity = this.getEntity();
 
-        let rows = await SELECT.from(Cards)
+        let rows = await SELECT.from(oCardsEntity)
             .columns(
 
                 'ID as CardID',

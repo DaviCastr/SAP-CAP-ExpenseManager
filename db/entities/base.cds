@@ -272,16 +272,21 @@ type Transactionsype {
 type CompleteInvoiceReturn {
     Year               : Integer;
     Month              : Integer;
-    InvoiceDescription : String;
+    Description        : String;
     TotalAmount        : Decimal;
     CurrencyCode       : String;
+    Currency           : { code : String(3) };
+    KPIs               : {
+        TotalTransactions : Integer;
+        TotalCards        : Integer;
+        TotalCategories   : Integer;
+    };
     Transactions       : many TrasactionsCompleteInvoice;
 }
 
 type TrasactionsCompleteInvoice {
     ID                : UUID;
-    CardID            : UUID;
-    CardName          : String(50);
+    Identifier        : UUID;
     Date              : Date;
     Amount            : Decimal;
     TotalAmount       : Decimal;
@@ -289,6 +294,19 @@ type TrasactionsCompleteInvoice {
     Installment       : Integer;
     TotalInstallments : Integer;
     Description       : String(255);
+    Card              : {
+        ID        : UUID;
+        Name      : String(50);
+        ImagePath : String;
+    };
+    Category          : {
+        ID        : UUID;
+        Name      : String(50);
+        ImagePath : String;
+    };
+    Invoice           : {
+        ID : UUID;
+    };
 }
 
 type ActionResult {

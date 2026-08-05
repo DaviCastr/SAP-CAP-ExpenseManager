@@ -1,11 +1,17 @@
-const cds = require('@sap/cds')
-const express = require('express')
+import cds from '@sap/cds'
+import express from 'express'
 
-const ALLOWED_ORIGINS = {
+const ALLOWED_ORIGINS: Record<string, 1> = {
   'https://davicastr.github.io': 1
 }
 
-function getXsuaaCredentials() {
+interface XsuaaCredentials {
+  url: string
+  clientid: string
+  clientsecret: string
+}
+
+function getXsuaaCredentials(): XsuaaCredentials {
   try {
     const vcap = JSON.parse(process.env.VCAP_SERVICES || '{}')
     const xsuaa = (vcap.xsuaa || [])[0]
@@ -19,13 +25,13 @@ function getXsuaaCredentials() {
   const auth = cds.env.requires && cds.env.requires.auth
   const credentials = auth && auth.credentials
   if (credentials && credentials.url && credentials.clientid && credentials.clientsecret) {
-    return credentials
+    return credentials as any
   }
 
   throw new Error('XSUAA credentials are not available')
 }
 
-async function callXsuaaTokenEndpoint(payload) {
+async function callXsuaaTokenEndpoint(payload: Record<string, string>): Promise<Record<string, unknown>> {
   const { url, clientid, clientsecret } = getXsuaaCredentials()
   const params = new URLSearchParams({
     ...payload,
@@ -65,7 +71,7 @@ cds.on('bootstrap', (app) => {
   })
 
   app.post('/auth/login', express.json(), async (req, res) => {
-    const { code, redirect_uri } = req.body || {}
+    const { code, redirect_uri } = (req.body || {}) as { code?: string; redirect_uri?: string }
 
     if (!code) {
       return res.status(400).json({
@@ -77,12 +83,17 @@ cds.on('bootstrap', (app) => {
     try {
       const data = await callXsuaaTokenEndpoint({
         grant_type: 'authorization_code',
-        code,
+        code: code as string,
         redirect_uri: redirect_uri || ''
       })
       res.json(data)
     } catch (error) {
-      const detail = error.response && error.response.data ? error.response.data : error.message
+      const detail =
+        error instanceof Object && 'response' in error && (error as { response?: { data?: unknown } }).response?.data
+          ? (error as { response: { data?: unknown } }).response.data
+          : error instanceof Error
+            ? error.message
+            : String(error)
       cds.log('auth').error('XSUAA token exchange failed', detail)
       res.status(502).json({
         error: 'token_exchange_failed',
@@ -92,7 +103,7 @@ cds.on('bootstrap', (app) => {
   })
 
   app.post('/auth/refresh', express.json(), async (req, res) => {
-    const { refresh_token } = req.body || {}
+    const { refresh_token } = (req.body || {}) as { refresh_token?: string }
 
     if (!refresh_token) {
       return res.status(400).json({
@@ -104,11 +115,16 @@ cds.on('bootstrap', (app) => {
     try {
       const data = await callXsuaaTokenEndpoint({
         grant_type: 'refresh_token',
-        refresh_token
+        refresh_token: refresh_token as string
       })
       res.json(data)
     } catch (error) {
-      const detail = error.response && error.response.data ? error.response.data : error.message
+      const detail =
+        error instanceof Object && 'response' in error && (error as { response?: { data?: unknown } }).response?.data
+          ? (error as { response: { data?: unknown } }).response.data
+          : error instanceof Error
+            ? error.message
+            : String(error)
       cds.log('auth').error('XSUAA token refresh failed', detail)
       res.status(502).json({
         error: 'token_refresh_failed',

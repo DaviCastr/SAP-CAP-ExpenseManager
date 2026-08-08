@@ -204,10 +204,10 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
             oEntities.length = 0;
             oEntities.push(...processedData);
 
-            const url = (Request as any)._req?.url || '';
+            const url = (Request as any).http.req.url || '';
             const isMediaAccess = /\/Image(\?|$)/.test(url);
 
-            if (isMediaAccess && oEntities.length === 1) {
+            if (isMediaAccess && oEntities.length > 0) {
                 return; 
             }
 

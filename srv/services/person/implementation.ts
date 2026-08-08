@@ -121,15 +121,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 const oPersonModel = PersonModel.singleModel(Person);
 
-                if ('Image' in Person ||
-                    (
-                        !('TotalExpenses' in Person) &&
-                        !('TotalExpensesMonth' in Person) &&
-                        !('AmountToSave' in Person) &&
-                        !('TotalExpensesToPay' in Person) &&
-                        !('TotalExpensesClosed' in Person) &&
-                        !('TotalExpensesPayed' in Person)
-                    )
+                if ('Image' in Person
+                    //  ||
+                    // (
+                    //     !('TotalExpenses' in Person) &&
+                    //     !('TotalExpensesMonth' in Person) &&
+                    //     !('AmountToSave' in Person) &&
+                    //     !('TotalExpensesToPay' in Person) &&
+                    //     !('TotalExpensesClosed' in Person) &&
+                    //     !('TotalExpensesPayed' in Person)
+                    // )
                 ) {
 
                     oPersonsData.push({

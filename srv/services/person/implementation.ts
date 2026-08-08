@@ -161,22 +161,22 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 oExpenses = oExpensesResult?.isRight() ? oExpensesResult.value : {} as any;
 
-                if (oPersonModel.TotalExpenses)
+                // if (oPersonModel.TotalExpenses)
                     oPersonModel.TotalExpenses = oExpenses?.totalExpenses?.toDecimalPlaces(2);
 
-                if (oPersonModel.TotalExpensesMonth)
+                // if (oPersonModel.TotalExpensesMonth)
                     oPersonModel.TotalExpensesMonth = oExpenses?.monthExpenses?.toDecimalPlaces(2);
 
-                if (oPersonModel.AmountToSave)
+                // if (oPersonModel.AmountToSave)
                     oPersonModel.AmountToSave = oPersonModel.TotalExpenses?.minus(oPersonModel.ExpenseTarget || 0);
 
-                if (oPersonModel.TotalExpensesToPay)
+                // if (oPersonModel.TotalExpensesToPay)
                     oPersonModel.TotalExpensesToPay = oExpenses?.monthExpensesToPay?.toDecimalPlaces(2);
 
-                if (oPersonModel.TotalExpensesClosed)
+                // if (oPersonModel.TotalExpensesClosed)
                     oPersonModel.TotalExpensesClosed = oExpenses?.monthExpensesClosed?.toDecimalPlaces(2);
 
-                if (oPersonModel.TotalExpensesPayed)
+                // if (oPersonModel.TotalExpensesPayed)
                     oPersonModel.TotalExpensesPayed = oExpenses?.monthExpensesPayed?.toDecimalPlaces(2);
 
                 if (oPersonModel.TotalExpenses?.gt(oPersonModel?.ExpenseTarget || 0)) {

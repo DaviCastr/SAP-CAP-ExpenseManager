@@ -162,22 +162,32 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 oExpenses = oExpensesResult?.isRight() ? oExpensesResult.value : {} as any;
 
                 // if (oPersonModel.TotalExpenses)
-                    oPersonModel.TotalExpenses = oExpenses?.totalExpenses?.toDecimalPlaces(2);
+                oPersonModel.TotalExpenses = oExpenses?.totalExpenses?.toDecimalPlaces(2);
 
                 // if (oPersonModel.TotalExpensesMonth)
-                    oPersonModel.TotalExpensesMonth = oExpenses?.monthExpenses?.toDecimalPlaces(2);
+                oPersonModel.TotalExpensesMonth = oExpenses?.monthExpenses?.toDecimalPlaces(2);
+
+                if (!oPersonModel.ExpenseTarget) {
+
+                    const oPerson = await this.Repository.findById(oPersonModel?.Id);
+
+                    if (oPerson?.ExpenseTarget) {
+                        oPersonModel.ExpenseTarget = oPerson?.ExpenseTarget;
+                    }
+
+                }
 
                 // if (oPersonModel.AmountToSave)
-                    oPersonModel.AmountToSave = oPersonModel.TotalExpenses?.minus(oPersonModel.ExpenseTarget || 0);
+                oPersonModel.AmountToSave = oPersonModel.TotalExpenses?.minus(oPersonModel.ExpenseTarget || 0);
 
                 // if (oPersonModel.TotalExpensesToPay)
-                    oPersonModel.TotalExpensesToPay = oExpenses?.monthExpensesToPay?.toDecimalPlaces(2);
+                oPersonModel.TotalExpensesToPay = oExpenses?.monthExpensesToPay?.toDecimalPlaces(2);
 
                 // if (oPersonModel.TotalExpensesClosed)
-                    oPersonModel.TotalExpensesClosed = oExpenses?.monthExpensesClosed?.toDecimalPlaces(2);
+                oPersonModel.TotalExpensesClosed = oExpenses?.monthExpensesClosed?.toDecimalPlaces(2);
 
                 // if (oPersonModel.TotalExpensesPayed)
-                    oPersonModel.TotalExpensesPayed = oExpenses?.monthExpensesPayed?.toDecimalPlaces(2);
+                oPersonModel.TotalExpensesPayed = oExpenses?.monthExpensesPayed?.toDecimalPlaces(2);
 
                 if (oPersonModel.TotalExpenses?.gt(oPersonModel?.ExpenseTarget || 0)) {
                     oPersonModel.MonthCriticallity = 1;
@@ -1007,7 +1017,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 Details: {
                     RecurringExpenses: recurring,
                     PendingInstallments: installmentMap,
-                    OpenInvoices: invoices?.map(item=>item.toEntityObject())
+                    OpenInvoices: invoices?.map(item => item.toEntityObject())
                 },
 
                 Recommendations: recommendations
@@ -1210,7 +1220,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 request.user
             );
 
-            if(resultAuth.isLeft()) return resultAuth as any;
+            if (resultAuth.isLeft()) return resultAuth as any;
 
             const result =
                 CompleteInvoiceModel.fromRepositoryRows(
@@ -3781,13 +3791,13 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const invoices = [
             ...new Map(
-                rows.map(r => [r.InvoiceID, { ID: r.InvoiceID, Card: { ID: r.CardID}  }])
+                rows.map(r => [r.InvoiceID, { ID: r.InvoiceID, Card: { ID: r.CardID } }])
             ).values()
         ];
 
         const transactions = [
             ...new Map(
-                rows.map(r => [r.TransactionID, { ID: r.TransactionID, Invoice: { ID: r.InvoiceID} }])
+                rows.map(r => [r.TransactionID, { ID: r.TransactionID, Invoice: { ID: r.InvoiceID } }])
             ).values()
         ];
 

@@ -102,6 +102,18 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
 
                 const oCardModel = CardModel.singleModel(Card);
 
+                if ('Image' in Card) {
+
+                    const oCardData = oCardModel.toEntityObject();
+
+                    oCardsData.push({
+                        ...oCardData
+                    });
+
+                    continue;
+
+                }
+
                 if (!('ClosingDay' in Card) || !('DueDay' in Card)) {
 
                     oCardsData.push({

@@ -186,9 +186,8 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
     protected async afterRead(Entities: Entity[] | Entity, Request: Request): Promise<void> {
 
-        const oEntities = Array.isArray(Entities)
-            ? Entities
-            : [Entities];
+        const isSingleEntity = !Array.isArray(Entities);
+        const oEntities = isSingleEntity ? [Entities] : Entities;
 
         const oResult = await this.Controller.afterRead(oEntities, Request.user);
 
@@ -196,11 +195,16 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
             return this.returnRejectMessage(Request, oResult);
         }
 
-        const oResultData = oResult.data as Entity[];
+        const oResultData = oResult.data;
 
         if (oEntities != oResultData) {
+
+            const processedData = Array.isArray(oResultData) ? oResultData : [oResultData];
+
             oEntities.length = 0;
-            oEntities.push(...oResultData);
+            oEntities.push(...processedData);
+
+            (Request as any).results = oEntities;
         }
 
     }

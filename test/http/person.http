@@ -1,5 +1,5 @@
 @server=http://localhost:4004
-@username=beatriz
+@username=davi
 @password=123456
 
 
@@ -321,8 +321,7 @@ Authorization: Basic {{username}}:{{password}}
     "code": "308"
   },
   "Email": "Email21587452@teste.com",
-  "Phone": "Phone-21587452",
-  "ExpenseTarget": 95.67,
+  "ExpenseTarget": 95.67
 }
 
 

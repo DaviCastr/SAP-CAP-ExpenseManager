@@ -87,7 +87,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         if (result.isLeft()) return result;
 
-        return this.checkPerson(Person);
+        return this.checkPerson(Person); 
 
     }
 
@@ -2116,21 +2116,21 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         }
 
-        if (Person.Phone) {
+        // if (Person.Phone) {
 
-            const regexPhone = /^\d{2}\d{2}9\d{8}$/;
+        //     const regexPhone = /^\d{2}\d{2}9\d{8}$/;
 
-            if (!regexPhone.test(Person.Phone)) {
+        //     if (!regexPhone.test(Person.Phone)) {
 
-                const oStack = new Error().stack as string;
+        //         const oStack = new Error().stack as string;
 
-                const message = this.getMessage('error.invalidPhone', ServiceLocator.getRequest());
+        //         const message = this.getMessage('error.invalidPhone', ServiceLocator.getRequest());
 
-                return left(new PermissionDenied(message, 403, oStack));
+        //         return left(new PermissionDenied(message, 403, oStack));
 
-            }
+        //     }
 
-        }
+        // }
 
         if (Person.Income) {
 

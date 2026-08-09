@@ -186,6 +186,14 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
     protected async afterRead(Entities: Entity[] | Entity, Request: Request): Promise<void> {
 
+        const method = (Request as any).http?.req?.method;
+        const url = (Request as any).http.req.url || '';
+        const isBatch = /\/$batch(\?|$)/.test(url);
+
+        if (method !== "GET" && !isBatch) {
+            return;
+        }
+
         const isSingleEntity = !Array.isArray(Entities);
         const oEntities = isSingleEntity ? [Entities] : Entities;
 
@@ -208,10 +216,14 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
             const isMediaAccess = /\/Image(\?|$)/.test(url);
 
             if (isMediaAccess && oEntities.length > 0) {
-                return; 
+                return;
             }
 
-            (Request as any).results = oEntities;
+            if (Array.isArray((Request as any).results)) {
+                (Request as any).results = oEntities;
+            } else {
+                (Request as any).results = oEntities[0];
+            }
 
         }
 

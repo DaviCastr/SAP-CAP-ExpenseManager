@@ -365,16 +365,17 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
             }
 
-        } else if (!oPerson) {
+        } 
+        // else if (!oPerson) {
 
-            const oStack = new Error().stack as string;
+        //     const oStack = new Error().stack as string;
 
-            const message = this.getMessage('error.invalidPersonId', ServiceLocator.getRequest(), this.entityCode()) ||
-                'error.invalidPersonId';
+        //     const message = this.getMessage('error.invalidPersonId', ServiceLocator.getRequest(), this.entityCode()) ||
+        //         'error.invalidPersonId';
 
-            return left(new PermissionDenied(message, 403, oStack));
+        //     return left(new PermissionDenied(message, 403, oStack));
 
-        }
+        // }
 
         return right(true);
 

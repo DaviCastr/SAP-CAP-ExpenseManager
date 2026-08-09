@@ -188,9 +188,8 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
         const method = (Request as any).http?.req?.method;
         const url = (Request as any).http.req.url || '';
-        const isBatch = /\/$batch(\?|$)/.test(url);
 
-        if (method !== "GET" && !isBatch) {
+        if (method !== "GET" && url !== "/$batch") {
             return;
         }
 
@@ -207,12 +206,26 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
         if (oEntities != oResultData) {
 
-            const processedData = Array.isArray(oResultData) ? oResultData : [oResultData];
+            let processedData = Array.isArray(oResultData) ? oResultData : [oResultData];
+
+            // 🔑 Merge: spread do original + sobrescrita com processado
+            processedData = processedData.map((processedItem, index) => {
+                const originalItem = oEntities[index] || oEntities[0];
+
+                if (originalItem && processedItem) {
+                    // Spread do original primeiro, depois processado sobrescreve
+                    return {
+                        ...originalItem,      // Campos originais
+                        ...processedItem      // Campos processados (prioridade)
+                    };
+                }
+
+                return processedItem || originalItem;
+            });
 
             oEntities.length = 0;
             oEntities.push(...processedData);
 
-            const url = (Request as any).http.req.url || '';
             const isMediaAccess = /\/Image(\?|$)/.test(url);
 
             if (isMediaAccess && oEntities.length > 0) {
@@ -224,9 +237,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
             } else {
                 (Request as any).results = oEntities[0];
             }
-
         }
-
     }
 
 

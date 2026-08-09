@@ -208,19 +208,20 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
             let processedData = Array.isArray(oResultData) ? oResultData : [oResultData];
 
-            // 🔑 Merge: spread do original + sobrescrita com processado
+            const draftFields = this.getDraftFields(oEntities[0]);
+
             processedData = processedData.map((processedItem, index) => {
                 const originalItem = oEntities[index] || oEntities[0];
 
-                if (originalItem && processedItem) {
-                    // Spread do original primeiro, depois processado sobrescreve
-                    return {
-                        ...originalItem,      // Campos originais
-                        ...processedItem      // Campos processados (prioridade)
-                    };
+                if (!originalItem || !processedItem) {
+                    return processedItem || originalItem;
                 }
 
-                return processedItem || originalItem;
+                const merged = { ...originalItem, ...processedItem };
+
+                this.addDraftsToArrays(merged, draftFields);
+
+                return merged;
             });
 
             oEntities.length = 0;
@@ -238,6 +239,47 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
                 (Request as any).results = oEntities[0];
             }
         }
+    }
+
+    private getDraftFields(entity: any): Record<string, any> {
+        const fields: Record<string, any> = {};
+        const draftNames = ['DraftAdministrativeData_DraftUUID', 'HasActiveEntity', 'HasDraftEntity', 'IsActiveEntity', 'DraftUUID'];
+
+        if (entity) {
+            draftNames.forEach(name => {
+                if (entity[name] !== undefined) {
+                    fields[name] = entity[name];
+                }
+            });
+        }
+
+        return fields;
+    }
+
+    private addDraftsToArrays(obj: any, draftFields: Record<string, any>): void {
+        if (!obj) return;
+
+        Object.keys(obj).forEach(key => {
+            if (Array.isArray(obj[key])) {
+
+                obj[key] = obj[key].map((item: any) => {
+                    if (item && typeof item === 'object') {
+                        const enriched = { ...item };
+
+                        Object.keys(draftFields).forEach(field => {
+                            if (enriched[field] === undefined) {
+                                enriched[field] = draftFields[field];
+                            }
+                        });
+
+                        this.addDraftsToArrays(enriched, draftFields);
+
+                        return enriched;
+                    }
+                    return item;
+                });
+            }
+        });
     }
 
 

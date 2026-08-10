@@ -189,9 +189,9 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
         const method = (Request as any).http?.req?.method;
         const url = (Request as any).http.req.url || '';
 
-        if (method !== "GET" && url !== "/$batch") {
-            return;
-        }
+        // if (method !== "GET" && url !== "/$batch") {
+        //     return;
+        // }
 
         const isSingleEntity = !Array.isArray(Entities);
         const oEntities = isSingleEntity ? [Entities] : Entities;

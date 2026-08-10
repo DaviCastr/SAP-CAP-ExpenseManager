@@ -307,6 +307,13 @@ Authorization: Basic {{username}}:{{password}}
 ### Result from POST request above
 @draftID={{Persons_Draft_POST.response.body.$.ID}}
 
+### Persons GET
+# @name Persons_GET
+GET {{server}}/service/ExpenseManager/Persons(ID={{draftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+
 ### Persons Draft PATCH
 # @name Persons_Draft_Patch
 PATCH {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons(ID={{draftID}},IsActiveEntity=false)
@@ -346,6 +353,14 @@ Authorization: Basic {{username}}:{{password}}
 ### Persons Draft Inactivate
 # @name Persons_Draft_Inactivate
 POST {{server}}/apps/dflc/cap/ExpenseManager/Person/Persons(ID={{draftID}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+### Persons Draft Inactivate
+# @name Persons_Draft_Inactivate
+POST {{server}}/service/ExpenseManager/Persons(ID={{draftID}},IsActiveEntity=true)/draftEdit
 Content-Type: application/json
 Authorization: Basic {{username}}:{{password}}
 

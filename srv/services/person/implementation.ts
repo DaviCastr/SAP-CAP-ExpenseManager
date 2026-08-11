@@ -3851,6 +3851,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         }
 
+        if(!categories.length) return right(true);
+
         const resultAuthCategory = await categoryService.afterRead([categories[0]] as any, user);
 
         if (resultAuthCategory.isLeft()) return resultAuthCategory as any;

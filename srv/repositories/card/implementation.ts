@@ -192,6 +192,10 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
                 }
             ] as any);
 
+        if(Array.isArray(rows) && rows.length > 0){
+            return rows.filter((row) => row.TransactionID !== null);
+        }
+
         return rows || [];
 
     }

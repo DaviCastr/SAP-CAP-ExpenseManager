@@ -328,7 +328,7 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
 
                     const oStack = new Error().stack as string;
 
-                    const message = this.getMessage('error.currencyNotEqualPersonCurrency', ServiceLocator.getRequest());
+                    const message = this.getMessage('error.currencyNotEqualPersonCurrency', ServiceLocator.getRequest(), undefined, { card: Card?.Name || '' });
 
                     return left(new PermissionDenied(message, 403, oStack));
 
@@ -342,7 +342,7 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
 
                 const oStack = new Error().stack as string;
 
-                const message = this.getMessage('error.invalidLimit', ServiceLocator.getRequest());
+                const message = this.getMessage('error.invalidLimit', ServiceLocator.getRequest(), undefined, { card: Card?.Name || '' });
 
                 return left(new PermissionDenied(message, 403, oStack));
 
@@ -356,7 +356,7 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
 
                 const oStack = new Error().stack as string;
 
-                const message = this.getMessage('error.incorectDueDayClosinDay', ServiceLocator.getRequest());
+                const message = this.getMessage('error.incorectDueDayClosinDay', ServiceLocator.getRequest(), undefined, { card: Card?.Name || '' });
 
                 return left(new PermissionDenied(message, 403, oStack));
 

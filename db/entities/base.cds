@@ -89,7 +89,7 @@ entity Cards : cuid, managed {
 
     @Core.MediaType               : ImageType
     @UI                           : {IsImage: true}
-    Image                           : LargeBinary;
+    Image                           : LargeBinary  @stream;
 
     @Core.IsMediaType             : true
     ImageType                       : String;

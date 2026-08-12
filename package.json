@@ -58,6 +58,9 @@
   },
   "private": true,
   "cds": {
+    "fiori": {
+      "move_media_data_in_db": true
+    },
     "requires": {
       "[development]": {
         "requires": {

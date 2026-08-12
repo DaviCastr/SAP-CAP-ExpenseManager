@@ -79,6 +79,8 @@ resources:
   
   - name: ExpenseManager-destination
     type: org.cloudfoundry.managed-service
+    requires:
+    - name: srv-api
     parameters:
       service: destination
       service-plan: lite
@@ -100,3 +102,4 @@ resources:
                 Authentication: NoAuthentication
                 Type: HTTP
                 ProxyType: Internet
+    

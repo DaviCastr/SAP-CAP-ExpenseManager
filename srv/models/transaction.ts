@@ -1,7 +1,9 @@
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
-import { Transaction, Transactions } from '@models/apps/dflc/expensemanager/entities';
+import { Invoice, Transaction, Transactions } from '@models/apps/dflc/expensemanager/entities';
 import { BaseModel } from './base';
+import { InvoiceModel } from './invoice';
+import { CategoryModel } from './category';
 
 type TransactionProperties = {
     Id: string;
@@ -14,7 +16,9 @@ type TransactionProperties = {
     Installment: number;
     Description: string;
     InvoiceId: string;
+    Invoice?: InvoiceModel;
     CategoryId: string;
+    Category?: CategoryModel;
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
@@ -46,6 +50,14 @@ export class TransactionModel extends BaseModel {
                 code: Transaction?.Currency?.code || Transaction?.Currency_code as string
             });
 
+            const oInvoiceModel = InvoiceModel.singleModel({
+                ...Transaction.Invoice
+            });
+
+            const oCategoryModel = CategoryModel.singleModel({
+                ...Transaction.Category
+            });
+
             return TransactionModel.with({
                 Id: Transaction.ID as string,
                 Identifier: Transaction.Identifier as string,
@@ -57,7 +69,9 @@ export class TransactionModel extends BaseModel {
                 Installment: Transaction.Installment as number,
                 Description: Transaction.Description as string,
                 InvoiceId: Transaction.Invoice_ID || Transaction?.Invoice?.ID as string,
+                Invoice: oInvoiceModel,
                 CategoryId: Transaction.Category_ID || Transaction?.Category?.ID as string,
+                Category: oCategoryModel,
                 CreatedAt: Transaction.createdAt as string,
                 CreatedBy: Transaction.createdBy as string,
                 ModifiedAt: Transaction.modifiedAt as string,
@@ -128,9 +142,21 @@ export class TransactionModel extends BaseModel {
 
     }
 
+    public get Invoice() {
+
+        return this.props.Invoice;
+
+    }
+
     public get CategoryId() {
 
         return this.props.CategoryId;
+
+    }
+
+    public get Category() {
+
+        return this.props.Category;
 
     }
 
@@ -182,14 +208,18 @@ export class TransactionModel extends BaseModel {
             TotalInstallments: this.props.TotalInstallments,
             Installment: this.props.Installment,
             Description: this.props.Description,
-            Invoice: { ID: this.props.InvoiceId },
-            Category: { ID: this.props.CategoryId },
+            Invoice: this?.Invoice
+                ? this.Invoice.toEntityObject()
+                : { ID: this.props.InvoiceId },
+            Category: this?.Category
+                ? this.Category.toEntityObject()
+                : { ID: this.props.CategoryId },
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,
             modifiedBy: this.props.ModifiedBy
         } as Transaction);
- 
+
     }
 
 }

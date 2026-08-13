@@ -51,11 +51,13 @@ export class TransactionModel extends BaseModel {
             });
 
             const oInvoiceModel = InvoiceModel.singleModel({
-                ...Transaction.Invoice
+                ...Transaction.Invoice,
+                ID: Transaction.Invoice?.ID || Transaction?.Invoice_ID || ''
             });
 
             const oCategoryModel = CategoryModel.singleModel({
-                ...Transaction.Category
+                ...Transaction.Category,
+                ID: Transaction.Category?.ID || Transaction?.Category_ID || ''
             });
 
             return TransactionModel.with({

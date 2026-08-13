@@ -19,7 +19,6 @@ service ExpenseManager {
     @cds.redirection.target
     entity Cards                 as projection on entities.Cards;
 
-    @readonly
     @cds.redirection.target
     entity Invoices              as projection on entities.Invoices;
 

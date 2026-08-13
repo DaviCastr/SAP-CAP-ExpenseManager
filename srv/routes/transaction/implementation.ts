@@ -35,7 +35,7 @@ export class TransactionRouteImplementation extends BaseRouteImplementation<Tran
             Service.on("DELETE", Transactions.drafts as entity, this.onDelete.bind(this));
             Service.after("CREATE", Transactions.drafts as entity, this.afterCreate.bind(this));
             Service.after("UPDATE", Transactions.drafts as entity, this.afterUpdate.bind(this));
-            Service.after("DELETE", Transactions as entity, this.afterDelete.bind(this));
+            Service.after("DELETE", Transactions.drafts as entity, this.afterDelete.bind(this));
 
         }
 

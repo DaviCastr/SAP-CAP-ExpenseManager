@@ -9,7 +9,7 @@ export interface InvoiceRepository extends BaseRepository {
     retrieveTotalAmountByCardIDs(CardIds: Invoice['Card_ID'][], additionalFilters?: {}): Promise<InvoiceModel | null>;
     retrieveTotalAmountByIDs(CardIds: Invoice['ID'][], additionalFilters?: {}): Promise<InvoiceModel | null>;
     createEntry(data: Invoice | Invoices): Promise<InvoiceModel[] | null>;
-    updateTotalAmountByTransactionId(TransactionId: Transaction['ID']): Promise<void>;
+    updateTotalAmountByTransactionId(TransactionId: Transaction['ID'], ID?: Transaction['Invoice_ID']): Promise<void>;
     updateTotalAmountById(Id: Invoice['ID']): Promise<void>;
     update(Id: Invoice['ID'], fields: {}): Promise<void>;
 }

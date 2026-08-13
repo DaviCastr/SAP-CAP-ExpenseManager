@@ -60,7 +60,17 @@ export class ServiceLocator {
 
         const oEntityName = oServiceName ? `${oServiceName}.${EntityName}` : EntityName;
 
-        let oEntity = cds.entities[oEntityName];
+        let oEntity: entity = cds.entities[oEntityName];
+
+        if (!ignoreDraft
+            && this.targetIsDraft()
+            && oServiceName == 'ExpenseManager'
+            && oEntity.drafts) {
+
+            oEntity = oEntity?.drafts;
+
+        }
+
 
         if (!oEntity) {
 
@@ -75,6 +85,12 @@ export class ServiceLocator {
         }
 
         return oEntity as entity;
+
+    }
+
+    public static targetIsDraft(): boolean {
+
+        return this.getRequest()?.target?.name?.endsWith(`.drafts`) ? true : false;
 
     }
 

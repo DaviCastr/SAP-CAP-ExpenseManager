@@ -38,7 +38,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
         try {
 
-            await this.InvoiceRepository.updateTotalAmountByTransactionId(Transaction?.ID);
+            await this.InvoiceRepository.updateTotalAmountByTransactionId(Transaction?.ID, Transaction?.Invoice_ID || Transaction.Invoice?.ID);
 
             return right(undefined);
 

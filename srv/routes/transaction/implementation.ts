@@ -92,7 +92,7 @@ export class TransactionRouteImplementation extends BaseRouteImplementation<Tran
     }
 
 
-    private async afterDelete(Count: number, Request: Request): Promise<void> {
+    private async afterDelete(Transactions: Transactions | Transaction, Request: Request): Promise<void> {
 
         const oTransactions = Array.isArray(Request.data)
             ? Request.data

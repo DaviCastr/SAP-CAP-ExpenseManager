@@ -169,7 +169,13 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
     }
 
 
-    public async updateTotalAmountByTransactionId(TransactionId: Transaction["ID"]): Promise<void> {
+    public async updateTotalAmountByTransactionId(TransactionId: Transaction["ID"], ID: Transaction['Invoice_ID']): Promise<void> {
+
+        if(ID){
+
+            return await this.updateTotalAmountById(ID);
+
+        }
 
         let oInvoiceEntity = this.getEntity();
 

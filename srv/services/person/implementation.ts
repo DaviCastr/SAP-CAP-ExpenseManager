@@ -110,16 +110,18 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             const mapCards = new Map<string, any[]>();
 
             for (const card of cardsByPerson) {
-                if (!mapCards.has(card?.PersonId)) {
-                    mapCards.set(card?.PersonId, []);
+                if (!mapCards.has(card?.Person?.Id)) {
+                    mapCards.set(card?.Person?.Id, []);
                 }
-                mapCards.get(card.PersonId)!.push(card.toEntityObject());
+                mapCards.get(card.Person?.Id)!.push(card.toEntityObject());
             }
 
             for (let Person of oPersonsFiltered) {
 
 
                 const oPersonModel = PersonModel.singleModel(Person);
+
+                if(!oPersonModel) continue;
 
                 if ('Image' in Person
                     //  ||
@@ -134,13 +136,13 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 ) {
 
                     oPersonsData.push({
-                        ...oPersonModel.toEntityObject(),
+                        ...oPersonModel?.toEntityObject(),
                     });
                     continue;
 
                 }
 
-                const oCards = mapCards.get(oPersonModel?.Id) as Cards;
+                const oCards = mapCards.get(oPersonModel?.Id as string) as Cards;
                 const oExpensesResult = await this.recoverExpenses(oCards);
                 let oExpenses: {
                     totalExpenses: Decimal,
@@ -153,7 +155,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 if (oExpensesResult?.isLeft()) {
 
                     oPersonsData.push({
-                        ...oPersonModel.toEntityObject(),
+                        ...oPersonModel?.toEntityObject(),
                     });
                     continue;
 
@@ -401,33 +403,37 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             for (const card of cards) {
 
-                if (!cardsByPerson.has(card.PersonId)) {
-                    cardsByPerson.set(card.PersonId, []);
+                if (!cardsByPerson.has(card.Person?.Id)) {
+                    cardsByPerson.set(card.Person?.Id, []);
                 }
 
-                cardsByPerson.get(card.PersonId)!.push(card);
+                cardsByPerson.get(card.Person?.Id)!.push(card);
             }
 
             const invoicesByCard = new Map<string, InvoiceModel[]>();
 
             for (const invoice of invoices) {
 
-                if (!invoicesByCard.has(invoice.CardId)) {
-                    invoicesByCard.set(invoice.CardId, []);
+                if(!invoice?.Card) continue;
+
+                if (!invoicesByCard.has(invoice.Card?.Id)) {
+                    invoicesByCard.set(invoice.Card?.Id, []);
                 }
 
-                invoicesByCard.get(invoice.CardId)!.push(invoice);
+                invoicesByCard.get(invoice.Card?.Id)!.push(invoice);
             }
 
             const transactionsByInvoice = new Map<string, TransactionModel[]>();
 
             for (const trx of transactions) {
 
-                if (!transactionsByInvoice.has(trx.InvoiceId)) {
-                    transactionsByInvoice.set(trx.InvoiceId, []);
+                if(!trx.Invoice) continue;
+
+                if (!transactionsByInvoice.has(trx.Invoice?.Id)) {
+                    transactionsByInvoice.set(trx.Invoice?.Id, []);
                 }
 
-                transactionsByInvoice.get(trx.InvoiceId)!.push(trx);
+                transactionsByInvoice.get(trx.Invoice?.Id)!.push(trx);
             }
 
             const cache = ServiceLocator.getEmailSendingCache();
@@ -462,7 +468,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         if (!invoiceTransactions.length) continue;
 
                         ServiceLocator.setRequestData({
-                            InvoiceId: invoice.Id
+                            Invoice: invoice
                         });
 
                         const analyticsResult =
@@ -527,7 +533,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     Cards: invoicesToSend.map(inv => {
 
                         const card =
-                            personCards.find(c => c.Id === inv.CardId);
+                            personCards.find(c => c.Id === inv.Card?.Id);
 
                         return {
                             CardName: card?.Name,
@@ -1272,7 +1278,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const required: string[] = [];
 
-        if (!input.CardId) required.push('CardId');
+        if (!input.Card?.Id) required.push('Card?.Id');
         if (!input.CategoryId) required.push('CategoryId');
         if (!input.Description) required.push('Description');
         if (!input.Value) required.push('Value');
@@ -1842,7 +1848,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         const oMonthTransacao = String(oExpenseDate.getMonth() + 1).padStart(2, "0");
                         const oDayTransacao = String(oExpenseDate.getDate()).padStart(2, "0");
 
-                        let oCategory = CardExpensesByCategory.Categories.filter(category => category.ID == transaction.CategoryId);
+                        let oCategory = CardExpensesByCategory.Categories.filter(category => category.ID == transaction.Category?.Id);
                         let oCategoryName: string;
                         if (oCategory.length > 0) {
                             oCategoryName = oCategory[0].Name;
@@ -1962,10 +1968,13 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             const mapInvoices = new Map<string, any[]>();
 
             for (const inv of invoicesByCard) {
-                if (!mapInvoices.has(inv?.CardId)) {
-                    mapInvoices.set(inv?.CardId, []);
+
+                if(!inv?.Card) continue;
+
+                if (!mapInvoices.has(inv?.Card?.Id)) {
+                    mapInvoices.set(inv?.Card?.Id, []);
                 }
-                mapInvoices.get(inv.CardId)!.push(inv);
+                mapInvoices.get(inv.Card?.Id)!.push(inv);
             }
 
             for (let Card of Cards) {
@@ -2210,9 +2219,9 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         const today = this.getBrazilDate();
 
         return {
-            PersonId: data.PersonId,
-            CardId: data.CardId,
-            InvoiceId: data.InvoiceId,
+            PersonId: data.Person?.Id,
+            CardId: data.Card?.Id,
+            InvoiceId: data.Invoice?.Id,
             TotalOnwards: !!data.TotalOnwards,
             Month: Number(data.Month || today.month),
             Year: Number(data.Year || today.year)
@@ -2222,27 +2231,27 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     private validateCardExpensesByCategoriesInput(input: any): Either<AbstractError, true> {
 
         if (
-            !input.PersonId &&
-            !input.CardId &&
-            !input.InvoiceId
+            !input.Person?.Id &&
+            !input.Card?.Id &&
+            !input.Invoice?.Id
         ) {
             return this.fail(
                 "error.fillAtLeastFieldsObrigatory",
                 {
-                    fields: "PersonId, CardId, InvoiceId"
+                    fields: "Person?.Id, Card?.Id, Invoice?.Id"
                 }
             );
         }
 
         if (
             input.TotalOnwards &&
-            !input.PersonId &&
-            !input.CardId
+            !input.Person?.Id &&
+            !input.Card?.Id
         ) {
             return this.fail(
                 "error.fillAtLeastFieldsObrigatory",
                 {
-                    fields: "PersonId, CardId"
+                    fields: "Person?.Id, Card?.Id"
                 }
             );
         }
@@ -2265,11 +2274,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         const categoryService =
             ServiceRegistry.get("Categories") as CategoryServiceImplementation;
 
-        if (input.PersonId) {
+        if (input.Person?.Id) {
 
             const result =
                 await this.afterRead(
-                    [{ ID: input.PersonId }],
+                    [{ ID: input.Person?.Id }],
                     user
                 );
 
@@ -2287,7 +2296,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             const categoryAuth =
                 await categoryService.afterRead(
-                    [{ Person: { ID: input.PersonId } }],
+                    [{ Person: { ID: input.Person?.Id } }],
                     user
                 );
 
@@ -2305,11 +2314,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         }
 
-        if (input.CardId) {
+        if (input.Card?.Id) {
 
             const result =
                 await cardService.afterRead(
-                    [{ ID: input.CardId }],
+                    [{ ID: input.Card?.Id }],
                     user
                 );
 
@@ -2327,11 +2336,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         }
 
-        if (input.InvoiceId) {
+        if (input.Invoice?.Id) {
 
             const result =
                 await invoiceService.afterRead(
-                    [{ ID: input.InvoiceId }],
+                    [{ ID: input.Invoice?.Id }],
                     user
                 );
 
@@ -2359,11 +2368,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         invoices: InvoiceModel[]
     }> {
 
-        if (input.PersonId) {
+        if (input.Person?.Id) {
             return this.loadByPerson(input);
         }
 
-        if (input.CardId) {
+        if (input.Card?.Id) {
             return this.loadByCard(input);
         }
 
@@ -2375,13 +2384,13 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const categories =
             await this.CategoryRepository
-                .findByPersonIds([input.PersonId]) || [];
+                .findByPersonIds([input.Person?.Id]) || [];
 
         const cards =
-            input.CardId && !input.TotalOnwards
-                ? [CardModel.singleModel({ ID: input.CardId })]
+            input.Card?.Id && !input.TotalOnwards
+                ? [CardModel.singleModel({ ID: input.Card?.Id })]
                 : await this.CardRepository
-                    .findByPersonIds([input.PersonId]) || [];
+                    .findByPersonIds([input.Person?.Id]) || [];
 
         if (!cards.length) {
             return {
@@ -2429,7 +2438,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const card =
             await this.CardRepository
-                .findById(input.CardId);
+                .findById(input.Card?.Id);
 
         if (!card) {
             return {
@@ -2441,7 +2450,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const categories =
             await this.CategoryRepository
-                .findByPersonIds([card.PersonId]) || [];
+                .findByPersonIds([card.Person?.Id]) || [];
 
         const filters = input.TotalOnwards
             ? { Year: { ">=": input.Year } }
@@ -2481,7 +2490,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const invoice =
             await this.InvoiceRepository
-                .findById(input.InvoiceId);
+                .findById(input.Invoice?.Id);
 
         if (!invoice) {
             return {
@@ -2493,7 +2502,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const cards =
             await this.CardRepository
-                .findByInvoiceIds(input.InvoiceId);
+                .findByInvoiceIds(input.Invoice?.Id);
 
         const card = cards?.[0];
 
@@ -2507,7 +2516,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const categories =
             await this.CategoryRepository
-                .findByPersonIds([card.PersonId]) || [];
+                .findByPersonIds([card.Person?.Id]) || [];
 
         return {
             categories,
@@ -2595,7 +2604,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             categories.map(async category => {
 
                 const result = totalsByCategory?.find(
-                    t => t.CategoryId === category.Id
+                    t => t.Category?.Id === category.Id
                 );
 
                 const amount =
@@ -2956,7 +2965,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             return left(
                 this.buildValidationError(
                     request,
-                    "PersonId"
+                    "Person?.Id"
                 )
             );
         }
@@ -3448,7 +3457,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const required: string[] = [];
 
-        if (!data.PersonId) required.push('PersonId');
+        if (!data.Person?.Id) required.push('PersonId');
         if (!data.CategoryId) required.push('CategoryId');
 
         if (required.length) {
@@ -3655,21 +3664,25 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         for (const invoice of invoices) {
 
-            if (!invoicesByCard.has(invoice.CardId)) {
-                invoicesByCard.set(invoice.CardId, []);
+            if(!invoice?.Card) continue;
+
+            if (!invoicesByCard.has(invoice.Card?.Id)) {
+                invoicesByCard.set(invoice.Card?.Id, []);
             }
 
-            invoicesByCard.get(invoice.CardId)!.push(invoice);
+            invoicesByCard.get(invoice.Card?.Id)!.push(invoice);
 
         }
 
         for (const transaction of transactions) {
 
-            if (!transactionsByInvoice.has(transaction.InvoiceId)) {
-                transactionsByInvoice.set(transaction.InvoiceId, []);
+            if(!transaction?.Invoice) continue;
+
+            if (!transactionsByInvoice.has(transaction.Invoice?.Id)) {
+                transactionsByInvoice.set(transaction.Invoice?.Id, []);
             }
 
-            transactionsByInvoice.get(transaction.InvoiceId)!.push(transaction);
+            transactionsByInvoice.get(transaction.Invoice?.Id)!.push(transaction);
 
         }
 

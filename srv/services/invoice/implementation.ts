@@ -45,7 +45,7 @@ export class InvoiceServiceImplementation extends BaseServiceImplementation<Invo
 
             for (let Invoice of oInvoicesFiltered) {
 
-                const oInvoiceModel = InvoiceModel.singleModel(Invoice);
+                const oInvoiceModel = InvoiceModel.singleModel(Invoice) as InvoiceModel;
 
                 if (!oInvoiceModel.Description && oInvoiceModel.Month) {
 

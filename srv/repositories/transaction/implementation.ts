@@ -267,7 +267,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
             }
 
             oTransactionsModel.push(
-                TransactionModel.singleModel(Transaction)
+                TransactionModel.singleModel(Transaction) as TransactionModel
             );
 
         };

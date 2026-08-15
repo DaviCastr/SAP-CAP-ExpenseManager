@@ -1,11 +1,12 @@
-import { Share, Shares } from "@models/apps/dflc/expensemanager/entities";
+import { Person, Share, Shares } from "@models/apps/dflc/expensemanager/entities";
 import { EntityModel } from "./entity";
 import { BaseModel } from "./base";
+import { PersonModel } from "./person";
 
 type ShareProperties = {
     Id: string;
     User: string;
-    PersonId: string;
+    Person: PersonModel;
     Entities: EntityModel[];
     CreatedAt: string;
     CreatedBy: string;
@@ -21,28 +22,33 @@ export class ShareModel extends BaseModel {
         return new ShareModel(properties);
     }
 
-    public static singleModel(properties: Share): ShareModel | null {
+    public static singleModel(properties: Share): ShareModel | undefined {
 
-        return this.mapModel([properties])?.[0] as ShareModel;
+        return this.mapModel([properties])?.[0];
 
     }
 
-    public static mapModel(Shares: Shares): ShareModel[] {
+    public static mapModel(Shares: Shares): ShareModel[] | null {
 
         return Shares?.map((Share: Share) => {
+
+            const oPersonModel = PersonModel.singleModel({
+                ...Share?.Person,
+                ID: Share?.Person?.ID || Share?.Person_ID as string
+            });
 
             return ShareModel.with({
                 Id: Share.ID as string,
                 User: Share.User as string,
-                PersonId: Share.Person_ID as string,
-                Entities: EntityModel.mapModel(Share?.Entities || []) as EntityModel[],
+                Person: oPersonModel as PersonModel,
+                Entities: EntityModel.mapModel(Share?.Entities as []) as EntityModel[],
                 CreatedAt: Share.createdAt as string,
                 CreatedBy: Share.createdBy as string,
                 ModifiedAt: Share.modifiedAt as string,
                 ModifiedBy: Share.modifiedBy as string
             });
 
-        }) || [] as ShareModel[];
+        });
 
     }
 
@@ -58,9 +64,9 @@ export class ShareModel extends BaseModel {
 
     }
 
-    public get PersonId() {
+    public get Person() {
 
-        return this.props.PersonId;
+        return this.props.Person;
 
     }
 
@@ -105,7 +111,7 @@ export class ShareModel extends BaseModel {
         return this.cleanEntity({
             ID: this.props.Id,
             User: this.props.User,
-            Person: { ID: this.props.PersonId },
+            Person: this.Person.toEntityObject(),
             Entities: this.props.Entities?.map((Entity)=>Entity.toEntityObject()),
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,

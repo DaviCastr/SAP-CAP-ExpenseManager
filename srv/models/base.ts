@@ -12,7 +12,7 @@ export class BaseModel {
     protected cleanEntity(obj: any): any {
         
         if (Array.isArray(obj)) {
-            if (obj.length === 0) return undefined;
+            if (obj.length === 0) return [];
             return obj.map((item) => this.cleanEntity(item));
         }
 
@@ -30,7 +30,7 @@ export class BaseModel {
 
                     if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) return false;
 
-                    if (Array.isArray(v) && v.length === 0) return false;
+                    // if (Array.isArray(v) && v.length === 0) return false;
 
                     return true;
                 })

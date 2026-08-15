@@ -15,9 +15,7 @@ type TransactionProperties = {
     TotalInstallments: number;
     Installment: number;
     Description: string;
-    InvoiceId: string;
     Invoice?: InvoiceModel;
-    CategoryId: string;
     Category?: CategoryModel;
     CreatedAt?: string;
     CreatedBy?: string;
@@ -35,13 +33,13 @@ export class TransactionModel extends BaseModel {
 
     }
 
-    public static singleModel(properties: Transaction): TransactionModel {
+    public static singleModel(properties: Transaction): TransactionModel | undefined {
 
         return this.mapModel([properties])?.[0];
 
     }
 
-    public static mapModel(Transactions: Transactions): TransactionModel[] {
+    public static mapModel(Transactions: Transactions): TransactionModel[] | null {
 
         return Transactions?.map((Transaction) => {
 
@@ -52,12 +50,12 @@ export class TransactionModel extends BaseModel {
 
             const oInvoiceModel = InvoiceModel.singleModel({
                 ...Transaction.Invoice,
-                ID: Transaction.Invoice?.ID || Transaction?.Invoice_ID || ''
+                ID: Transaction.Invoice?.ID || Transaction?.Invoice_ID as string
             });
 
             const oCategoryModel = CategoryModel.singleModel({
                 ...Transaction.Category,
-                ID: Transaction.Category?.ID || Transaction?.Category_ID || ''
+                ID: Transaction.Category?.ID || Transaction?.Category_ID as string
             });
 
             return TransactionModel.with({
@@ -70,9 +68,7 @@ export class TransactionModel extends BaseModel {
                 TotalInstallments: Transaction.TotalInstallments as number,
                 Installment: Transaction.Installment as number,
                 Description: Transaction.Description as string,
-                InvoiceId: Transaction.Invoice_ID || Transaction?.Invoice?.ID as string,
                 Invoice: oInvoiceModel,
-                CategoryId: Transaction.Category_ID || Transaction?.Category?.ID as string,
                 Category: oCategoryModel,
                 CreatedAt: Transaction.createdAt as string,
                 CreatedBy: Transaction.createdBy as string,
@@ -80,7 +76,7 @@ export class TransactionModel extends BaseModel {
                 ModifiedBy: Transaction.modifiedBy as string
             }) as TransactionModel;
 
-        }) as TransactionModel[];
+        });
 
     }
 
@@ -138,21 +134,9 @@ export class TransactionModel extends BaseModel {
 
     }
 
-    public get InvoiceId() {
-
-        return this.props.InvoiceId;
-
-    }
-
     public get Invoice() {
 
         return this.props.Invoice;
-
-    }
-
-    public get CategoryId() {
-
-        return this.props.CategoryId;
 
     }
 
@@ -210,12 +194,8 @@ export class TransactionModel extends BaseModel {
             TotalInstallments: this.props.TotalInstallments,
             Installment: this.props.Installment,
             Description: this.props.Description,
-            Invoice: this?.Invoice
-                ? this.Invoice.toEntityObject()
-                : { ID: this.props.InvoiceId },
-            Category: this?.Category
-                ? this.Category.toEntityObject()
-                : { ID: this.props.CategoryId },
+            Invoice: this.Invoice?.toEntityObject(),
+            Category: this.Category?.toEntityObject(),
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,

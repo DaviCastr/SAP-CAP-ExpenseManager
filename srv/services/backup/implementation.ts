@@ -147,20 +147,20 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
                 cardRepo.findImageByIds(cards?.map(c => c.Id) || [])
             ]);
 
-            const groupBy = <T>(arr: T[], key: keyof T) =>
+            const groupBy = <T>(arr: T[], key: keyof T, keyId: string) =>
                 arr.reduce((acc, item) => {
-                    const k = item[key] as any;
+                    const k = item[key]?.[keyId] as any;
                     if (!acc[k]) acc[k] = [];
                     acc[k].push(item);
                     return acc;
                 }, {} as Record<string, T[]>);
 
-            const sharesByPerson = groupBy(shares || [], 'PersonId');
-            const categoriesByPerson = groupBy(categories || [], 'PersonId');
-            const cardsByPerson = groupBy(cards || [], 'PersonId');
-            const entitiesByShare = groupBy(entities || [], 'ShareId');
-            const invoicesByCard = groupBy(invoices || [], 'CardId');
-            const transactionsByInvoice = groupBy(transactions || [], 'InvoiceId');
+            const sharesByPerson = groupBy(shares || [], 'Person', 'Id');
+            const categoriesByPerson = groupBy(categories || [], 'Person', 'Id');
+            const cardsByPerson = groupBy(cards || [], 'Person', 'Id');
+            const entitiesByShare = groupBy(entities || [], 'Share', 'Id');
+            const invoicesByCard = groupBy(invoices || [], 'Card', 'Id');
+            const transactionsByInvoice = groupBy(transactions || [], 'Invoice', 'Id');
 
             const mapById = <T extends { ID: string, Image: Readable }>(arr: T[]) =>
                 arr?.reduce((acc, item) => {

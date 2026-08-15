@@ -2,13 +2,14 @@ import { TransactionModel } from '@/models/transaction';
 import { Categories, Category, Transactions } from '@models/apps/dflc/expensemanager/entities';
 import { Readable } from 'stream';
 import { BaseModel } from './base';
+import { PersonModel } from './person';
 
 export type CategoryProperties = {
     Id: string;
     Name: string;
     Image: Readable;
     ImageType: string;
-    PersonId: string;
+    Person: PersonModel;
     Transactions?: TransactionModel[];
     CreatedAt: string;
     CreatedBy: string;
@@ -24,23 +25,28 @@ export class CategoryModel extends BaseModel {
         return new CategoryModel(properties);
     }
 
-    public static singleModel(properties: Category): CategoryModel {
+    public static singleModel(properties: Category): CategoryModel | undefined {
 
         return this.mapModel([properties])?.[0];
 
     }
 
-    public static mapModel(Categories: Categories): CategoryModel[] {
+    public static mapModel(Categories: Categories): CategoryModel[] | null {
 
         return Categories?.map((Category: Category) => {
+
+            const oPersonModel = PersonModel.singleModel({
+                ...Category?.Person,
+                ID: Category?.Person?.ID || Category?.Person_ID as string
+            });
 
             return CategoryModel.with({
                 Id: Category.ID as string,
                 Name: Category.Name as string,
                 Image: Category?.Image as Readable,
                 ImageType: Category.ImageType as string,
-                PersonId: Category.Person_ID || Category?.Person?.ID as string,
-                Transactions: TransactionModel.mapModel(Category?.Transactions as Transactions),
+                Person: oPersonModel as PersonModel,
+                Transactions: TransactionModel.mapModel(Category?.Transactions as Transactions) as TransactionModel[],
                 CreatedAt: Category.createdAt as string,
                 CreatedBy: Category.createdBy as string,
                 ModifiedAt: Category.modifiedAt as string,
@@ -75,9 +81,9 @@ export class CategoryModel extends BaseModel {
 
     }
 
-    public get PersonId() {
+    public get Person() {
 
-        return this.properties.PersonId;
+        return this.properties.Person;
 
     }
 
@@ -130,7 +136,7 @@ export class CategoryModel extends BaseModel {
             Name: this.properties.Name,
             Image: this.properties.Image,
             ImageType: this.properties.ImageType,
-            Person: { ID: this.properties.PersonId },
+            Person: this.Person.toEntityObject(),
             Transactions: this.properties.Transactions?.map((Transaction)=> Transaction.toEntityObject()),
             createdAt: this.properties.CreatedAt,
             createdBy: this.properties.CreatedBy,

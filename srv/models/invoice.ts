@@ -1,8 +1,9 @@
 import Decimal from 'decimal.js';
 import { CurrencyModel } from '@/models/currency';
-import { Invoice, Invoices } from '@models/apps/dflc/expensemanager/entities';
+import { Card, Invoice, Invoices } from '@models/apps/dflc/expensemanager/entities';
 import { TransactionModel } from './transaction';
 import { BaseModel } from './base';
+import { CardModel } from './card';
 
 type InvoiceProperties = {
     Id: string;
@@ -12,7 +13,7 @@ type InvoiceProperties = {
     TotalAmount: Decimal;
     Currency: CurrencyModel;
     InvoiceSent: boolean;
-    CardId: string;
+    Card?: CardModel;
     Transactions: TransactionModel[];
     CreatedAt?: string;
     CreatedBy?: string;
@@ -30,13 +31,13 @@ export class InvoiceModel extends BaseModel {
 
     }
 
-    public static singleModel(properties: Invoice): InvoiceModel {
+    public static singleModel(properties: Invoice): InvoiceModel | undefined {
 
         return this.mapModel([properties])?.[0];
 
     }
 
-    public static mapModel(Invoices: Invoices): InvoiceModel[] {
+    public static mapModel(Invoices: Invoices): InvoiceModel[] | null {
 
         const oInvoicesModel: InvoiceModel[] =
 
@@ -47,6 +48,11 @@ export class InvoiceModel extends BaseModel {
                     code: Invoice?.Currency?.code || Invoice?.Currency_code as string
                 });
 
+                const oCardModel = CardModel.singleModel({
+                    ...Invoice.Card,
+                    ID: Invoice.Card?.ID || Invoice.Card_ID as string
+                });
+
                 return InvoiceModel.with({
                     Id: Invoice?.ID as string,
                     Year: Invoice?.Year as number,
@@ -55,8 +61,8 @@ export class InvoiceModel extends BaseModel {
                     TotalAmount: this.retrieveDecimal(Invoice?.TotalAmount),
                     Currency: oCurrencyModel,
                     InvoiceSent: Invoice?.InvoiceSent as boolean,
-                    CardId: Invoice?.Card_ID || Invoice?.Card?.ID as string,
-                    Transactions: TransactionModel.mapModel(Invoice?.Transactions || []),
+                    Card: oCardModel,
+                    Transactions: TransactionModel.mapModel(Invoice?.Transactions as []) as TransactionModel[],
                     CreatedAt: Invoice?.createdAt as string,
                     CreatedBy: Invoice?.createdBy as string,
                     ModifiedAt: Invoice?.modifiedAt as string,
@@ -65,7 +71,7 @@ export class InvoiceModel extends BaseModel {
 
             });
 
-        return oInvoicesModel || [] as InvoiceModel[];
+        return oInvoicesModel;
 
     }
 
@@ -111,9 +117,9 @@ export class InvoiceModel extends BaseModel {
 
     }
 
-    public get CardId() {
+    public get Card() {
 
-        return this.props.CardId;
+        return this.props.Card;
 
     }
 
@@ -169,7 +175,7 @@ export class InvoiceModel extends BaseModel {
             Description: this.props.Description,
             Currency: this.props.Currency.toEntityObject(),
             InvoiceSent: this.props.InvoiceSent,
-            Card: { ID: this.props.CardId },
+            Card: this.Card?.toEntityObject(),
             Transactions: this.props.Transactions?.map((item) => item.toEntityObject()),
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,

@@ -42,7 +42,7 @@ export class PersonModel extends BaseModel {
         return new PersonModel(properties);
     }
 
-    public static singleModel(properties: Person): PersonModel {
+    public static singleModel(properties: Person): PersonModel | undefined {
 
         return this.mapModel([properties])?.[0];
 
@@ -75,9 +75,9 @@ export class PersonModel extends BaseModel {
                 TotalExpensesClosed: this.retrieveDecimal(Person.TotalExpensesClosed),
                 MonthCriticallity: Person.MonthCriticallity as number,
                 CriticallityToPay: Person.CriticallityToPay as number,
-                Shares: ShareModel?.mapModel(Person?.Shares || []),
-                Categories: CategoryModel?.mapModel(Person?.Categories || []),
-                Cards: CardModel?.mapModel(Person?.Cards || []),
+                Shares: ShareModel?.mapModel(Person?.Shares as []) as ShareModel[],
+                Categories: CategoryModel?.mapModel(Person?.Categories as []) as CategoryModel[],
+                Cards: CardModel?.mapModel(Person?.Cards as []),
                 CreatedAt: Person.createdAt as string,
                 CreatedBy: Person.createdBy as string,
                 ModifiedAt: Person.modifiedAt as string,

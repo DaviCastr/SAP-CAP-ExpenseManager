@@ -4,6 +4,7 @@ import { CurrencyModel } from '@/models/currency';
 import { InvoiceModel } from '@/models/invoice';
 import { Card, Card as CardEntityType, Cards } from '@models/apps/dflc/expensemanager/entities';
 import { BaseModel } from "./base";
+import { PersonModel } from "./person";
 
 type CardProperties = {
     Id: string;
@@ -17,7 +18,7 @@ type CardProperties = {
     ClosingDay: number;
     InvoiceAmountForPayment: Decimal;
     InvoiceAmountToPay: Decimal;
-    PersonId: string;
+    Person: PersonModel;
     Invoices: InvoiceModel[];
     CreatedAt?: string;
     CreatedBy?: string;
@@ -52,6 +53,11 @@ export class CardModel extends BaseModel {
                 code: Card?.Currency?.code || Card?.Currency_code as string
             });
 
+            const oPersonModel = PersonModel.singleModel({
+                ...Card?.Person,
+                ID: Card?.Person?.ID || Card?.Person_ID as string
+            });
+
             return CardModel.with({
                 Id: Card.ID as string,
                 Name: Card.Name as string,
@@ -64,8 +70,8 @@ export class CardModel extends BaseModel {
                 ClosingDay: Card.ClosingDay as number,
                 InvoiceAmountForPayment: this.retrieveDecimal(Card.InvoiceAmountForPayment),
                 InvoiceAmountToPay: this.retrieveDecimal(Card.InvoiceAmountToPay),
-                PersonId: Card?.Person?.ID || Card?.Person_ID as string,
-                Invoices: InvoiceModel.mapModel(Card?.Invoices || []),
+                Person: oPersonModel as PersonModel,
+                Invoices: InvoiceModel.mapModel(Card?.Invoices as []) as InvoiceModel[],
                 CreatedAt: Card.createdAt as string,
                 CreatedBy: Card.createdBy as string,
                 ModifiedAt: Card.modifiedAt as string,
@@ -142,9 +148,9 @@ export class CardModel extends BaseModel {
 
     }
 
-    public get PersonId() {
+    public get Person() {
 
-        return this.props.PersonId;
+        return this.props.Person;
 
     }
 
@@ -228,7 +234,7 @@ export class CardModel extends BaseModel {
             ClosingDay: this.props.ClosingDay,
             InvoiceAmountForPayment: this.props.InvoiceAmountForPayment?.toNumber(),
             InvoiceAmountToPay: this.props.InvoiceAmountToPay?.toNumber(),
-            Person: { ID: this.props.PersonId },
+            Person: this.Person.toEntityObject(),
             Invoices: this.props.Invoices?.map((item) => item?.toEntityObject()),
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,

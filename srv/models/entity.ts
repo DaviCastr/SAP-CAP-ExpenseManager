@@ -1,11 +1,12 @@
 import { Entities, EntitiesCodes, Entity, Permissions } from '@models/apps/dflc/expensemanager/entities';
 import { BaseModel } from './base';
+import { ShareModel } from './share';
 
 type EntityProperties = {
     Id: string;
     Entity: EntitiesCodes;
     Permission: Permissions;
-    ShareId: string;
+    Share: ShareModel;
     CreatedAt?: string;
     CreatedBy?: string;
     ModifiedAt?: string;
@@ -24,27 +25,26 @@ export class EntityModel extends BaseModel {
 
     }
 
-    public static singleModel(properties: Entity): EntityModel {
+    public static singleModel(properties: Entity): EntityModel | undefined {
 
-        return this.mapModel([properties])?.[0] as EntityModel;
+        return this.mapModel([properties])?.[0];
 
     }    
 
     public static mapModel(Entities: Entities): EntityModel[] | null {
 
-        if (Entities.length === 0) {
-
-            return null;
-
-        }
-
         return Entities?.map((Entity: Entity) => {
+
+            const oShareModel = ShareModel.singleModel({
+                ...Entity?.Share,
+                ID: Entity?.Share?.ID || Entity?.Share_ID as string
+            });
 
             return EntityModel.with({
                 Id: Entity?.ID as string,
                 Entity: Entity?.Entity as EntitiesCodes,
                 Permission: Entity?.Permission as Permissions,
-                ShareId: Entity?.Share_ID || Entity?.Share?.ID as string,
+                Share: oShareModel as ShareModel,
                 CreatedAt: Entity?.createdAt as string,
                 CreatedBy: Entity?.createdBy as string,
                 ModifiedAt: Entity?.modifiedAt as string,
@@ -73,9 +73,9 @@ export class EntityModel extends BaseModel {
 
     }
 
-    public get ShareId() {
+    public get Share() {
 
-        return this.props.ShareId;
+        return this.props.Share;
 
     }
 
@@ -115,7 +115,7 @@ export class EntityModel extends BaseModel {
             ID: this.props.Id,
             Entity: this.props.Entity,
             Permission: this.props.Permission,
-            Share: { ID: this.props.ShareId },
+            Share: this.Share.toEntityObject(),
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,
             modifiedAt: this.props.ModifiedAt,

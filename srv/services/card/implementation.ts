@@ -92,10 +92,13 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
             const mapInvoices = new Map<string, any[]>();
 
             for (const inv of invoicesByCard) {
-                if (!mapInvoices.has(inv?.CardId)) {
-                    mapInvoices.set(inv?.CardId, []);
+
+                if(!inv?.Card) continue;
+
+                if (!mapInvoices.has(inv?.Card?.Id)) {
+                    mapInvoices.set(inv?.Card?.Id, []);
                 }
-                mapInvoices.get(inv.CardId)!.push(inv);
+                mapInvoices.get(inv.Card?.Id)!.push(inv);
             }
 
             for (let Card of oCardsFiltered) {

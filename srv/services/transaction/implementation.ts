@@ -92,7 +92,7 @@ export class TransactionServiceImplementation extends BaseServiceImplementation<
 
                 }
 
-                const oTransactionData = oTransactionModel.toEntityObject();
+                const oTransactionData = oTransactionModel?.toEntityObject() as Transaction;
 
                 oTransactionsData.push({
                     ...oTransactionData

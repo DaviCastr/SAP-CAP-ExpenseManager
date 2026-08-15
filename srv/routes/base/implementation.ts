@@ -1,6 +1,7 @@
 import cds, { entity, Request, Service } from "@sap/cds";
 import { BaseRoute } from "./protocols";
 import { BaseController, BaseControllerResponse } from "@/controllers/base";
+import { Entity } from "@models/_";
 
 export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
@@ -186,21 +187,17 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
     protected async afterRead(Entities: Entity[] | Entity, Request: Request): Promise<void> {
 
-        const method = (Request as any).http?.req?.method;
-        const url = (Request as any).http.req.url || '';
-
-        // if (method !== "GET" && url !== "/$batch") {
-        //     return;
-        // }
-
         const isSingleEntity = !Array.isArray(Entities);
         const oEntities = isSingleEntity ? [Entities] : Entities;
-
+        const entitiesData = oEntities.map(item => this.clone(item));
         const oResult = await this.Controller.afterRead(oEntities, Request.user);
 
         if (oResult.status >= 400) {
             return this.returnRejectMessage(Request, oResult);
         }
+
+        oEntities.length = 0;
+        oEntities.push(...entitiesData);
 
         const oResultData = oResult.data;
 
@@ -208,18 +205,28 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
             let processedData = Array.isArray(oResultData) ? oResultData : [oResultData];
 
-            const draftFields = this.getDraftFields(oEntities[0]);
-
             processedData = processedData.map((processedItem, index) => {
+
                 const originalItem = oEntities[index] || oEntities[0];
 
                 if (!originalItem || !processedItem) {
                     return processedItem || originalItem;
                 }
 
-                const merged = { ...originalItem, ...processedItem };
+                const draftFields = { ...this.getDraftFields(originalItem) };
 
-                this.addDraftsToArrays(merged, draftFields);
+                Object.keys(draftFields).forEach(field => {
+                    if (processedItem[field] === undefined) {
+                        processedItem[field] = draftFields[field];
+                    }
+                });
+
+                const merged = {
+                    ...originalItem,
+                    ...processedItem
+                };
+
+                this.addDraftsToArraysAndObjects(merged, originalItem);
 
                 return merged;
             });
@@ -227,44 +234,83 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
             oEntities.length = 0;
             oEntities.push(...processedData);
 
-            const isMediaAccess = /\/Image(\?|$)/.test(url);
-
-            if (isMediaAccess && oEntities.length > 0) {
-                return;
-            }
-
             if (Array.isArray((Request as any).results)) {
+                
                 (Request as any).results = oEntities;
+
             } else {
+
                 (Request as any).results = oEntities[0];
+
             }
+
         }
+
     }
 
-    private getDraftFields(entity: any): Record<string, any> {
-        const fields: Record<string, any> = {};
-        const draftNames = ['DraftAdministrativeData_DraftUUID', 'HasActiveEntity', 'HasDraftEntity', 'IsActiveEntity', 'DraftUUID'];
 
-        if (entity) {
-            draftNames.forEach(name => {
-                if (entity[name] !== undefined) {
-                    fields[name] = entity[name];
-                }
-            });
+    private clone<T>(value: T): T {
+        if (Array.isArray(value)) {
+            return value.map(v => this.clone(v)) as T;
         }
+
+        if (value && typeof value === "object") {
+            return Object.fromEntries(
+                Object.entries(value).map(([k, v]) => [k, this.clone(v)])
+            ) as T;
+        }
+
+        return value;
+    }
+
+
+    private getDraftFields(entity: any): Record<string, any> {
+        if (!entity) {
+            return {};
+        }
+
+        const fields: Record<string, any> = {};
+
+        const fixedFields = [
+            'HasActiveEntity',
+            'HasDraftEntity',
+            'IsActiveEntity'
+        ];
+
+        fixedFields.forEach(field => {
+            if (entity[field] !== undefined) {
+                fields[field] = entity[field];
+            }
+        });
+
+        Object.keys(entity)
+            .filter(field => field.startsWith('Draft') || field.startsWith('$'))
+            .forEach(field => {
+                fields[field] = entity[field];
+            });
 
         return fields;
     }
 
-    private addDraftsToArrays(obj: any, draftFields: Record<string, any>): void {
+    private addDraftsToArraysAndObjects(obj: any, originalObj: any): void {
         if (!obj) return;
 
         Object.keys(obj).forEach(key => {
             if (Array.isArray(obj[key])) {
 
-                obj[key] = obj[key].map((item: any) => {
+                if (key.startsWith('Draft')) {
+                    return;
+                }
+
+                obj[key] = obj[key].map((item: any, index: number) => {
+
                     if (item && typeof item === 'object') {
-                        const enriched = { ...item };
+
+                        const originalItem = originalObj[key][index] || originalObj[key][0];
+
+                        let draftFields = this.getDraftFields(originalItem);
+
+                        const enriched = { ...originalItem, ...item };
 
                         Object.keys(draftFields).forEach(field => {
                             if (enriched[field] === undefined) {
@@ -272,7 +318,7 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
                             }
                         });
 
-                        this.addDraftsToArrays(enriched, draftFields);
+                        this.addDraftsToArraysAndObjects(enriched, originalItem);
 
                         return enriched;
                     }

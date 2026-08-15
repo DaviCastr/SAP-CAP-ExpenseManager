@@ -2,7 +2,7 @@ import '../configs/module-alias';
 import { oMainRouteFactory } from '@/factories/routes/main';
 import cds from '@sap/cds';
 
-class GestaoGastos extends cds.ApplicationService {
+class ExpenseManager extends cds.ApplicationService {
 
 
     init(): Promise<void> {
@@ -16,4 +16,4 @@ class GestaoGastos extends cds.ApplicationService {
 
 }
 
-module.exports = GestaoGastos
+module.exports = ExpenseManager

@@ -227,7 +227,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
     protected personPath(): string {
 
-        return 'Invoice.Transaction.Person';
+        return 'Invoice.Card.Person';
 
     }
 

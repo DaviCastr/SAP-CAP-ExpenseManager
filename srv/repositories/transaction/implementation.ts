@@ -287,7 +287,7 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
         const returnTotalAmount = async (Identifier: Transaction['Identifier']) => {
 
             const oTotalAmount = await cds.run(
-                SELECT.one`coalesce(sum(TotalAmount),0) as TotalAmount`
+                SELECT.one`coalesce(sum(Amount),0) as TotalAmount`
                     .from(oTransactionEntity)
                     .where({ Identifier: Identifier })
             );

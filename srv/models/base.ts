@@ -4,7 +4,7 @@ export class BaseModel {
 
     protected static retrieveDecimal(value: number | null | undefined): Decimal {
 
-        return value ? new Decimal(value).toDecimalPlaces(2) : null as any;
+        return value || value == 0 ? new Decimal(value).toDecimalPlaces(2) : null as any;
 
     }
 

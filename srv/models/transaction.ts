@@ -58,8 +58,8 @@ export class TransactionModel extends BaseModel {
                 ID: Transaction.Category?.ID || Transaction?.Category_ID as string
             });
 
-            if('TotalAmount' in Transaction){
-                Transaction.TotalAmount = 0;
+            if ('TotalAmount' in Transaction) {
+                if (!Transaction.TotalAmount) Transaction.TotalAmount = 0;
             }
 
             return TransactionModel.with({

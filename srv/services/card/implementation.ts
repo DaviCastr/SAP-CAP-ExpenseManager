@@ -355,15 +355,15 @@ export class CardServiceImplementation extends BaseServiceImplementation<Card> i
 
         if (Card?.ClosingDay && Card?.DueDay) {
 
-            if (Card?.DueDay - Card?.ClosingDay < 2) {
+            // if (Card?.DueDay - Card?.ClosingDay < 2 ) {
 
-                const oStack = new Error().stack as string;
+            //     const oStack = new Error().stack as string;
 
-                const message = this.getMessage('error.incorectDueDayClosinDay', ServiceLocator.getRequest(), undefined, { card: Card?.Name || '' });
+            //     const message = this.getMessage('error.incorectDueDayClosinDay', ServiceLocator.getRequest(), undefined, { card: Card?.Name || '' });
 
-                return left(new PermissionDenied(message, 403, oStack));
+            //     return left(new PermissionDenied(message, 403, oStack));
 
-            }
+            // }
 
         }
 

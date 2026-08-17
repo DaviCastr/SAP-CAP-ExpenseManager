@@ -148,7 +148,7 @@ entity Transactions : cuid, managed {
     Installment       : Integer;
     Description       : String(255);
     Invoice           : Association to Invoices   @mandatory; //@assert.target
-    Category          : Association to Categories @mandatory;
+    Category          : Association to Categories;
 }
 
 entity Backups : cuid, managed {

@@ -317,7 +317,7 @@ export class LiabilityRepositoryImplementation
         ignoreDraft?: boolean
     ): entity {
 
-        return ServiceLocator.getEntity('Invoices', ignoreDraft);
+        return ServiceLocator.getEntity('Liabilities', ignoreDraft);
 
     }
 

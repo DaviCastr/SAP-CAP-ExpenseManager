@@ -62,6 +62,6 @@ entity Liabilities : cuid, managed {
 
     virtual HealthScore           : Integer;
 
-    Transactions                  : Composition of many entities.LiabilityTransactions
-                                        on Transactions.Liability = $self;
+    LiabilityTransactions         : Composition of many entities.LiabilityTransactions
+                                        on LiabilityTransactions.Liability = $self;
 }

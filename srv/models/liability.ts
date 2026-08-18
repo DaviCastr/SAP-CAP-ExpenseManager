@@ -43,7 +43,7 @@ type LiabilityProperties = {
 
     PersonId?: string;
 
-    Transactions?: LiabilityTransactionModel[];
+    LiabilityTransactions?: LiabilityTransactionModel[];
 
     CreatedAt?: string;
     CreatedBy?: string;
@@ -110,7 +110,7 @@ export class LiabilityModel extends BaseModel {
 
                 PersonId: item.Person_ID || item?.Person?.ID,
 
-                Transactions: LiabilityTransactionModel.mapModel(item?.Transactions || []),
+                LiabilityTransactions: LiabilityTransactionModel.mapModel(item?.LiabilityTransactions || []),
 
                 CreatedAt: item.createdAt as string,
                 CreatedBy: item.createdBy as string,
@@ -159,7 +159,7 @@ export class LiabilityModel extends BaseModel {
 
     public get PersonId() { return this.props.PersonId; }
 
-    public get Transactions() { return this.props.Transactions || []; }
+    public get Transactions() { return this.props.LiabilityTransactions || []; }
 
     public get CreatedAt() { return this.props.CreatedAt; }
     public get CreatedBy() { return this.props.CreatedBy; }
@@ -210,7 +210,7 @@ export class LiabilityModel extends BaseModel {
 
             Person: this.props.PersonId ? { ID: this.props.PersonId } : undefined,
 
-            Transactions: this.props.Transactions?.map(x => x.toEntityObject()),
+            Transactions: this.props.LiabilityTransactions?.map(x => x.toEntityObject()),
 
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,

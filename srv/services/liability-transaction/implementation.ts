@@ -431,7 +431,7 @@ export class LiabilityTransactionServiceImplementation
             }
 
             const liabilityId =
-                tx.LiabilityId as string;
+                tx.Liability?.Id as string;
 
             const authRead =
                 await this.authorizeLiabilityRead(

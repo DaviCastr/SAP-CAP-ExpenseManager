@@ -1,5 +1,6 @@
 namespace apps.dflc.expensemanager.entities;
 
+using {apps.dflc.expensemanager.entities as entities} from './liabilities';
 using {
     Currency,
     cuid,
@@ -53,6 +54,9 @@ entity Persons : cuid, managed {
 
     Cards                       : Composition of many Cards
                                       on Cards.Person = $self;
+
+    Liabilities                 : Composition of many entities.Liabilities
+                                      on Liabilities.Person = $self;
 }
 
 entity Categories : cuid, managed {
@@ -89,7 +93,7 @@ entity Cards : cuid, managed {
 
     @Core.MediaType               : ImageType
     @UI                           : {IsImage: true}
-    Image                           : LargeBinary  @stream;
+    Image                           : LargeBinary            @stream;
 
     @Core.IsMediaType             : true
     ImageType                       : String;
@@ -147,7 +151,7 @@ entity Transactions : cuid, managed {
     TotalInstallments : Integer;
     Installment       : Integer;
     Description       : String(255);
-    Invoice           : Association to Invoices   @mandatory; //@assert.target
+    Invoice           : Association to Invoices @mandatory; //@assert.target
     Category          : Association to Categories;
 }
 
@@ -270,18 +274,20 @@ type Transactionsype {
 }
 
 type CompleteInvoiceReturn {
-    Year               : Integer;
-    Month              : Integer;
-    Description        : String;
-    TotalAmount        : Decimal;
-    CurrencyCode       : String;
-    Currency           : { code : String(3) };
-    KPIs               : {
+    Year         : Integer;
+    Month        : Integer;
+    Description  : String;
+    TotalAmount  : Decimal;
+    CurrencyCode : String;
+    Currency     : {
+        code : String(3)
+    };
+    KPIs         : {
         TotalTransactions : Integer;
         TotalCards        : Integer;
         TotalCategories   : Integer;
     };
-    Transactions       : many TrasactionsCompleteInvoice;
+    Transactions : many TrasactionsCompleteInvoice;
 }
 
 type TrasactionsCompleteInvoice {

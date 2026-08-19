@@ -4,16 +4,26 @@ import {
 } from "../base";
 
 import {
-    LiabilityTransaction
+    LiabilityTransaction,
+    LiabilityTransactions
 } from "@models/apps/dflc/expensemanager/entities";
 
 export interface LiabilityTransactionController
     extends BaseController<LiabilityTransaction> {
 
-    reverseTransaction():
-        Promise<BaseControllerResponse>;
+    onDelete(
+        LiabilityTransaction:
+            LiabilityTransaction
+    ): Promise<BaseControllerResponse>;
 
-    recalculateLiability():
-        Promise<BaseControllerResponse>;
+    afterCreate(
+        LiabilityTransactions:
+            LiabilityTransactions
+    ): Promise<BaseControllerResponse>;
+
+    afterUpdate(
+        LiabilityTransactions:
+            LiabilityTransactions
+    ): Promise<BaseControllerResponse>;
 
 }

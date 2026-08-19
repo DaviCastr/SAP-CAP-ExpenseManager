@@ -1,0 +1,195 @@
+@server=http://localhost:4004
+@username=davi
+@password=123456
+@personId=11111111-1111-1111-1111-111111111111
+
+
+### Cria uma dívida para os testes (draft)
+# @name Liabilities_Draft_POST
+POST {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Financiamento Carro",
+  "OriginalAmount": 5000,
+  "Currency": {
+    "code": "BRL"
+  },
+  "Installments": 10,
+  "FirstDueDate": "2026-09-10",
+  "Person": {
+    "ID": "{{personId}}"
+  }
+}
+
+
+@liabilityDraftID={{Liabilities_Draft_POST.response.body.$.ID}}
+
+
+### Ativa a dívida
+# @name Liabilities_Draft_Activate
+POST {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityDraftID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### ID da dívida ativa
+@liabilityID={{Liabilities_Draft_Activate.response.body.ID}}
+
+
+### LiabilityTransactions GET (ativos)
+# @name LiabilityTransactions_GET
+GET {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### LiabilityTransactions Draft POST (pagamento via CRUD/draft)
+# @name LiabilityTransactions_Draft_POST
+POST {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Liability_ID": "{{liabilityID}}",
+  "Type": "PAYMENT",
+  "Amount": 1000,
+  "MovementDate": "2026-08-18",
+  "Currency": {
+    "code": "BRL"
+  },
+  "Description": "Pagamento da 1a parcela"
+}
+
+
+### Result from POST request above
+@txDraftID={{LiabilityTransactions_Draft_POST.response.body.$.ID}}
+
+
+### LiabilityTransactions Draft Prepare
+# @name LiabilityTransactions_Draft_Prepare
+POST {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions(ID={{txDraftID}},IsActiveEntity=false)/LiabilityTransactionService.draftPrepare
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### LiabilityTransactions Draft Activate (cria a transação ativa e recalcula a dívida)
+# @name LiabilityTransactions_Draft_Activate
+POST {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions(ID={{txDraftID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Result from Activate request above (ID da transação ativa)
+@txID={{LiabilityTransactions_Draft_Activate.response.body.ID}}
+
+
+### Liability GET (CurrentBalance deve ser 4000 e PaidAmount 1000)
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityID}},IsActiveEntity=true)
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### LiabilityTransactions Draft POST (juros via CRUD/draft)
+# @name LiabilityTransactions_Interest_Draft_POST
+POST {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Liability_ID": "{{liabilityID}}",
+  "Type": "INTEREST",
+  "Amount": 50,
+  "MovementDate": "2026-08-18",
+  "Currency": {
+    "code": "BRL"
+  },
+  "Description": "Juros do mes"
+}
+
+
+@txInterestDraftID={{LiabilityTransactions_Interest_Draft_POST.response.body.$.ID}}
+
+
+### Ativa os juros
+# @name LiabilityTransactions_Interest_Draft_Activate
+POST {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions(ID={{txInterestDraftID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Liability GET (CurrentBalance deve ser 4050 = 5000 - 1000 + 50)
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityID}},IsActiveEntity=true)
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### LiabilityTransactions Draft Edit (preparar edição da transação)
+# @name LiabilityTransactions_Draft_Edit
+POST {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions(ID={{txID}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### PATCH no draft da transação (edição via CRUD)
+# @name LiabilityTransactions_Draft_Edit_PATCH
+PATCH {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions(ID={{txID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Description": "Pagamento da 1a parcela (alterado)"
+}
+
+
+### Activate edição da transação
+# @name LiabilityTransactions_Draft_Edit_Activate
+POST {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions(ID={{txID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### LiabilityTransactions DELETE ativa (recálculo volta a CurrentBalance para 4050 e PaidAmount para 0)
+# @name LiabilityTransactions_DELETE_Active
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions(ID={{txID}},IsActiveEntity=true)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Liability GET (conferir estado após delete da transação)
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityID}},IsActiveEntity=true)
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### LiabilityTransactions DELETE draft (limpeza)
+# @name LiabilityTransactions_DELETE_Draft
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/LiabilityTransaction/LiabilityTransactions(ID={{txInterestDraftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Liability DELETE ativa (limpeza)
+# @name Liabilities_DELETE_Active
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityID}},IsActiveEntity=true)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}

@@ -35,23 +35,6 @@ service LiabilityService {
 
     entity Liabilities as projection on entities.Liabilities;
 
-
-    action   CreateLiability(PersonId: UUID,
-                             Name: String,
-                             OriginalAmount: Decimal,
-                             Currency: String)              returns entities.ActionResult;
-
-    action   PayLiability(LiabilityId: UUID,
-                          Amount: Decimal,
-                          Notes: String)                    returns entities.ActionResult;
-
-    action   CloseLiability(LiabilityId: UUID)              returns entities.ActionResult;
-
-    action   RenegotiateLiability(LiabilityId: UUID,
-                                  NewBalance: Decimal,
-                                  NewInstallments: Integer,
-                                  NewInterestRate: Decimal) returns entities.ActionResult;
-
     function Dashboard(PersonId: UUID)                      returns entities.ActionResult;
 
     function Analytics(PersonId: UUID)                      returns entities.ActionResult;

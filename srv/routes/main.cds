@@ -55,27 +55,6 @@ service ExpenseManager {
                                      Year: Integer,
                                      Month: Integer)         returns entities.ActionResult;
 
-    //Liabilities
-    action   CreateLiability(PersonId: UUID,
-                             Name: String,
-                             OriginalAmount: Decimal,
-                             Currency: String)               returns entities.ActionResult;
-
-    action   PayLiability(LiabilityId: UUID,
-                          Amount: Decimal,
-                          Notes: String)                     returns entities.ActionResult;
-
-    action   CloseLiability(LiabilityId: UUID)               returns entities.ActionResult;
-
-    action   RenegotiateLiability(LiabilityId: UUID,
-                                  NewBalance: Decimal,
-                                  NewInstallments: Integer,
-                                  NewInterestRate: Decimal)  returns entities.ActionResult;
-
-    //Liability-Transaction
-    action   ReverseTransaction(TransactionId: UUID)         returns entities.ActionResult;
-    action   RecalculateLiability(LiabilityId: UUID)         returns entities.ActionResult;
-
     function CardExpensesByCategories(PersonId: UUID,
                                       CardId: UUID,
                                       InvoiceId: UUID,

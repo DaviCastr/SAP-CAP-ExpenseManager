@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import { User } from "@sap/cds";
 
 import {
     Either,
@@ -26,10 +27,6 @@ import {
 } from "@/infrastructure/ServiceLocator";
 
 import {
-    ServiceRegistry
-} from "@/infrastructure/ServiceRegistry";
-
-import {
     LiabilityRepository
 } from "@/repositories/liability";
 
@@ -50,20 +47,16 @@ import {
 } from "@/repositories/entity";
 
 import {
-    LiabilityCreateModel
-} from "@/models/liability-create";
+    LiabilityTransactionModel
+} from "@/models/liability-transaction";
+
+import {
+    LiabilityModel
+} from "@/models/liability";
 
 import {
     LiabilityDashboardModel
 } from "@/models/liability-dashboard";
-
-import {
-    LiabilityPayModel
-} from "@/models/liability-pay";
-
-import {
-    LiabilityCloseModel
-} from "@/models/liability-close";
 
 import {
     LiabilityAnalyticsModel,
@@ -76,18 +69,9 @@ import {
 } from "@/models/liability-payment-schedule";
 
 import {
-    LiabilityRenegotiationModel,
-    LiabilityRenegotiationReturnProperties
-} from "@/models/liability-renegotiation";
-
-import {
     LiabilityFutureImpactModel,
     LiabilityFutureImpactReturnProperties
 } from "@/models/liability-future-impact";
-
-import {
-    LiabilityPremiumScoreModel
-} from "@/models/liability-premium-score";
 
 import {
     CurrencyModel
@@ -147,14 +131,6 @@ export class LiabilityServiceImplementation
 
     }
 
-    private getTransactionService(): any {
-
-        return ServiceRegistry.get(
-            "LiabilityTransactions"
-        );
-
-    }
-
     // ==================================================
     // HELPERS
     // ==================================================
@@ -188,7 +164,7 @@ export class LiabilityServiceImplementation
     ) {
 
         const auth =
-            await this.afterRead(
+            await this.enrichRows(
                 rows,
                 user
             );
@@ -209,7 +185,7 @@ export class LiabilityServiceImplementation
     ) {
 
         const auth =
-            await this.afterRead(
+            await this.enrichRows(
                 [row],
                 user
             );
@@ -229,109 +205,366 @@ export class LiabilityServiceImplementation
     }
 
     // ==================================================
-    // ACTIONS
+    // CRUD HOOKS
     // ==================================================
 
-    public async createLiability():
-        Promise<any> {
+    public async beforeCreate(
+        entity: Liability,
+        user: User
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        const data =
+            entity as any;
+
+        if (
+            data.CurrentBalance === undefined ||
+            data.CurrentBalance === null
+        ) {
+
+            data.CurrentBalance =
+                new Decimal(
+                    data.OriginalAmount || 0
+                );
+
+        }
+
+        if (
+            data.PaidAmount === undefined ||
+            data.PaidAmount === null
+        ) {
+
+            data.PaidAmount =
+                new Decimal(0);
+
+        }
+
+        if (!data.StartDate) {
+
+            data.StartDate =
+                new Date()
+                    .toISOString()
+                    .slice(0, 10);
+
+        }
+
+        if (!data.Status) {
+            data.Status =
+                "OPEN";
+        }
+
+        const installments =
+            Number(data.Installments) || 1;
+
+        if (
+            installments > 1 &&
+            (
+                data.InstallmentAmount === undefined ||
+                data.InstallmentAmount === null
+            ) &&
+            data.OriginalAmount
+        ) {
+
+            data.InstallmentAmount =
+                new Decimal(
+                    data.OriginalAmount
+                ).div(installments)
+                    .toDecimalPlaces(2);
+
+        }
+
+        return super.beforeCreate(
+            entity,
+            user
+        );
+
+    }
+
+
+    public async afterRead(
+        Entities: Liability[],
+        User: User
+    ): Promise<
+        Either<AbstractError, Liability[]>
+    > {
+
+        const result =
+            await super.afterRead(
+                Entities,
+                User
+            );
+
+        if (result.isLeft()) {
+            return result;
+        }
+
+        const enriched =
+            await this.enrichLiabilities(
+                result.value
+            );
+
+        return right(
+            enriched
+        );
+
+    }
+
+
+    private async enrichRows(
+        rows: Liability[],
+        user: User
+    ): Promise<
+        Either<AbstractError, Liability[]>
+    > {
+
+        return this.afterRead(
+            rows,
+            user
+        );
+
+    }
+
+
+    private async enrichLiabilities(
+        entities: Liability[]
+    ): Promise<Liability[]> {
+
+        if (!entities?.length) {
+            return entities;
+        }
+
+        const ids =
+            entities
+                .map(e => e.ID)
+                .filter(Boolean);
+
+        if (!ids.length) {
+            return entities;
+        }
+
+        let rows:
+            LiabilityTransactionModel[] = [];
 
         try {
 
-            const request =
-                ServiceLocator.getRequest();
+            rows =
+                await this
+                    .LiabilityTransactionRepository
+                    .findByLiabilityIds(
+                        ids
+                    ) || [];
 
-            if (!request.data.PersonId) {
+        } catch {
+            rows = [];
+        }
 
-                return left(
-                    new AbstractError(
-                        "PersonId is required",
-                        400,
-                        ""
-                    )
-                );
+        const grouped =
+            new Map<string, LiabilityTransactionModel[]>();
 
+        for (const transaction of rows) {
+
+            const key =
+                transaction.LiabilityId as string;
+
+            if (!key) continue;
+
+            if (!grouped.has(key)) {
+                grouped.set(key, []);
             }
 
-            const data: Liability = {
+            grouped
+                .get(key)!
+                .push(transaction);
 
-                Person_ID:
-                    request.data.PersonId,
+        }
 
-                Name:
-                    request.data.Name,
+        const today =
+            new Date()
+                .toISOString()
+                .slice(0, 10);
 
-                OriginalAmount:
-                    request.data.OriginalAmount,
+        const enriched: Liability[] = [];
 
-                CurrentBalance:
-                    request.data.OriginalAmount,
-
-                PaidAmount:
-                    0,
-
-                Currency_code:
-                    request.data.Currency,
-
-                Status:
-                    "OPEN"
-
-            };
-
-            const auth =
-                await this.beforeCreate(
-                    data as any,
-                    request.user
-                );
-
-            if (auth.isLeft()) {
-                return auth;
-            }
-
-            const created =
-                await this.Repository
-                    .createEntry(data);
-
-            const row =
-                created?.[0];
+        for (const entity of entities) {
 
             const model =
-                LiabilityCreateModel.singleModel({
+                LiabilityModel.singleModel(
+                    entity
+                );
 
-                    ID:
-                        row?.Id as string,
+            if (!model) {
+                enriched.push(entity);
+                continue;
+            }
 
-                    Name:
-                        row?.Name as string,
+            const data =
+                entity as any;
 
-                    CurrentBalance:
-                        row?.CurrentBalance
-                            ?.toNumber() as number,
+            const liabilityTransactions =
+                grouped.get(
+                    data.ID as string
+                ) || [];
 
-                    Status:
-                        row?.Status as string
+            const original =
+                new Decimal(
+                    data.OriginalAmount || 0
+                );
 
+            const paid =
+                new Decimal(
+                    data.PaidAmount || 0
+                );
+
+            const balance =
+                new Decimal(
+                    data.CurrentBalance ??
+                        original.minus(paid)
+                );
+
+            model.RemainingAmount =
+                balance;
+
+            model.ProgressPercent =
+                original.greaterThan(0)
+                    ? new Decimal(
+                        Number(
+                            paid
+                                .div(original)
+                                .mul(100)
+                                .toFixed(2)
+                        )
+                    )
+                    : new Decimal(0);
+
+            const totalInstallments =
+                Number(data.Installments) || 1;
+
+            const paidInstallments =
+                liabilityTransactions.filter(t =>
+                    t.Type === "PAYMENT" ||
+                    t.Type === "AMORTIZATION"
+                ).length;
+
+            model.PaidInstallments =
+                paidInstallments;
+
+            model.RemainingInstallments =
+                Math.max(
+                    totalInstallments - paidInstallments,
+                    0
+                );
+
+            model.NextDueDate =
+                this.computeNextDueDate(
+                    entity,
+                    paidInstallments
+                );
+
+            model.IsOverdue =
+                data.Status === "OPEN" &&
+                !!model.NextDueDate &&
+                model.NextDueDate < today;
+
+            model.HealthScore =
+                this.computeHealthScore({
+                    ...entity,
+                    IsOverdue:
+                        model.IsOverdue
                 });
 
-            return right(
-                model.toEntityObject()
-            );
-
-        } catch (error) {
-
-            const err =
-                error as Error;
-
-            return left(
-                new AbstractError(
-                    err.message,
-                    400,
-                    err.stack || ""
-                )
+            enriched.push(
+                model.toEntityObject() as Liability
             );
 
         }
 
+        return enriched;
+
     }
+
+
+    private computeNextDueDate(
+        entity: Liability,
+        paidInstallments: number
+    ): string | null {
+
+        const total =
+            Number(entity.Installments) || 1;
+
+        if (!entity.FirstDueDate) {
+            return null;
+        }
+
+        if (paidInstallments >= total) {
+            return null;
+        }
+
+        const date =
+            new Date(
+                `${entity.FirstDueDate}T00:00:00`
+            );
+
+        const monthsToAdd =
+            Math.min(
+                paidInstallments,
+                total - 1
+            );
+
+        date.setMonth(
+            date.getMonth() + monthsToAdd
+        );
+
+        return date
+            .toISOString()
+            .slice(0, 10);
+
+    }
+
+
+    private computeHealthScore(
+        entity: Liability
+    ): number {
+
+        const balance =
+            Number(
+                entity.CurrentBalance || 0
+            );
+
+        const original =
+            Number(
+                entity.OriginalAmount || 0
+            );
+
+        let score = 100;
+
+        if (entity.IsOverdue) {
+            score -= 30;
+        }
+
+        if (original > 0) {
+
+            const ratio =
+                balance / original;
+
+            if (ratio > 0.8) {
+                score -= 20;
+            } else if (ratio > 0.5) {
+                score -= 10;
+            }
+
+        }
+
+        return Math.max(
+            Math.min(score, 100),
+            0
+        );
+
+    }
+
+    // ==================================================
+    // FUNCTIONS
+    // ==================================================
 
     public async dashboard():
         Promise<any> {
@@ -414,265 +647,20 @@ export class LiabilityServiceImplementation
                         80,
 
                     Currency:
-                        safeRows?.[0]
-                            ?.Currency as CurrencyModel,
+                        safeRows?.[0]?.Currency
+                            ? CurrencyModel.singleModel({
+                                ...safeRows?.[0]?.Currency,
+                                code:
+                                    safeRows?.[0]?.Currency?.code ||
+                                    safeRows?.[0]?.Currency_code
+                            } as any)
+                            : undefined as any,
 
                     NextPayments: [],
 
                     Recommendations: [],
 
                     TopDebts: []
-
-                });
-
-            return right(
-                model.toEntityObject()
-            );
-
-        } catch (error) {
-
-            const err =
-                error as Error;
-
-            return left(
-                new AbstractError(
-                    err.message,
-                    400,
-                    err.stack || ""
-                )
-            );
-
-        }
-
-    }
-
-    public async payLiability():
-        Promise<any> {
-
-        try {
-
-            const request =
-                ServiceLocator.getRequest();
-
-            const debt =
-                await this.Repository
-                    .findById(
-                        request.data
-                            .LiabilityId
-                    );
-
-            if (!debt) {
-
-                return left(
-                    new AbstractError(
-                        "Liability not found",
-                        404,
-                        ""
-                    )
-                );
-
-            }
-
-            const auth =
-                await this.beforeUpdate(
-                    debt as any,
-                    request.user
-                );
-
-            if (auth.isLeft()) {
-                return auth;
-            }
-
-            const payment =
-                new Decimal(
-                    request.data.Amount || 0
-                );
-
-            let balance =
-                (
-                    debt.CurrentBalance ||
-                    new Decimal(0)
-                ).minus(payment);
-
-            if (balance.lessThan(0)) {
-                balance =
-                    new Decimal(0);
-            }
-
-            const paid =
-                (
-                    debt.PaidAmount ||
-                    new Decimal(0)
-                ).plus(payment);
-
-            await this.Repository
-                .updateAmounts(
-                    debt.Id,
-                    {
-                        CurrentBalance:
-                            balance,
-
-                        PaidAmount:
-                            paid,
-
-                        Status:
-                            balance.equals(0)
-                                ? "PAID"
-                                : "OPEN"
-                    }
-                );
-
-            const trxService =
-                this.getTransactionService();
-
-            if (trxService) {
-
-                const trxAuth =
-                    await trxService
-                        .beforeCreate(
-                            {
-                                Liability_ID:
-                                    debt.Id
-                            },
-                            request.user
-                        );
-
-                if (trxAuth.isLeft()) {
-                    return trxAuth;
-                }
-
-            }
-
-            await this
-                .LiabilityTransactionRepository
-                .createEntry({
-
-                    Liability_ID:
-                        debt.Id,
-
-                    Type:
-                        "PAYMENT",
-
-                    Amount:
-                        payment.toNumber(),
-
-                    Description:
-                        request.data.Notes
-
-                });
-
-            const model =
-                LiabilityPayModel.with({
-
-                    LiabilityId:
-                        debt.Id,
-
-                    PaymentDate:
-                        new Date()
-                            .toISOString()
-                            .slice(0, 10),
-
-                    Amount:
-                        payment,
-
-                    Currency:
-                        debt.Currency,
-
-                    Notes:
-                        request.data.Notes
-
-                });
-
-            return right(
-                model.toEntityObject()
-            );
-
-        } catch (error) {
-
-            const err =
-                error as Error;
-
-            return left(
-                new AbstractError(
-                    err.message,
-                    400,
-                    err.stack || ""
-                )
-            );
-
-        }
-
-    }
-
-    public async closeLiability():
-        Promise<any> {
-
-        try {
-
-            const request =
-                ServiceLocator.getRequest();
-
-            const debt =
-                await this.Repository
-                    .findById(
-                        request.data
-                            .LiabilityId
-                    );
-
-            if (!debt) {
-
-                return left(
-                    new AbstractError(
-                        "Liability not found",
-                        404,
-                        ""
-                    )
-                );
-
-            }
-
-            const auth =
-                await this.beforeUpdate(
-                    debt as any,
-                    request.user
-                );
-
-            if (auth.isLeft()) {
-                return auth;
-            }
-
-            await this.Repository
-                .closeLiability(
-                    debt.Id
-                );
-
-            const model =
-                LiabilityCloseModel.singleModel({
-
-                    LiabilityId:
-                        debt.Id,
-
-                    Name:
-                        debt.Name,
-
-                    TotalPaidAmount:
-                        debt.OriginalAmount
-                            ?.toNumber(),
-
-                    PaidAmount:
-                        debt.PaidAmount
-                            ?.toNumber() as number,
-
-                    ClosedAt:
-                        new Date()
-                            .toISOString(),
-
-                    Currency:
-                        debt.Currency
-                            ?.toEntityObject(),
-
-                    Status:
-                        "PAID"
 
                 });
 
@@ -725,9 +713,6 @@ export class LiabilityServiceImplementation
             if (auth.isLeft()) {
                 return auth as any;
             }
-
-            const safeRows =
-                auth.value;
 
             const model =
                 LiabilityAnalyticsModel.with({
@@ -849,170 +834,6 @@ export class LiabilityServiceImplementation
 
     }
 
-    public async renegotiate():
-        Promise<
-            Either<
-                AbstractError,
-                LiabilityRenegotiationReturnProperties
-            >
-        > {
-
-        try {
-
-            const request =
-                ServiceLocator.getRequest();
-
-            const debt =
-                await this.Repository
-                    .findById(
-                        request.data
-                            .LiabilityId
-                    );
-
-            if (!debt) {
-
-                return left(
-                    new AbstractError(
-                        "Liability not found",
-                        404,
-                        ""
-                    )
-                );
-
-            }
-
-            const auth =
-                await this.beforeUpdate(
-                    debt as any,
-                    request.user
-                );
-
-            if (auth.isLeft()) {
-                return auth as any;
-            }
-
-            const previous =
-                debt.CurrentBalance ||
-                new Decimal(0);
-
-            const current =
-                new Decimal(
-                    request.data
-                        .NewBalance || 0
-                );
-
-            const installments =
-                Number(
-                    request.data
-                        .NewInstallments || 1
-                );
-
-            const installmentValue =
-                current.div(
-                    installments
-                );
-
-            await this.Repository
-                .renegotiate(
-                    debt.Id,
-                    {
-                        CurrentBalance:
-                            current?.toNumber(),
-
-                        Installments:
-                            installments,
-
-                        RemainingInstallments:
-                            installments,
-
-                        InstallmentAmount:
-                            installmentValue?.toNumber(),
-
-                        InterestRate:
-                            request.data
-                                .NewInterestRate,
-
-                        Status:
-                            current.equals(0)
-                                ? "PAID"
-                                : "OPEN"
-                    }
-                );
-
-            const model =
-                LiabilityRenegotiationModel.with({
-
-                    LiabilityId:
-                        debt.Id,
-
-                    Name:
-                        debt.Name,
-
-                    PreviousBalance:
-                        previous,
-
-                    NewBalance:
-                        current,
-
-                    DiscountAmount:
-                        previous.minus(
-                            current
-                        ),
-
-                    PreviousInstallments:
-                        debt.Installments,
-
-                    NewInstallments:
-                        installments,
-
-                    PreviousInstallmentAmount:
-                        debt.InstallmentAmount,
-
-                    NewInstallmentAmount:
-                        installmentValue,
-
-                    PreviousInterestRate:
-                        debt.InterestRate,
-
-                    NewInterestRate:
-                        new Decimal(
-                            request.data
-                                .NewInterestRate || 0
-                        ),
-
-                    RenegotiatedAt:
-                        new Date()
-                            .toISOString(),
-
-                    Currency:
-                        debt.Currency,
-
-                    Notes:
-                        request.data.Notes
-
-                });
-
-            return right(
-                model.toEntityObject()
-            );
-
-        } catch (error) {
-
-            const err =
-                error as Error;
-
-            return left(
-                new AbstractError(
-                    err.message,
-                    400,
-                    err.stack || ""
-                )
-            );
-
-        }
-
-    }
-
     public async futureImpact():
         Promise<
             Either<
@@ -1052,137 +873,6 @@ export class LiabilityServiceImplementation
                     Next12Months: 0,
 
                     MonthlyCommitment: []
-
-                });
-
-            return right(
-                model.toEntityObject()
-            );
-
-        } catch (error) {
-
-            const err =
-                error as Error;
-
-            return left(
-                new AbstractError(
-                    err.message,
-                    400,
-                    err.stack || ""
-                )
-            );
-
-        }
-
-    }
-
-    public async premiumScore() {
-
-        try {
-
-            const request =
-                ServiceLocator.getRequest();
-
-            const personId =
-                request.data.PersonId;
-
-            const auth =
-                await this.authorizeRows(
-                    [{ Person_ID: personId }] as any,
-                    request.user
-                );
-
-            if (auth.isLeft()) {
-                return auth;
-            }
-
-            if (!auth.value?.length) {
-                return this.forbidden();
-            }
-
-            const rows =
-                await this.Repository
-                    .findOpenByPersonId(
-                        personId
-                    ) || [];
-
-            let totalDebt =
-                new Decimal(0);
-
-            for (const item of rows) {
-
-                totalDebt =
-                    totalDebt.plus(
-                        item.CurrentBalance || 0
-                    );
-
-            }
-
-            const person =
-                await this.PersonRepository
-                    .findById(
-                        personId
-                    );
-
-            const income =
-                new Decimal(
-                    person?.Income || 0
-                );
-
-            let ratio =
-                new Decimal(0);
-
-            if (income.greaterThan(0)) {
-
-                ratio =
-                    totalDebt.div(income);
-
-            }
-
-            let score =
-                100;
-
-            if (ratio.greaterThan(1))
-                score -= 40;
-            else if (
-                ratio.greaterThan(0.6)
-            )
-                score -= 25;
-            else if (
-                ratio.greaterThan(0.3)
-            )
-                score -= 10;
-
-            if (rows.length > 5) {
-                score -= 15;
-            }
-
-            let level =
-                "EXCELLENT";
-
-            if (score < 80)
-                level = "GOOD";
-
-            if (score < 60)
-                level = "WARNING";
-
-            if (score < 40)
-                level = "CRITICAL";
-
-            const model =
-                LiabilityPremiumScoreModel.with({
-
-                    Score:
-                        score,
-
-                    Level:
-                        level,
-
-                    DebtRatio:
-                        ratio,
-
-                    Message:
-                        "Calculated successfully"
 
                 });
 

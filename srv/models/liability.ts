@@ -43,7 +43,7 @@ type LiabilityProperties = {
 
     PersonId?: string;
 
-    Transactions?: LiabilityTransactionModel[];
+    LiabilityTransactions?: LiabilityTransactionModel[];
 
     CreatedAt?: string;
     CreatedBy?: string;
@@ -110,7 +110,7 @@ export class LiabilityModel extends BaseModel {
 
                 PersonId: item.Person_ID || item?.Person?.ID,
 
-                Transactions: LiabilityTransactionModel.mapModel(item?.Transactions || []),
+                LiabilityTransactions: LiabilityTransactionModel.mapModel(item?.Transactions || []),
 
                 CreatedAt: item.createdAt as string,
                 CreatedBy: item.createdBy as string,
@@ -157,9 +157,37 @@ export class LiabilityModel extends BaseModel {
     public get IsOverdue() { return this.props.IsOverdue; }
     public get HealthScore() { return this.props.HealthScore; }
 
+    public set RemainingAmount(remainingAmount: Decimal | undefined) {
+        this.props.RemainingAmount = remainingAmount;
+    }
+
+    public set ProgressPercent(progressPercent: Decimal | undefined) {
+        this.props.ProgressPercent = progressPercent;
+    }
+
+    public set PaidInstallments(paidInstallments: number | undefined) {
+        this.props.PaidInstallments = paidInstallments;
+    }
+
+    public set RemainingInstallments(remainingInstallments: number | undefined) {
+        this.props.RemainingInstallments = remainingInstallments;
+    }
+
+    public set NextDueDate(nextDueDate: string | null | undefined) {
+        this.props.NextDueDate = nextDueDate || undefined;
+    }
+
+    public set IsOverdue(isOverdue: boolean | undefined) {
+        this.props.IsOverdue = isOverdue;
+    }
+
+    public set HealthScore(healthScore: number | undefined) {
+        this.props.HealthScore = healthScore;
+    }
+
     public get PersonId() { return this.props.PersonId; }
 
-    public get Transactions() { return this.props.Transactions || []; }
+    public get LiabilityTransactions() { return this.props.LiabilityTransactions || []; }
 
     public get CreatedAt() { return this.props.CreatedAt; }
     public get CreatedBy() { return this.props.CreatedBy; }
@@ -210,7 +238,7 @@ export class LiabilityModel extends BaseModel {
 
             Person: this.props.PersonId ? { ID: this.props.PersonId } : undefined,
 
-            Transactions: this.props.Transactions?.map(x => x.toEntityObject()),
+            LiabilityTransactions: this.props.LiabilityTransactions?.map(x => x.toEntityObject()),
 
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,

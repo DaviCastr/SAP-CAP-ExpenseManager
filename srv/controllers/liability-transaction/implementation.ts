@@ -15,7 +15,8 @@ import {
 } from "@/services/liability-transaction";
 
 import {
-    LiabilityTransaction
+    LiabilityTransaction,
+    LiabilityTransactions
 } from "@models/apps/dflc/expensemanager/entities";
 
 export class LiabilityTransactionControllerImplementation
@@ -38,48 +39,72 @@ export class LiabilityTransactionControllerImplementation
     }
 
 
-    public async reverseTransaction():
-        Promise<BaseControllerResponse> {
+    public async onDelete(
+        LiabilityTransaction:
+            LiabilityTransaction
+    ): Promise<BaseControllerResponse> {
 
         const result =
             await this.Service
-                .reverseTransaction();
+                .onDelete(LiabilityTransaction);
 
         if (result.isLeft()) {
-
             return this.error(
                 result.value.code,
                 result.value.message
             );
-
         }
 
         return this.success(
-            200,
+            204,
             result.value
         );
 
     }
 
 
-    public async recalculateLiability():
-        Promise<BaseControllerResponse> {
+    public async afterCreate(
+        LiabilityTransactions:
+            LiabilityTransactions
+    ): Promise<BaseControllerResponse> {
 
         const result =
             await this.Service
-                .recalculateLiability();
+                .afterCreate(LiabilityTransactions);
 
         if (result.isLeft()) {
-
             return this.error(
                 result.value.code,
                 result.value.message
             );
-
         }
 
         return this.success(
-            200,
+            201,
+            result.value
+        );
+
+    }
+
+
+    public async afterUpdate(
+        LiabilityTransactions:
+            LiabilityTransactions
+    ): Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .afterUpdate(LiabilityTransactions);
+
+        if (result.isLeft()) {
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+        }
+
+        return this.success(
+            204,
             result.value
         );
 

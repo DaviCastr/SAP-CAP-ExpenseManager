@@ -16,7 +16,8 @@ import {
 } from "./protocols";
 
 import {
-    LiabilityTransaction
+    LiabilityTransaction,
+    LiabilityTransactions
 } from "@models/apps/dflc/expensemanager/entities";
 
 import {
@@ -54,10 +55,6 @@ import {
 import {
     ServiceLocator
 } from "@/infrastructure/ServiceLocator";
-
-import {
-    ServiceRegistry
-} from "@/infrastructure/ServiceRegistry";
 
 export class LiabilityTransactionServiceImplementation
     extends BaseServiceImplementation<LiabilityTransaction>
@@ -107,7 +104,114 @@ export class LiabilityTransactionServiceImplementation
     protected parentField():
         string | null {
 
-        return "Liability.Person_ID";
+        return "Liability.ID";
+
+    }
+
+
+    protected async checkPermission(
+        Transaction: LiabilityTransaction,
+        User: User,
+        Permission: number
+    ) {
+
+        const cache =
+            ServiceLocator.getPermissionCache();
+
+        const userId =
+            User?.id;
+
+        let personId =
+            cache.personMap.get(
+                Transaction.ID
+            );
+
+        if (!personId) {
+
+            if (
+                !Transaction?.Liability_ID &&
+                !Transaction?.Liability?.ID
+            ) {
+
+                personId =
+                    await this.Repository
+                        .findPersonIdById(
+                            Transaction?.ID as string
+                        );
+
+            } else {
+
+                const liabilityId =
+                    Transaction?.Liability_ID ||
+                    Transaction?.Liability?.ID;
+
+                personId =
+                    cache.personMap.get(
+                        liabilityId as string
+                    ) ||
+                    await this.LiabilityRepository
+                        .findPersonIdById(
+                            liabilityId as string
+                        );
+
+            }
+
+            if (personId) {
+                cache.personMap.set(
+                    Transaction.ID,
+                    personId
+                );
+            }
+
+        }
+
+        if (!personId) {
+
+            const oStack =
+                new Error().stack as string;
+
+            const message =
+                this.getMessage(
+                    'error.invalidPersonId',
+                    ServiceLocator.getRequest(),
+                    this.entityCode()
+                ) ||
+                'error.invalidPersonId';
+
+            return left(
+                new PermissionDenied(
+                    message,
+                    403,
+                    oStack
+                )
+            );
+
+        }
+
+        const key =
+            ServiceLocator.buildPermissionKey(
+                userId,
+                personId,
+                this.entityCode(),
+                Permission
+            );
+
+        if (cache.permissionChecked.has(key)) {
+            return right(true);
+        }
+
+        const result =
+            await this.checkPermissionByPersonId(
+                User,
+                personId,
+                Permission
+            );
+
+        if (result.isRight()) {
+            cache.permissionChecked.add(key);
+        }
+
+        return result;
 
     }
 
@@ -175,13 +279,359 @@ export class LiabilityTransactionServiceImplementation
     }
 
 
+    public async afterCreate(
+        LiabilityTransactions:
+            LiabilityTransactions
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        return this.recalculateForTransactions(
+            LiabilityTransactions
+        );
+
+    }
+
+
+    public async afterUpdate(
+        LiabilityTransactions:
+            LiabilityTransactions
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        return this.recalculateForTransactions(
+            LiabilityTransactions
+        );
+
+    }
+
+
+    public async onDelete(
+        Transaction:
+            LiabilityTransaction
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        try {
+
+            const tx =
+                Transaction as any;
+
+            if (!tx?._resolvedLiabilityId) {
+
+                const liabilityId =
+                    Transaction?.Liability_ID ||
+                    Transaction?.Liability?.ID;
+
+                if (liabilityId) {
+
+                    tx._resolvedLiabilityId =
+                        liabilityId;
+
+                } else if (Transaction?.ID) {
+
+                    const existing =
+                        await this.Repository
+                            .findById(
+                                Transaction.ID as string,
+                                true
+                            );
+
+                    tx._resolvedLiabilityId =
+                        existing?.LiabilityId;
+
+                }
+
+            }
+
+            if (!tx?._resolvedLiabilityId) {
+                return right(true);
+            }
+
+            return this.recalculateLiability(
+                tx._resolvedLiabilityId
+            );
+
+        } catch (error) {
+
+            const err =
+                error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    400,
+                    err.stack || ""
+                )
+            );
+
+        }
+
+    }
+
+
+    public async recalculateLiability(
+        liabilityId: string
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        try {
+
+            if (!liabilityId) {
+                return right(true);
+            }
+
+            const rows =
+                await this.Repository
+                    .findByLiabilityId(
+                        liabilityId
+                    ) || [];
+
+            let paid =
+                new Decimal(0);
+
+            let delta =
+                new Decimal(0);
+
+            for (const row of rows) {
+
+                const amount =
+                    new Decimal(
+                        row.Amount || 0
+                    );
+
+                const signs =
+                    this.getTypeSigns(
+                        row.Type as string
+                    );
+
+                delta =
+                    delta.plus(
+                        amount.mul(signs.balance)
+                    );
+
+                paid =
+                    paid.plus(
+                        amount.mul(signs.paid)
+                    );
+
+            }
+
+            if (paid.lessThan(0)) {
+                paid =
+                    new Decimal(0);
+            }
+
+            const debt =
+                await this
+                    .LiabilityRepository
+                    .findById(
+                        liabilityId,
+                        true
+                    );
+
+            if (!debt) {
+                return right(true);
+            }
+
+            const original =
+                new Decimal(
+                    debt.OriginalAmount || 0
+                );
+
+            let balance =
+                original.plus(delta);
+
+            if (balance.lessThan(0)) {
+                balance =
+                    new Decimal(0);
+            }
+
+            await this
+                .LiabilityRepository
+                .updateAmounts(
+                    liabilityId,
+                    {
+                        CurrentBalance:
+                            balance,
+
+                        PaidAmount:
+                            paid,
+
+                        Status:
+                            balance.equals(0)
+                                ? "PAID"
+                                : "OPEN"
+                    }
+                );
+
+            return right(true);
+
+        } catch (error) {
+
+            const err =
+                error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    400,
+                    err.stack || ""
+                )
+            );
+
+        }
+
+    }
+
+
+    private async recalculateForTransactions(
+        LiabilityTransactions:
+            LiabilityTransactions
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        try {
+
+            const list =
+                Array.isArray(LiabilityTransactions)
+                    ? LiabilityTransactions
+                    : [LiabilityTransactions];
+
+            const ids =
+                new Set<string>();
+
+            for (const transaction of list) {
+
+                const liabilityId =
+                    transaction?.Liability_ID ||
+                    transaction?.Liability?.ID;
+
+                if (liabilityId) {
+                    ids.add(liabilityId);
+                }
+
+            }
+
+            for (const id of ids) {
+
+                const result =
+                    await this.recalculateLiability(id);
+
+                if (result.isLeft()) {
+                    return result;
+                }
+
+            }
+
+            return right(true);
+
+        } catch (error) {
+
+            const err =
+                error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    400,
+                    err.stack || ""
+                )
+            );
+
+        }
+
+    }
+
+
+    private getTypeSigns(
+        type: string | null | undefined
+    ): {
+        balance: number;
+        paid: number
+    } {
+
+        switch (type) {
+
+            case "PAYMENT":
+                return { balance: -1, paid: 1 };
+
+            case "AMORTIZATION":
+                return { balance: -1, paid: 1 };
+
+            case "DISCOUNT":
+                return { balance: -1, paid: 0 };
+
+            case "INTEREST":
+                return { balance: 1, paid: 0 };
+
+            case "FEE":
+                return { balance: 1, paid: 0 };
+
+            case "RENEGOTIATION":
+                return { balance: 1, paid: 0 };
+
+            case "REVERSAL":
+            case "PAYMENT_REVERSAL":
+                return { balance: 1, paid: -1 };
+
+            case "OPENING":
+            default:
+                return { balance: 0, paid: 0 };
+
+        }
+
+    }
+
+
     private async validateTransaction(
         entity: LiabilityTransaction
     ): Promise<
         Either<AbstractError, boolean>
     > {
 
-        if (!entity?.Liability_ID) {
+        const isNew =
+            !entity?.ID;
+
+        let liabilityId =
+            entity?.Liability_ID ||
+            entity?.Liability?.ID;
+
+        let amount =
+            entity?.Amount;
+
+        if (!isNew) {
+
+            const existing =
+                await this.Repository
+                    .findById(
+                        entity.ID as string,
+                        true
+                    );
+
+            if (existing) {
+
+                liabilityId =
+                    liabilityId ||
+                    existing.LiabilityId as string;
+
+                if (
+                    amount === undefined ||
+                    amount === null
+                ) {
+                    amount =
+                        existing.Amount?.toNumber();
+                }
+
+            }
+
+        }
+
+        if (!liabilityId) {
 
             return left(
                 new PermissionDenied(
@@ -194,22 +644,24 @@ export class LiabilityTransactionServiceImplementation
         }
 
         if (
-            entity.Amount === undefined ||
-            entity.Amount === null
+            amount === undefined ||
+            amount === null
         ) {
 
-            return left(
-                new PermissionDenied(
-                    "error.invalidAmount",
-                    400,
-                    new Error().stack || ""
-                )
-            );
+            if (isNew) {
 
-        }
+                return left(
+                    new PermissionDenied(
+                        "error.invalidAmount",
+                        400,
+                        new Error().stack || ""
+                    )
+                );
 
-        if (
-            Number(entity.Amount) === 0
+            }
+
+        } else if (
+            Number(amount) === 0
         ) {
 
             return left(
@@ -225,7 +677,7 @@ export class LiabilityTransactionServiceImplementation
         const liability =
             await this.LiabilityRepository
                 .findById(
-                    entity.Liability_ID,
+                    liabilityId,
                     true
                 );
 
@@ -242,344 +694,6 @@ export class LiabilityTransactionServiceImplementation
         }
 
         return right(true);
-
-    }
-
-
-    private async authorizeLiabilityRead(
-        liabilityId: string
-    ): Promise<
-        Either<AbstractError, boolean>
-    > {
-
-        const request =
-            ServiceLocator.getRequest();
-
-        const liabilityService =
-            ServiceRegistry.get(
-                "Liabilities"
-            ) as any;
-
-        if (!liabilityService) {
-            return right(true);
-        }
-
-        const auth =
-            await liabilityService.afterRead(
-                [{ ID: liabilityId }],
-                request.user
-            );
-
-        if (auth.isLeft()) {
-            return auth;
-        }
-
-        if (!auth.value?.length) {
-
-            return left(
-                new PermissionDenied(
-                    "error.modificationPermissionDenied",
-                    403,
-                    new Error().stack || ""
-                )
-            );
-
-        }
-
-        return right(true);
-
-    }
-
-
-    private async authorizeLiabilityUpdate(
-        liabilityId: string
-    ): Promise<
-        Either<AbstractError, boolean>
-    > {
-
-        const request =
-            ServiceLocator.getRequest();
-
-        const liabilityService =
-            ServiceRegistry.get(
-                "Liabilities"
-            ) as any;
-
-        if (!liabilityService) {
-            return right(true);
-        }
-
-        return liabilityService.beforeUpdate(
-            { ID: liabilityId },
-            request.user
-        );
-
-    }
-
-
-    private async recalculateLiabilityInternal(
-        liabilityId: string
-    ): Promise<void> {
-
-        const rows =
-            await this.Repository
-                .findByLiabilityId(
-                    liabilityId
-                ) || [];
-
-        let paid =
-            new Decimal(0);
-
-        for (const row of rows) {
-
-            const amount =
-                new Decimal(
-                    row.Amount || 0
-                );
-
-            switch (row.Type) {
-
-                case "PAYMENT":
-                    paid =
-                        paid.plus(amount);
-                    break;
-
-                case "PAYMENT_REVERSAL":
-                    paid =
-                        paid.minus(amount);
-                    break;
-
-            }
-
-        }
-
-        const debt =
-            await this
-                .LiabilityRepository
-                .findById(
-                    liabilityId,
-                    true
-                );
-
-        if (!debt) {
-            return;
-        }
-
-        const original =
-            debt.OriginalAmount ||
-            new Decimal(0);
-
-        let balance =
-            original.minus(paid);
-
-        if (balance.lessThan(0)) {
-            balance =
-                new Decimal(0);
-        }
-
-        await this
-            .LiabilityRepository
-            .updateAmounts(
-                liabilityId,
-                {
-                    CurrentBalance:
-                        balance,
-
-                    PaidAmount:
-                        paid,
-
-                    Status:
-                        balance.equals(0)
-                            ? "PAID"
-                            : "OPEN"
-                }
-            );
-
-    }
-
-
-    public async reverseTransaction():
-        Promise<
-            Either<
-                AbstractError,
-                LiabilityTransaction
-            >
-        > {
-
-        try {
-
-            const request =
-                ServiceLocator.getRequest();
-
-            const id =
-                request.data?.ID;
-
-            const tx =
-                await this.Repository
-                    .findById(id);
-
-            if (!tx) {
-
-                return left(
-                    new AbstractError(
-                        "Transaction not found",
-                        404,
-                        ""
-                    )
-                );
-
-            }
-
-            const liabilityId =
-                tx.LiabilityId as string;
-
-            const authRead =
-                await this.authorizeLiabilityRead(
-                    liabilityId
-                );
-
-            if (authRead.isLeft()) {
-                return authRead as any;
-            }
-
-            const authUpdate =
-                await this.authorizeLiabilityUpdate(
-                    liabilityId
-                );
-
-            if (authUpdate.isLeft()) {
-                return authUpdate as any;
-            }
-
-            const existing =
-                await this.Repository
-                    .findByExternalReference(
-                        id
-                    );
-
-            if (existing) {
-
-                return left(
-                    new AbstractError(
-                        "Transaction already reversed",
-                        400,
-                        ""
-                    )
-                );
-
-            }
-
-            const reversal =
-                await this.Repository
-                    .createEntry({
-
-                        Liability_ID:
-                            liabilityId,
-
-                        Type:
-                            "PAYMENT_REVERSAL",
-
-                        Amount:
-                            tx.Amount,
-
-                        MovementDate:
-                            new Date()
-                                .toISOString()
-                                .slice(0, 10),
-
-                        Description:
-                            `Reversal of ${id}`,
-
-                        ExternalReference:
-                            id,
-
-                        Currency_code:
-                            tx.Currency?.Code
-
-                    } as any);
-
-            await this
-                .recalculateLiabilityInternal(
-                    liabilityId
-                );
-
-            return right(
-                reversal?.[0]?.toEntityObject() as LiabilityTransaction
-            );
-
-        } catch (error) {
-
-            const err =
-                error as Error;
-
-            return left(
-                new AbstractError(
-                    err.message,
-                    400,
-                    err.stack || ""
-                )
-            );
-
-        }
-
-    }
-
-
-    public async recalculateLiability():
-        Promise<
-            Either<
-                AbstractError,
-                boolean
-            >
-        > {
-
-        try {
-
-            const request =
-                ServiceLocator.getRequest();
-
-            const liabilityId =
-                request.data?.LiabilityId;
-
-            const authRead =
-                await this.authorizeLiabilityRead(
-                    liabilityId
-                );
-
-            if (authRead.isLeft()) {
-                return authRead;
-            }
-
-            const authUpdate =
-                await this.authorizeLiabilityUpdate(
-                    liabilityId
-                );
-
-            if (authUpdate.isLeft()) {
-                return authUpdate;
-            }
-
-            await this
-                .recalculateLiabilityInternal(
-                    liabilityId
-                );
-
-            return right(true);
-
-        } catch (error) {
-
-            const err =
-                error as Error;
-
-            return left(
-                new AbstractError(
-                    err.message,
-                    400,
-                    err.stack || ""
-                )
-            );
-
-        }
 
     }
 

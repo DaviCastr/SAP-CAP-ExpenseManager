@@ -1,0 +1,272 @@
+@server=http://localhost:4004
+@username=davi
+@password=123456
+@personId=11111111-1111-1111-1111-111111111111
+
+
+### Liabilities GET (ativos)
+# @name Liabilities_GET
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### Liabilities Drafts GET (rascunhos)
+# @name Liabilities_Drafts_GET
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities?$filter=(IsActiveEntity eq false)&$expand=DraftAdministrativeData($select=InProcessByUser,LastChangedByUser)&$orderby=modifiedAt desc
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### Liabilities Draft POST (criar dívida via CRUD/draft)
+# @name Liabilities_Draft_POST
+POST {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Emprestimo Pessoal",
+  "Creditor": "Banco XYZ",
+  "Description": "Emprestimo para reforma",
+  "Type": "GENERAL",
+  "OriginalAmount": 5000,
+  "Currency": {
+    "code": "BRL"
+  },
+  "InterestMode": "MANUAL",
+  "InterestRate": 2.5,
+  "Installments": 10,
+  "FirstDueDate": "2026-09-10",
+  "Person": {
+    "ID": "{{personId}}"
+  }
+}
+
+
+### Result from POST request above
+@liabilityDraftID={{Liabilities_Draft_POST.response.body.$.ID}}
+
+
+### Liabilities Draft PATCH (ajuste no draft)
+# @name Liabilities_Draft_PATCH
+PATCH {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityDraftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Description": "Emprestimo para reforma da casa"
+}
+
+
+### Liabilities Draft Prepare
+# @name Liabilities_Draft_Prepare
+POST {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityDraftID}},IsActiveEntity=false)/LiabilityService.draftPrepare
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Liabilities Draft Activate (cria a dívida ativa)
+# @name Liabilities_Draft_Activate
+POST {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityDraftID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Result from Activate request above (ID da dívida ativa)
+@liabilityID={{Liabilities_Draft_Activate.response.body.ID}}
+
+
+### Liabilities GET (conferir virtuals: RemainingAmount, ProgressPercent, PaidInstallments, NextDueDate, IsOverdue, HealthScore)
+# @name Liabilities_GET_Active
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityID}},IsActiveEntity=true)
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### Function Dashboard
+# @name Liability_Dashboard
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/Dashboard(PersonId={{personId}})
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### Function Analytics
+# @name Liability_Analytics
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/Analytics(PersonId={{personId}})
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### Function PaymentSchedule
+# @name Liability_PaymentSchedule
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/PaymentSchedule(LiabilityId={{liabilityID}})
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### Function FutureImpact
+# @name Liability_FutureImpact
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/FutureImpact(PersonId={{personId}})
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### Liabilities Draft Edit (preparar edição da dívida)
+# @name Liabilities_Draft_Edit
+POST {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityID}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Liabilities PATCH no draft (edição via CRUD)
+# @name Liabilities_Draft_Edit_PATCH
+PATCH {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Emprestimo Pessoal (editado)"
+}
+
+
+### Liabilities Activate edição
+# @name Liabilities_Draft_Edit_Activate
+POST {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Liabilities DELETE ativa
+# @name Liabilities_DELETE_Active
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityID}},IsActiveEntity=true)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### Liabilities DELETE draft
+# @name Liabilities_DELETE_Draft
+DELETE {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities(ID={{liabilityDraftID}},IsActiveEntity=false)
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+# ==========================================================
+# CRIAÇÃO ANINHADA VIA Persons (serviço do main.cds)
+# ==========================================================
+
+
+### [Persons] Draft Edit (abrir draft da pessoa para criar dívida aninhada)
+# @name Persons_Draft_Edit_Nested
+POST {{server}}/service/ExpenseManager/Persons(ID={{personId}},IsActiveEntity=true)/draftEdit
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### [Persons] POST Liabilities aninhado no draft da pessoa
+# @name Persons_Nested_Liability_POST
+POST {{server}}/service/ExpenseManager/Persons(ID={{personId}},IsActiveEntity=false)/Liabilities
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Divida via Person",
+  "Creditor": "Credor X",
+  "Description": "Criada aninhada no draft da pessoa",
+  "OriginalAmount": 1500,
+  "Currency": {
+    "code": "BRL"
+  },
+  "Installments": 3,
+  "FirstDueDate": "2026-10-10"
+}
+
+
+### Result from nested POST request above
+@nestedLiabilityID={{Persons_Nested_Liability_POST.response.body.$.ID}}
+
+
+### [Persons] Draft Activate (persiste a dívida aninhada)
+# @name Persons_Draft_Activate_Nested
+POST {{server}}/service/ExpenseManager/Persons(ID={{personId}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### [Persons] GET Liabilities da pessoa (conferir a aninhada)
+# @name Persons_Nested_Liability_GET
+GET {{server}}/apps/dflc/cap/ExpenseManager/Liability/Liabilities?$filter=Person_ID eq {{personId}}
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true
+
+
+### [Persons] POST nova pessoa com Liabilities aninhadas (um único POST)
+# @name Persons_POST_With_Nested_Liabilities
+POST {{server}}/service/ExpenseManager/Persons
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{
+  "Name": "Pessoa Teste Nested",
+  "Income": 9000,
+  "ExpenseTarget": 3000,
+  "Currency": {
+    "code": "BRL"
+  },
+  "Email": "nested@email.com",
+  "Liabilities": [
+    {
+      "Name": "Divida em lote",
+      "OriginalAmount": 3000,
+      "Currency": {
+        "code": "BRL"
+      },
+      "Installments": 6,
+      "StartDate": "2026-08-18"
+    },
+    {
+      "Name": "Financiamento",
+      "OriginalAmount": 12000,
+      "Currency": {
+        "code": "BRL"
+      },
+      "Installments": 24,
+      "FirstDueDate": "2026-09-05"
+    }
+  ]
+}
+
+
+### Result from new Person POST request above
+@newPersonDraftID={{Persons_POST_With_Nested_Liabilities.response.body.$.ID}}
+
+
+### [Persons] Draft Activate da nova pessoa (persiste pessoa + dívidas)
+# @name Persons_Draft_Activate_New
+POST {{server}}/service/ExpenseManager/Persons(ID={{newPersonDraftID}},IsActiveEntity=false)/draftActivate
+Content-Type: application/json
+Authorization: Basic {{username}}:{{password}}
+
+{}
+
+
+### [Persons] GET nova pessoa com $expand=Liabilities (conferir as aninhadas)
+# @name Persons_GET_With_Nested
+GET {{server}}/service/ExpenseManager/Persons(ID={{newPersonDraftID}},IsActiveEntity=true)?$expand=Liabilities
+Authorization: Basic {{username}}:{{password}}
+Accept: application/json;odata.metadata=minimal;IEEE754Compatible=true

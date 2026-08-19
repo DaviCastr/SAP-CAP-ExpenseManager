@@ -121,18 +121,6 @@ export class LiabilityRepositoryImplementation
     }
 
 
-    public async findOverdueByPersonId(
-        PersonId: Person["ID"]
-    ): Promise<LiabilityModel[] | null> {
-
-        return this.findByStatus(
-            PersonId,
-            "OVERDUE"
-        );
-
-    }
-
-
     public async findByStatus(
         PersonId: Person["ID"],
         Status: string
@@ -174,6 +162,12 @@ export class LiabilityRepositoryImplementation
         const payload =
             Array.isArray(data) ? data : [data];
 
+        for (const item of payload) {
+            if (!item?.ID) {
+                item.ID = cds.utils.uuid();
+            }
+        }
+
         await INSERT.into(
             this.getEntity(true)
         ).entries(payload);
@@ -181,22 +175,6 @@ export class LiabilityRepositoryImplementation
         return this.findByIds(
             payload.map(x => x.ID)
         );
-
-    }
-
-
-    public async updateBalance(
-        Id: Liability["ID"],
-        Balance: number
-    ): Promise<boolean> {
-
-        await UPDATE(this.getEntity(true))
-            .set({
-                CurrentBalance: Balance
-            })
-            .where({ ID: Id });
-
-        return true;
 
     }
 
@@ -254,70 +232,11 @@ export class LiabilityRepositoryImplementation
     }
 
 
-    public async closeLiability(
-        Id: Liability["ID"]
-    ): Promise<boolean> {
-
-        await UPDATE(this.getEntity(true))
-            .set({
-                Status: "PAID",
-                CurrentBalance: 0
-            })
-            .where({ ID: Id });
-
-        return true;
-
-    }
-
-
-    public async renegotiate(
-        Id: Liability["ID"],
-        data: {
-            CurrentBalance: number;
-            Installments: number;
-            RemainingInstallments: number;
-            InstallmentAmount: number;
-            InterestRate: number;
-            Status: string;
-        }
-    ): Promise<boolean> {
-
-        await UPDATE(
-            this.getEntity(true)
-        )
-            .set({
-                CurrentBalance:
-                    data.CurrentBalance,
-
-                Installments:
-                    data.Installments,
-
-                RemainingInstallments:
-                    data.RemainingInstallments,
-
-                InstallmentAmount:
-                    data.InstallmentAmount,
-
-                InterestRate:
-                    data.InterestRate,
-
-                Status:
-                    data.Status
-            })
-            .where({
-                ID: Id
-            });
-
-        return true;
-
-    }
-
-
     protected getEntity(
         ignoreDraft?: boolean
     ): entity {
 
-        return ServiceLocator.getEntity('Invoices', ignoreDraft);
+        return ServiceLocator.getEntity('Liabilities', ignoreDraft);
 
     }
 

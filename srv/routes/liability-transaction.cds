@@ -5,6 +5,8 @@ using {apps.dflc.expensemanager.entities as entities} from '../../db/entities';
 
 service LiabilityTransactionService {
 
+    @odata.draft.enabled
+
     // @restrict: [
 
     //     {
@@ -32,12 +34,6 @@ service LiabilityTransactionService {
     // ]
 
     entity LiabilityTransactions as projection on entities.LiabilityTransactions;
-
-
-    action ReverseTransaction(TransactionId: UUID) returns entities.ActionResult;
-
-
-    action RecalculateLiability(LiabilityId: UUID) returns entities.ActionResult;
 
 }
 

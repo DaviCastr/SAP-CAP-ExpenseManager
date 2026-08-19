@@ -38,30 +38,6 @@ export class LiabilityControllerImplementation
     }
 
 
-    public async createLiability():
-        Promise<BaseControllerResponse> {
-
-        const result =
-            await this.Service
-                .createLiability();
-
-        if (result.isLeft()) {
-
-            return this.error(
-                result.value.code,
-                result.value.message
-            );
-
-        }
-
-        return this.success(
-            201,
-            result.value
-        );
-
-    }
-
-
     public async dashboard():
         Promise<BaseControllerResponse> {
 
@@ -130,78 +106,12 @@ export class LiabilityControllerImplementation
     }
 
 
-    public async renegotiate():
-        Promise<BaseControllerResponse> {
-
-        const result =
-            await this.Service
-                .renegotiate();
-
-        if (result.isLeft()) {
-            return this.error(
-                result.value.code,
-                result.value.message
-            );
-        }
-
-        return this.success(
-            201,
-            result.value
-        );
-
-    }
-
-
     public async futureImpact():
         Promise<BaseControllerResponse> {
 
         const result =
             await this.Service
                 .futureImpact();
-
-        if (result.isLeft()) {
-            return this.error(
-                result.value.code,
-                result.value.message
-            );
-        }
-
-        return this.success(
-            200,
-            result.value
-        );
-
-    }
-
-
-    public async payLiability():
-        Promise<BaseControllerResponse> {
-
-        const result =
-            await this.Service
-                .payLiability();
-
-        if (result.isLeft()) {
-            return this.error(
-                result.value.code,
-                result.value.message
-            );
-        }
-
-        return this.success(
-            201,
-            result.value
-        );
-
-    }
-
-
-    public async closeLiability():
-        Promise<BaseControllerResponse> {
-
-        const result =
-            await this.Service
-                .closeLiability();
 
         if (result.isLeft()) {
             return this.error(

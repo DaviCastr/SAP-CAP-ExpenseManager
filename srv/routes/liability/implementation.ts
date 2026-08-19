@@ -56,11 +56,6 @@ export class LiabilityRouteImplementation
         );
 
         Service.on(
-            "CreateLiability",
-            this.createLiability.bind(this)
-        );
-
-        Service.on(
             "Dashboard",
             this.dashboard.bind(this)
         );
@@ -76,44 +71,9 @@ export class LiabilityRouteImplementation
         );
 
         Service.on(
-            "Renegotiate",
-            this.renegotiate.bind(this)
-        );
-
-        Service.on(
             "FutureImpact",
             this.futureImpact.bind(this)
         );
-
-        Service.on(
-            "PayLiability",
-            this.payLiability.bind(this)
-        );
-
-        Service.on(
-            "CloseLiability",
-            this.closeLiability.bind(this)
-        );
-
-    }
-
-
-    private async createLiability(
-        Request: Request
-    ): Promise<BaseControllerResponse> {
-
-        const result =
-            await this.Controller
-                .createLiability();
-
-        if (result.status !== 201) {
-            return this.returnRejectMessage(
-                Request,
-                result
-            );
-        }
-
-        return result;
 
     }
 
@@ -178,26 +138,6 @@ export class LiabilityRouteImplementation
     }
 
 
-    private async renegotiate(
-        Request: Request
-    ): Promise<BaseControllerResponse> {
-
-        const result =
-            await this.Controller
-                .renegotiate();
-
-        if (result.status !== 201) {
-            return this.returnRejectMessage(
-                Request,
-                result
-            );
-        }
-
-        return result;
-
-    }
-
-
     private async futureImpact(
         Request: Request
     ): Promise<BaseControllerResponse> {
@@ -205,46 +145,6 @@ export class LiabilityRouteImplementation
         const result =
             await this.Controller
                 .futureImpact();
-
-        if (result.status !== 200) {
-            return this.returnRejectMessage(
-                Request,
-                result
-            );
-        }
-
-        return result;
-
-    }
-
-
-    private async payLiability(
-        Request: Request
-    ): Promise<BaseControllerResponse> {
-
-        const result =
-            await this.Controller
-                .payLiability();
-
-        if (result.status !== 201) {
-            return this.returnRejectMessage(
-                Request,
-                result
-            );
-        }
-
-        return result;
-
-    }
-
-
-    private async closeLiability(
-        Request: Request
-    ): Promise<BaseControllerResponse> {
-
-        const result =
-            await this.Controller
-                .closeLiability();
 
         if (result.status !== 200) {
             return this.returnRejectMessage(

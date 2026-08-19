@@ -289,6 +289,12 @@ export class LiabilityTransactionRepositoryImplementation
                 ? data
                 : [data];
 
+        for (const item of payload) {
+            if (!item?.ID) {
+                item.ID = cds.utils.uuid();
+            }
+        }
+
         await INSERT
             .into(this.getEntity(true))
             .entries(payload);

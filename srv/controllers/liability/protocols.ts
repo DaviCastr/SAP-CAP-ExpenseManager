@@ -10,9 +10,6 @@ import {
 export interface LiabilityController
     extends BaseController<Liability> {
 
-    createLiability():
-        Promise<BaseControllerResponse>;
-
     dashboard():
         Promise<BaseControllerResponse>;
 
@@ -22,16 +19,7 @@ export interface LiabilityController
     paymentSchedule():
         Promise<BaseControllerResponse>;
 
-    renegotiate():
-        Promise<BaseControllerResponse>;
-
     futureImpact():
-        Promise<BaseControllerResponse>;
-
-    payLiability():
-        Promise<BaseControllerResponse>;
-
-    closeLiability():
         Promise<BaseControllerResponse>;
 
 }

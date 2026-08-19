@@ -6,11 +6,12 @@ import {
     LiabilityTransaction,
     LiabilityTransactions
 } from '@models/apps/dflc/expensemanager/entities';
+import { LiabilityModel } from './liability';
 
 export type LiabilityTransactionProperties = {
     Id: string;
 
-    LiabilityId?: string;
+    Liability?: LiabilityModel;
 
     Type: string;
     Description?: string;
@@ -68,12 +69,15 @@ export class LiabilityTransactionModel extends BaseModel {
                 code: item?.Currency?.code || item?.Currency_code as string
             });
 
+            const oLiabilityModel = LiabilityModel.singleModel({
+                ...item?.Liability,
+                ID: item?.Liability?.ID || item?.Liability_ID as string
+            });
+
             return LiabilityTransactionModel.with({
                 Id: item.ID as string,
 
-                LiabilityId:
-                    item.Liability_ID as string ||
-                    item?.Liability?.ID as string,
+                Liability: oLiabilityModel,
 
                 Type: item.Type as string,
                 Description: item.Description as string,
@@ -108,7 +112,7 @@ export class LiabilityTransactionModel extends BaseModel {
 
     public get Id() { return this.props.Id; }
 
-    public get LiabilityId() { return this.props.LiabilityId; }
+    public get Liability() { return this.props.Liability; }
 
     public get Type() { return this.props.Type; }
 
@@ -140,9 +144,7 @@ export class LiabilityTransactionModel extends BaseModel {
 
             ID: this.props.Id,
 
-            Liability: this.props.LiabilityId
-                ? { ID: this.props.LiabilityId }
-                : undefined,
+            Liability: this.props.Liability?.toEntityObject(),
 
             Type: this.props.Type,
             Description: this.props.Description,

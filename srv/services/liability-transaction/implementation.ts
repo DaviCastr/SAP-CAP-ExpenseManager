@@ -340,7 +340,7 @@ export class LiabilityTransactionServiceImplementation
                             );
 
                     tx._resolvedLiabilityId =
-                        existing?.LiabilityId;
+                        existing?.Liability?.Id;
 
                 }
 
@@ -617,7 +617,7 @@ export class LiabilityTransactionServiceImplementation
 
                 liabilityId =
                     liabilityId ||
-                    existing.LiabilityId as string;
+                    existing.Liability?.Id as string;
 
                 if (
                     amount === undefined ||

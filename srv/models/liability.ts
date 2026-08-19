@@ -4,6 +4,7 @@ import { CurrencyModel } from './currency';
 import { Liability, Liabilities } from '@models/apps/dflc/expensemanager/entities';
 import { LiabilityTransactionModel } from './liability-transaction';
 import { InterestMode, LiabilityStatus, LiabilityType } from '@models/apps/dflc/expensemanager/types';
+import { PersonModel } from './person';
 
 type LiabilityProperties = {
     Id: string;
@@ -41,7 +42,7 @@ type LiabilityProperties = {
     IsOverdue?: boolean;
     HealthScore?: number;
 
-    PersonId?: string;
+    Person?: PersonModel;
 
     LiabilityTransactions?: LiabilityTransactionModel[];
 
@@ -70,6 +71,11 @@ export class LiabilityModel extends BaseModel {
             const currency = CurrencyModel.singleModel({
                 ...item?.Currency,
                 code: item?.Currency?.code || item?.Currency_code as string
+            });
+
+            const oPersonModel = PersonModel.singleModel({
+                ...item?.Person,
+                ID: item?.Person?.ID || item?.Person_ID as string
             });
 
             return LiabilityModel.with({
@@ -108,7 +114,7 @@ export class LiabilityModel extends BaseModel {
                 IsOverdue: item.IsOverdue as boolean,
                 HealthScore: item.HealthScore as number,
 
-                PersonId: item.Person_ID || item?.Person?.ID,
+                Person: oPersonModel,
 
                 LiabilityTransactions: LiabilityTransactionModel.mapModel(item?.Transactions || []),
 
@@ -185,7 +191,7 @@ export class LiabilityModel extends BaseModel {
         this.props.HealthScore = healthScore;
     }
 
-    public get PersonId() { return this.props.PersonId; }
+    public get Person() { return this.props.Person; }
 
     public get LiabilityTransactions() { return this.props.LiabilityTransactions || []; }
 
@@ -236,7 +242,7 @@ export class LiabilityModel extends BaseModel {
             IsOverdue: this.props.IsOverdue,
             HealthScore: this.props.HealthScore,
 
-            Person: this.props.PersonId ? { ID: this.props.PersonId } : undefined,
+            Person: this.props.Person?.toEntityObject(),
 
             LiabilityTransactions: this.props.LiabilityTransactions?.map(x => x.toEntityObject()),
 

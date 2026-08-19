@@ -365,7 +365,7 @@ export class LiabilityServiceImplementation
         for (const transaction of rows) {
 
             const key =
-                transaction.LiabilityId as string;
+                transaction.Liability?.Id as string;
 
             if (!key) continue;
 

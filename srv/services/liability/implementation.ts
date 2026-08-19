@@ -215,6 +215,15 @@ export class LiabilityServiceImplementation
         Either<AbstractError, boolean>
     > {
 
+        const result = await super.beforeCreate(
+            entity,
+            user
+        );
+
+        if(result.isLeft()){
+            return result;
+        }
+
         const data =
             entity as any;
 
@@ -226,7 +235,7 @@ export class LiabilityServiceImplementation
             data.CurrentBalance =
                 new Decimal(
                     data.OriginalAmount || 0
-                );
+                )?.toDecimalPlaces(2)?.toNumber();
 
         }
 
@@ -236,7 +245,7 @@ export class LiabilityServiceImplementation
         ) {
 
             data.PaidAmount =
-                new Decimal(0);
+                new Decimal(0)?.toNumber();
 
         }
 
@@ -270,14 +279,9 @@ export class LiabilityServiceImplementation
                 new Decimal(
                     data.OriginalAmount
                 ).div(installments)
-                    .toDecimalPlaces(2);
+                    .toDecimalPlaces(2)?.toNumber();
 
         }
-
-        return super.beforeCreate(
-            entity,
-            user
-        );
 
     }
 

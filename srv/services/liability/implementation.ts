@@ -215,15 +215,6 @@ export class LiabilityServiceImplementation
         Either<AbstractError, boolean>
     > {
 
-        const result = await super.beforeCreate(
-            entity,
-            user
-        );
-
-        if(result.isLeft()){
-            return result;
-        }
-
         const data =
             entity as any;
 
@@ -282,6 +273,11 @@ export class LiabilityServiceImplementation
                     .toDecimalPlaces(2)?.toNumber();
 
         }
+
+        return super.beforeCreate(
+            entity,
+            user
+        );
 
     }
 

@@ -116,7 +116,7 @@ export class LiabilityModel extends BaseModel {
 
                 Person: oPersonModel,
 
-                LiabilityTransactions: LiabilityTransactionModel.mapModel(item?.Transactions || []),
+                LiabilityTransactions: LiabilityTransactionModel.mapModel(item?.LiabilityTransactions || []),
 
                 CreatedAt: item.createdAt as string,
                 CreatedBy: item.createdBy as string,

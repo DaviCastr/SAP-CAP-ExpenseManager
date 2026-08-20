@@ -4,11 +4,20 @@ import {
 } from "../base";
 
 import {
-    Liability
+    Liability,
+    Liabilities
 } from "@models/apps/dflc/expensemanager/entities";
 
 export interface LiabilityController
     extends BaseController<Liability> {
+
+    afterCreate(
+        Liabilities: Liabilities
+    ): Promise<BaseControllerResponse>;
+
+    afterUpdate(
+        Liabilities: Liabilities
+    ): Promise<BaseControllerResponse>;
 
     dashboard():
         Promise<BaseControllerResponse>;

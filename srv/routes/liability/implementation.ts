@@ -1,5 +1,6 @@
 import {
     ApplicationService,
+    entity,
     Request
 } from "@sap/cds";
 
@@ -8,7 +9,8 @@ import {
 } from "@/controllers/base";
 
 import {
-    Liability
+    Liability,
+    Liabilities
 } from "@models/apps/dflc/expensemanager/entities";
 
 import {
@@ -55,6 +57,37 @@ export class LiabilityRouteImplementation
             Liabilities
         );
 
+        // After the debt is created or its editable fields (TotalAmount,
+        // DueDay) are changed the derived values are recomputed from the
+        // transactions. The hooks run for the active entity set and for the
+        // drafts set, so a draft keeps its own computed values until
+        // activation.
+        Service.after(
+            "CREATE",
+            Liabilities as entity,
+            this.afterCreate.bind(this)
+        );
+        Service.after(
+            "UPDATE",
+            Liabilities as entity,
+            this.afterUpdate.bind(this)
+        );
+
+        if (Liabilities.drafts) {
+
+            Service.after(
+                "CREATE",
+                Liabilities.drafts as entity,
+                this.afterCreate.bind(this)
+            );
+            Service.after(
+                "UPDATE",
+                Liabilities.drafts as entity,
+                this.afterUpdate.bind(this)
+            );
+
+        }
+
         Service.on(
             "Dashboard",
             this.dashboard.bind(this)
@@ -74,6 +107,52 @@ export class LiabilityRouteImplementation
             "FutureImpact",
             this.futureImpact.bind(this)
         );
+
+    }
+
+
+    private async afterCreate(
+        Liabilities: Liabilities | Liability,
+        Request: Request
+    ): Promise<void> {
+
+        const oLiabilities = Array.isArray(Liabilities)
+            ? Liabilities
+            : [Liabilities];
+
+        const oResult =
+            await this.Controller
+                .afterCreate(oLiabilities);
+
+        if (oResult.status != 201) {
+            return this.returnRejectMessage(
+                Request,
+                oResult
+            );
+        }
+
+    }
+
+
+    private async afterUpdate(
+        Liabilities: Liabilities | Liability,
+        Request: Request
+    ): Promise<void> {
+
+        const oLiabilities = Array.isArray(Liabilities)
+            ? Liabilities
+            : [Liabilities];
+
+        const oResult =
+            await this.Controller
+                .afterUpdate(oLiabilities);
+
+        if (oResult.status != 204) {
+            return this.returnRejectMessage(
+                Request,
+                oResult
+            );
+        }
 
     }
 

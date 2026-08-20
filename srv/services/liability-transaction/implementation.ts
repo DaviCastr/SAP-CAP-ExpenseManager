@@ -56,6 +56,14 @@ import {
     ServiceLocator
 } from "@/infrastructure/ServiceLocator";
 
+import {
+    normalizeDate,
+    outstandingBalance,
+    paymentPercentage,
+    statusFromBalance,
+    summarizeTransactions
+} from "@/domain/liability-rules";
+
 export class LiabilityTransactionServiceImplementation
     extends BaseServiceImplementation<LiabilityTransaction>
     implements LiabilityTransactionService {
@@ -257,6 +265,40 @@ export class LiabilityTransactionServiceImplementation
             return result;
         }
 
+        // Moving a transaction to another liability must recompute BOTH debts.
+        // The previous liability is captured here (before the row changes) and
+        // read again by the after-update recalculation.
+        const existing =
+            await this.Repository
+                .findById(
+                    entity.ID as string
+                );
+
+        if (existing?.Liability?.Id) {
+
+            const newLiabilityId =
+                entity?.Liability_ID ||
+                entity?.Liability?.ID;
+
+            const oldLiabilityId =
+                existing.Liability.Id;
+
+            if (
+                newLiabilityId &&
+                newLiabilityId !== oldLiabilityId
+            ) {
+
+                ServiceLocator
+                    .getLiabilityMoveCache()
+                    .set(
+                        entity.ID as string,
+                        oldLiabilityId
+                    );
+
+            }
+
+        }
+
         return this.validateTransaction(
             entity
         );
@@ -316,42 +358,65 @@ export class LiabilityTransactionServiceImplementation
 
         try {
 
-            const tx =
-                Transaction as any;
+            const transactionId =
+                Transaction?.ID as string;
 
-            if (!tx?._resolvedLiabilityId) {
+            if (!transactionId) {
+                return right(true);
+            }
 
-                const liabilityId =
+            const cache =
+                ServiceLocator
+                    .getLiabilityMoveCache();
+
+            // The route invokes this handler before the delete runs (row still
+            // exists) and again after it committed (row gone). On the first
+            // call only resolve and remember the parent liability; recalculating
+            // now would still count the row towards the balance.
+            const alreadyResolved =
+                cache.has(transactionId);
+
+            if (!alreadyResolved) {
+
+                let liabilityId =
                     Transaction?.Liability_ID ||
                     Transaction?.Liability?.ID;
 
-                if (liabilityId) {
-
-                    tx._resolvedLiabilityId =
-                        liabilityId;
-
-                } else if (Transaction?.ID) {
+                if (!liabilityId) {
 
                     const existing =
                         await this.Repository
                             .findById(
-                                Transaction.ID as string,
-                                true
+                                transactionId
                             );
 
-                    tx._resolvedLiabilityId =
-                        existing?.Liability?.Id;
+                    liabilityId =
+                        existing?.Liability?.Id as string;
 
                 }
 
+                if (liabilityId) {
+                    cache.set(
+                        transactionId,
+                        liabilityId
+                    );
+                }
+
+                return right(true);
+
             }
 
-            if (!tx?._resolvedLiabilityId) {
+            // Second call: the row is gone, so the recalculation produces the
+            // correct remaining balance.
+            const liabilityId =
+                cache.get(transactionId);
+
+            if (!liabilityId) {
                 return right(true);
             }
 
             return this.recalculateLiability(
-                tx._resolvedLiabilityId
+                liabilityId
             );
 
         } catch (error) {
@@ -372,6 +437,20 @@ export class LiabilityTransactionServiceImplementation
     }
 
 
+    /**
+     * Recalculates the derived values of the parent debt from ALL its
+     * persisted transactions (`TotalAmount + TotalOut - TotalIn`), never
+     * incrementally and never from the payload.
+     *
+     * When a draft row exists for the liability (draft session in progress,
+     * including activation), the transactions are read from and the values are
+     * written to the draft tree, so a discarded draft never corrupts the
+     * active balance and a delete inside a draft is recalculated against the
+     * remaining draft rows.
+     *
+     * @param {string} liabilityId the parent debt ID
+     * @returns {Either<AbstractError, boolean>} right on success
+     */
     public async recalculateLiability(
         liabilityId: string
     ): Promise<
@@ -384,88 +463,80 @@ export class LiabilityTransactionServiceImplementation
                 return right(true);
             }
 
+            const draftExists =
+                await this.LiabilityRepository
+                    .hasDraftRow(
+                        liabilityId
+                    );
+
+            const transactionsEntity =
+                draftExists
+                    ? this.Repository.getDraftsEntity()
+                    : undefined;
+
             const rows =
                 await this.Repository
                     .findByLiabilityId(
-                        liabilityId
+                        liabilityId,
+                        transactionsEntity
                     ) || [];
-
-            let paid =
-                new Decimal(0);
-
-            let delta =
-                new Decimal(0);
-
-            for (const row of rows) {
-
-                const amount =
-                    new Decimal(
-                        row.Amount || 0
-                    );
-
-                const signs =
-                    this.getTypeSigns(
-                        row.Type as string
-                    );
-
-                delta =
-                    delta.plus(
-                        amount.mul(signs.balance)
-                    );
-
-                paid =
-                    paid.plus(
-                        amount.mul(signs.paid)
-                    );
-
-            }
-
-            if (paid.lessThan(0)) {
-                paid =
-                    new Decimal(0);
-            }
 
             const debt =
                 await this
                     .LiabilityRepository
                     .findById(
-                        liabilityId,
-                        true
+                        liabilityId
                     );
 
             if (!debt) {
                 return right(true);
             }
 
-            const original =
-                new Decimal(
-                    debt.OriginalAmount || 0
+            const summary =
+                summarizeTransactions(
+                    rows.map(row => ({
+                        Id: row.Id,
+                        Type: row.Type,
+                        Amount: row.Amount,
+                        Date: row.Date
+                    }))
                 );
 
-            let balance =
-                original.plus(delta);
+            const balance =
+                outstandingBalance(
+                    debt.TotalAmount,
+                    summary
+                );
 
-            if (balance.lessThan(0)) {
-                balance =
-                    new Decimal(0);
-            }
+            const percentage =
+                paymentPercentage(
+                    debt.TotalAmount,
+                    summary
+                );
+
+            const status =
+                statusFromBalance(
+                    balance
+                );
 
             await this
                 .LiabilityRepository
-                .updateAmounts(
+                .updateComputedValues(
                     liabilityId,
                     {
-                        CurrentBalance:
+                        OutstandingBalance:
                             balance,
 
-                        PaidAmount:
-                            paid,
+                        PaymentPercentage:
+                            percentage,
 
                         Status:
-                            balance.equals(0)
-                                ? "PAID"
-                                : "OPEN"
-                    }
+                            status
+                    },
+                    draftExists
+                        ? this.LiabilityRepository
+                            .getDraftsEntity()
+                        : undefined
                 );
 
             return right(true);
@@ -515,6 +586,17 @@ export class LiabilityTransactionServiceImplementation
                     ids.add(liabilityId);
                 }
 
+                const previous =
+                    ServiceLocator
+                        .getLiabilityMoveCache()
+                        .get(
+                            transaction?.ID as string
+                        );
+
+                if (previous) {
+                    ids.add(previous);
+                }
+
             }
 
             for (const id of ids) {
@@ -548,51 +630,34 @@ export class LiabilityTransactionServiceImplementation
     }
 
 
-    private getTypeSigns(
-        type: string | null | undefined
-    ): {
-        balance: number;
-        paid: number
-    } {
-
-        switch (type) {
-
-            case "PAYMENT":
-                return { balance: -1, paid: 1 };
-
-            case "AMORTIZATION":
-                return { balance: -1, paid: 1 };
-
-            case "DISCOUNT":
-                return { balance: -1, paid: 0 };
-
-            case "INTEREST":
-                return { balance: 1, paid: 0 };
-
-            case "FEE":
-                return { balance: 1, paid: 0 };
-
-            case "RENEGOTIATION":
-                return { balance: 1, paid: 0 };
-
-            case "REVERSAL":
-            case "PAYMENT_REVERSAL":
-                return { balance: 1, paid: -1 };
-
-            case "OPENING":
-            default:
-                return { balance: 0, paid: 0 };
-
-        }
-
-    }
-
-
+    /**
+     * Validates a transaction before it is persisted:
+     * - the liability must exist;
+     * - the type must be `IN` or `OUT`;
+     * - the amount must be a positive number;
+     * - the date is mandatory and must be a valid date (the UI sends
+     *   `dd/MM/yyyy`, which is normalized to `yyyy-MM-dd`);
+     * - an `IN` transaction can never make the outstanding balance negative,
+     *   considering the transactions already persisted in the same request
+     *   (batch).
+     *
+     * @param {LiabilityTransaction} entity the transaction being created/updated
+     * @returns {Either<AbstractError, boolean>} left with a localized error
+     */
     private async validateTransaction(
         entity: LiabilityTransaction
     ): Promise<
         Either<AbstractError, boolean>
     > {
+
+        const stack =
+            new Error().stack || "";
+
+        const request =
+            ServiceLocator.getRequest();
+
+        const entityCode =
+            this.entityCode();
 
         const isNew =
             !entity?.ID;
@@ -604,13 +669,20 @@ export class LiabilityTransactionServiceImplementation
         let amount =
             entity?.Amount;
 
+        let type =
+            entity?.Type;
+
+        let date =
+            entity?.Date;
+
+        let existing: any = null;
+
         if (!isNew) {
 
-            const existing =
+            existing =
                 await this.Repository
                     .findById(
-                        entity.ID as string,
-                        true
+                        entity.ID as string
                     );
 
             if (existing) {
@@ -627,6 +699,19 @@ export class LiabilityTransactionServiceImplementation
                         existing.Amount?.toNumber();
                 }
 
+                if (!type) {
+                    type =
+                        existing.Type;
+                }
+
+                if (
+                    date === undefined ||
+                    date === null
+                ) {
+                    date =
+                        existing.Date;
+                }
+
             }
 
         }
@@ -635,9 +720,31 @@ export class LiabilityTransactionServiceImplementation
 
             return left(
                 new PermissionDenied(
+                    this.getMessage(
+                        "error.invalidLiability",
+                        request,
+                        entityCode
+                    ) ||
                     "error.invalidLiability",
                     400,
-                    new Error().stack || ""
+                    stack
+                )
+            );
+
+        }
+
+        if (type !== "IN" && type !== "OUT") {
+
+            return left(
+                new PermissionDenied(
+                    this.getMessage(
+                        "error.transactionInvalidType",
+                        request,
+                        entityCode
+                    ) ||
+                    "error.transactionInvalidType",
+                    400,
+                    stack
                 )
             );
 
@@ -645,51 +752,149 @@ export class LiabilityTransactionServiceImplementation
 
         if (
             amount === undefined ||
-            amount === null
-        ) {
-
-            if (isNew) {
-
-                return left(
-                    new PermissionDenied(
-                        "error.invalidAmount",
-                        400,
-                        new Error().stack || ""
-                    )
-                );
-
-            }
-
-        } else if (
-            Number(amount) === 0
+            amount === null ||
+            !(Number(amount) > 0)
         ) {
 
             return left(
                 new PermissionDenied(
-                    "error.invalidAmount",
+                    this.getMessage(
+                        "error.transactionInvalidAmount",
+                        request,
+                        entityCode
+                    ) ||
+                    "error.transactionInvalidAmount",
                     400,
-                    new Error().stack || ""
+                    stack
                 )
             );
+
+        }
+
+        if (!date) {
+
+            return left(
+                new PermissionDenied(
+                    this.getMessage(
+                        "error.transactionDateRequired",
+                        request,
+                        entityCode
+                    ) ||
+                    "error.transactionDateRequired",
+                    400,
+                    stack
+                )
+            );
+
+        }
+
+        const normalized =
+            normalizeDate(date);
+
+        if (!normalized) {
+
+            return left(
+                new PermissionDenied(
+                    this.getMessage(
+                        "error.invalidDate",
+                        request,
+                        entityCode,
+                        { date }
+                    ) ||
+                    "error.invalidDate",
+                    400,
+                    stack
+                )
+            );
+
+        }
+
+        // Mirror the normalized value into the real request payload: on UPDATE
+        // the controller works on a shallow copy, so only mutating
+        // `Request.data` guarantees CAP persists the ISO date.
+        if (request?.data && (request.data as any).Date !== normalized) {
+
+            (request.data as any).Date =
+                normalized;
 
         }
 
         const liability =
             await this.LiabilityRepository
                 .findById(
-                    liabilityId,
-                    true
+                    liabilityId
                 );
 
         if (!liability) {
 
             return left(
                 new PermissionDenied(
+                    this.getMessage(
+                        "error.invalidLiability",
+                        request,
+                        entityCode
+                    ) ||
                     "error.invalidLiability",
                     404,
-                    new Error().stack || ""
+                    stack
                 )
             );
+
+        }
+
+        if (type === "IN") {
+
+            const rows =
+                await this.Repository
+                    .findByLiabilityId(
+                        liabilityId
+                    ) || [];
+
+            const others =
+                rows.filter(
+                    row =>
+                        row.Id !== entity.ID
+                );
+
+            const summary =
+                summarizeTransactions(
+                    others.map(row => ({
+                        Id: row.Id,
+                        Type: row.Type,
+                        Amount: row.Amount,
+                        Date: row.Date
+                    }))
+                );
+
+            const rawBalance =
+                new Decimal(
+                    Number(
+                        liability.TotalAmount
+                            ?.toNumber() || 0
+                    )
+                )
+                    .plus(summary.TotalOut)
+                    .minus(summary.TotalIn);
+
+            if (
+                new Decimal(Number(amount))
+                    .greaterThan(rawBalance)
+            ) {
+
+                return left(
+                    new PermissionDenied(
+                        this.getMessage(
+                            "error.transactionExceedsBalance",
+                            request,
+                            entityCode
+                        ) ||
+                        "error.transactionExceedsBalance",
+                        400,
+                        stack
+                    )
+                );
+
+            }
 
         }
 

@@ -15,7 +15,8 @@ import {
 } from "@/services/liability";
 
 import {
-    Liability
+    Liability,
+    Liabilities
 } from "@models/apps/dflc/expensemanager/entities";
 
 export class LiabilityControllerImplementation
@@ -34,6 +35,52 @@ export class LiabilityControllerImplementation
 
         this.Service =
             Service;
+
+    }
+
+
+    public async afterCreate(
+        Liabilities: Liabilities
+    ): Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .afterCreate(Liabilities);
+
+        if (result.isLeft()) {
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+        }
+
+        return this.success(
+            201,
+            result.value
+        );
+
+    }
+
+
+    public async afterUpdate(
+        Liabilities: Liabilities
+    ): Promise<BaseControllerResponse> {
+
+        const result =
+            await this.Service
+                .afterUpdate(Liabilities);
+
+        if (result.isLeft()) {
+            return this.error(
+                result.value.code,
+                result.value.message
+            );
+        }
+
+        return this.success(
+            204,
+            result.value
+        );
 
     }
 

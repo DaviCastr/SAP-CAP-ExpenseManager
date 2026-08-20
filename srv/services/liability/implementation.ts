@@ -47,15 +47,8 @@ import {
 } from "@/repositories/entity";
 
 import {
-    LiabilityTransactionModel
-} from "@/models/liability-transaction";
-
-import {
-    LiabilityModel
-} from "@/models/liability";
-
-import {
-    LiabilityDashboardModel
+    LiabilityDashboardModel,
+    LiabilityDashboardReturnProperties
 } from "@/models/liability-dashboard";
 
 import {
@@ -74,12 +67,15 @@ import {
 } from "@/models/liability-future-impact";
 
 import {
-    CurrencyModel
-} from "@/models/currency";
-
-import {
     EntitiesCodes
 } from "@/constants/entities-codes";
+
+import {
+    outstandingBalance,
+    paymentPercentage,
+    statusFromBalance,
+    summarizeTransactions
+} from "@/domain/liability-rules";
 
 export class LiabilityServiceImplementation
     extends BaseServiceImplementation<Liability>
@@ -204,6 +200,199 @@ export class LiabilityServiceImplementation
 
     }
 
+    private invalidDueDayError(
+        day: unknown
+    ): Either<AbstractError, boolean> {
+
+        const stack =
+            new Error().stack || "";
+
+        const request =
+            ServiceLocator.getRequest();
+
+        return left(
+            new PermissionDenied(
+                this.getMessage(
+                    "error.invalidDueDay",
+                    request,
+                    this.entityCode(),
+                    { day }
+                ) ||
+                "error.invalidDueDay",
+                400,
+                stack
+            )
+        );
+
+    }
+
+    /**
+     * Validates the due day of month (the UI sends `1`-`31`) and mirrors the
+     * parsed integer into the real request payload, because on UPDATE the
+     * controller works on a shallow copy of `Request.data` and only mutations
+     * applied to the original payload are persisted by CAP.
+     *
+     * @param {any} data the liability payload
+     * @returns {boolean} `true` when the day is fine, `false` when it is
+     * present but not an integer between 1 and 31
+     */
+    private normalizeDueDay(
+        data: any
+    ): boolean {
+
+        if (
+            data.DueDay === undefined ||
+            data.DueDay === null ||
+            data.DueDay === ""
+        ) {
+            return true;
+        }
+
+        const day =
+            Number(data.DueDay);
+
+        if (
+            !Number.isInteger(day) ||
+            day < 1 ||
+            day > 31
+        ) {
+            return false;
+        }
+
+        data.DueDay =
+            day;
+
+        const request =
+            ServiceLocator.getRequest();
+
+        if (request?.data) {
+
+            (request.data as any).DueDay =
+                day;
+
+        }
+
+        return true;
+
+    }
+
+    /**
+     * Recomputes the derived values of a debt from ALL its persisted
+     * transactions (never incremental, never from the payload). The write goes
+     * to the entity set the current request works on, so during a draft
+     * session the draft row is updated and a discarded draft never corrupts
+     * the active balance.
+     *
+     * @param {string} liabilityId the parent debt ID
+     * @returns {Either<AbstractError, boolean>} right on success
+     */
+    public async recalculateLiability(
+        liabilityId: string
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        try {
+
+            if (!liabilityId) {
+                return right(true);
+            }
+
+            const draftExists =
+                await this.Repository
+                    .hasDraftRow(
+                        liabilityId
+                    );
+
+            const transactionsEntity =
+                draftExists
+                    ? this.LiabilityTransactionRepository
+                        .getDraftsEntity()
+                    : undefined;
+
+            const rows =
+                await this
+                    .LiabilityTransactionRepository
+                    .findByLiabilityId(
+                        liabilityId,
+                        transactionsEntity
+                    ) || [];
+
+            const debt =
+                await this.Repository
+                    .findById(
+                        liabilityId
+                    );
+
+            if (!debt) {
+                return right(true);
+            }
+
+            const summary =
+                summarizeTransactions(
+                    rows.map(row => ({
+                        Id: row.Id,
+                        Type: row.Type,
+                        Amount: row.Amount,
+                        Date: row.Date
+                    }))
+                );
+
+            const balance =
+                outstandingBalance(
+                    debt.TotalAmount,
+                    summary
+                );
+
+            const percentage =
+                paymentPercentage(
+                    debt.TotalAmount,
+                    summary
+                );
+
+            const status =
+                statusFromBalance(
+                    balance
+                );
+
+            await this.Repository
+                .updateComputedValues(
+                    liabilityId,
+                    {
+                        OutstandingBalance:
+                            balance,
+
+                        PaymentPercentage:
+                            percentage,
+
+                        Status:
+                            status
+                    },
+                    draftExists
+                        ? this.Repository
+                            .getDraftsEntity()
+                        : undefined
+                );
+
+            return right(true);
+
+        } catch (error) {
+
+            const err =
+                error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    400,
+                    err.stack || ""
+                )
+            );
+
+        }
+
+    }
+
     // ==================================================
     // CRUD HOOKS
     // ==================================================
@@ -218,60 +407,64 @@ export class LiabilityServiceImplementation
         const data =
             entity as any;
 
+        if (!this.normalizeDueDay(data)) {
+            return this.invalidDueDayError(data.DueDay);
+        }
+
+        const totalAmount =
+            Number(
+                data.TotalAmount ?? 0
+            );
+
         if (
-            data.CurrentBalance === undefined ||
-            data.CurrentBalance === null
+            !Number.isFinite(totalAmount) ||
+            totalAmount < 0
         ) {
 
-            data.CurrentBalance =
-                new Decimal(
-                    data.OriginalAmount || 0
-                )?.toDecimalPlaces(2)?.toNumber();
+            const stack =
+                new Error().stack || "";
+
+            return left(
+                new PermissionDenied(
+                    this.getMessage(
+                        "error.liabilityInvalidTotalAmount",
+                        ServiceLocator.getRequest(),
+                        this.entityCode()
+                    ) ||
+                    "error.liabilityInvalidTotalAmount",
+                    400,
+                    stack
+                )
+            );
 
         }
 
+        // The derived values are never trusted from the payload; a brand new
+        // debt has no transactions, so its balance equals the total amount.
+        // During draft activation the same handler runs again on the deep
+        // upsert of the draft tree, which already carries the correctly
+        // recalculated values - those must be preserved, not reset.
         if (
-            data.PaidAmount === undefined ||
-            data.PaidAmount === null
+            data.OutstandingBalance === undefined ||
+            data.OutstandingBalance === null
         ) {
-
-            data.PaidAmount =
-                new Decimal(0)?.toNumber();
-
+            data.OutstandingBalance =
+                new Decimal(totalAmount)
+                    .toDecimalPlaces(2)
+                    .toNumber();
         }
 
-        if (!data.StartDate) {
-
-            data.StartDate =
-                new Date()
-                    .toISOString()
-                    .slice(0, 10);
-
+        if (
+            data.PaymentPercentage === undefined ||
+            data.PaymentPercentage === null
+        ) {
+            data.PaymentPercentage =
+                0;
         }
 
         if (!data.Status) {
             data.Status =
                 "OPEN";
-        }
-
-        const installments =
-            Number(data.Installments) || 1;
-
-        if (
-            installments > 1 &&
-            (
-                data.InstallmentAmount === undefined ||
-                data.InstallmentAmount === null
-            ) &&
-            data.OriginalAmount
-        ) {
-
-            data.InstallmentAmount =
-                new Decimal(
-                    data.OriginalAmount
-                ).div(installments)
-                    .toDecimalPlaces(2)?.toNumber();
-
         }
 
         return super.beforeCreate(
@@ -281,6 +474,214 @@ export class LiabilityServiceImplementation
 
     }
 
+    public async beforeUpdate(
+        entity: Liability,
+        user: User
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        const result =
+            await super.beforeUpdate(
+                entity,
+                user
+            );
+
+        if (result.isLeft()) {
+            return result;
+        }
+
+        const data =
+            entity as any;
+
+        if (!this.normalizeDueDay(data)) {
+            return this.invalidDueDayError(data.DueDay);
+        }
+
+        // Derived fields are read-only: only the backend may write them.
+        delete data.OutstandingBalance;
+        delete data.PaymentPercentage;
+        delete data.Status;
+
+        const request =
+            ServiceLocator.getRequest();
+
+        if (request?.data) {
+
+            const payload =
+                request.data as any;
+
+            delete payload.OutstandingBalance;
+            delete payload.PaymentPercentage;
+            delete payload.Status;
+
+        }
+
+        if (
+            data.TotalAmount === undefined ||
+            data.TotalAmount === null
+        ) {
+            return right(true);
+        }
+
+        const stack =
+            new Error().stack || "";
+
+        const totalAmount =
+            Number(data.TotalAmount);
+
+        if (
+            !Number.isFinite(totalAmount) ||
+            totalAmount < 0
+        ) {
+
+            return left(
+                new PermissionDenied(
+                    this.getMessage(
+                        "error.liabilityInvalidTotalAmount",
+                        ServiceLocator.getRequest(),
+                        this.entityCode()
+                    ) ||
+                    "error.liabilityInvalidTotalAmount",
+                    400,
+                    stack
+                )
+            );
+
+        }
+
+        const existing =
+            await this.Repository
+                .findById(
+                    data.ID,
+                    true
+                );
+
+        if (!existing) {
+            return right(true);
+        }
+
+        const rows =
+            await this
+                .LiabilityTransactionRepository
+                .findByLiabilityId(
+                    data.ID
+                ) || [];
+
+        const summary =
+            summarizeTransactions(
+                rows.map(row => ({
+                    Id: row.Id,
+                    Type: row.Type,
+                    Amount: row.Amount,
+                    Date: row.Date
+                }))
+            );
+
+        const rawBalance =
+            new Decimal(totalAmount)
+                .plus(summary.TotalOut)
+                .minus(summary.TotalIn);
+
+        if (rawBalance.lessThan(0)) {
+
+            return left(
+                new PermissionDenied(
+                    this.getMessage(
+                        "error.liabilityBalanceCannotBeNegative",
+                        ServiceLocator.getRequest(),
+                        this.entityCode()
+                    ) ||
+                    "error.liabilityBalanceCannotBeNegative",
+                    400,
+                    stack
+                )
+            );
+
+        }
+
+        return right(true);
+
+    }
+
+    public async afterCreate(
+        Entities: Liability[]
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        return this.recalculateForLiabilities(
+            Entities
+        );
+
+    }
+
+    public async afterUpdate(
+        Entities: Liability[]
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        return this.recalculateForLiabilities(
+            Entities
+        );
+
+    }
+
+    private async recalculateForLiabilities(
+        Entities:
+            Liability | Liability[]
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        try {
+
+            const list =
+                Array.isArray(Entities)
+                    ? Entities
+                    : [Entities];
+
+            const ids =
+                new Set<string>();
+
+            for (const entity of list) {
+
+                if (entity?.ID) {
+                    ids.add(entity.ID);
+                }
+
+            }
+
+            for (const id of ids) {
+
+                const result =
+                    await this.recalculateLiability(id);
+
+                if (result.isLeft()) {
+                    return result;
+                }
+
+            }
+
+            return right(true);
+
+        } catch (error) {
+
+            const err =
+                error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    400,
+                    err.stack || ""
+                )
+            );
+
+        }
+
+    }
 
     public async afterRead(
         Entities: Liability[],
@@ -299,17 +700,11 @@ export class LiabilityServiceImplementation
             return result;
         }
 
-        const enriched =
-            await this.enrichLiabilities(
-                result.value
-            );
-
         return right(
-            enriched
+            result.value
         );
 
     }
-
 
     private async enrichRows(
         rows: Liability[],
@@ -325,249 +720,17 @@ export class LiabilityServiceImplementation
 
     }
 
-
-    private async enrichLiabilities(
-        entities: Liability[]
-    ): Promise<Liability[]> {
-
-        if (!entities?.length) {
-            return entities;
-        }
-
-        const ids =
-            entities
-                .map(e => e.ID)
-                .filter(Boolean);
-
-        if (!ids.length) {
-            return entities;
-        }
-
-        let rows:
-            LiabilityTransactionModel[] = [];
-
-        try {
-
-            rows =
-                await this
-                    .LiabilityTransactionRepository
-                    .findByLiabilityIds(
-                        ids
-                    ) || [];
-
-        } catch {
-            rows = [];
-        }
-
-        const grouped =
-            new Map<string, LiabilityTransactionModel[]>();
-
-        for (const transaction of rows) {
-
-            const key =
-                transaction.Liability?.Id as string;
-
-            if (!key) continue;
-
-            if (!grouped.has(key)) {
-                grouped.set(key, []);
-            }
-
-            grouped
-                .get(key)!
-                .push(transaction);
-
-        }
-
-        const today =
-            new Date()
-                .toISOString()
-                .slice(0, 10);
-
-        const enriched: Liability[] = [];
-
-        for (const entity of entities) {
-
-            const model =
-                LiabilityModel.singleModel(
-                    entity
-                );
-
-            if (!model) {
-                enriched.push(entity);
-                continue;
-            }
-
-            const data =
-                entity as any;
-
-            const liabilityTransactions =
-                grouped.get(
-                    data.ID as string
-                ) || [];
-
-            const original =
-                new Decimal(
-                    data.OriginalAmount || 0
-                );
-
-            const paid =
-                new Decimal(
-                    data.PaidAmount || 0
-                );
-
-            const balance =
-                new Decimal(
-                    data.CurrentBalance ??
-                        original.minus(paid)
-                );
-
-            model.RemainingAmount =
-                balance;
-
-            model.ProgressPercent =
-                original.greaterThan(0)
-                    ? new Decimal(
-                        Number(
-                            paid
-                                .div(original)
-                                .mul(100)
-                                .toFixed(2)
-                        )
-                    )
-                    : new Decimal(0);
-
-            const totalInstallments =
-                Number(data.Installments) || 1;
-
-            const paidInstallments =
-                liabilityTransactions.filter(t =>
-                    t.Type === "PAYMENT" ||
-                    t.Type === "AMORTIZATION"
-                ).length;
-
-            model.PaidInstallments =
-                paidInstallments;
-
-            model.RemainingInstallments =
-                Math.max(
-                    totalInstallments - paidInstallments,
-                    0
-                );
-
-            model.NextDueDate =
-                this.computeNextDueDate(
-                    entity,
-                    paidInstallments
-                );
-
-            model.IsOverdue =
-                data.Status === "OPEN" &&
-                !!model.NextDueDate &&
-                model.NextDueDate < today;
-
-            model.HealthScore =
-                this.computeHealthScore({
-                    ...entity,
-                    IsOverdue:
-                        model.IsOverdue
-                });
-
-            enriched.push(
-                model.toEntityObject() as Liability
-            );
-
-        }
-
-        return enriched;
-
-    }
-
-
-    private computeNextDueDate(
-        entity: Liability,
-        paidInstallments: number
-    ): string | null {
-
-        const total =
-            Number(entity.Installments) || 1;
-
-        if (!entity.FirstDueDate) {
-            return null;
-        }
-
-        if (paidInstallments >= total) {
-            return null;
-        }
-
-        const date =
-            new Date(
-                `${entity.FirstDueDate}T00:00:00`
-            );
-
-        const monthsToAdd =
-            Math.min(
-                paidInstallments,
-                total - 1
-            );
-
-        date.setMonth(
-            date.getMonth() + monthsToAdd
-        );
-
-        return date
-            .toISOString()
-            .slice(0, 10);
-
-    }
-
-
-    private computeHealthScore(
-        entity: Liability
-    ): number {
-
-        const balance =
-            Number(
-                entity.CurrentBalance || 0
-            );
-
-        const original =
-            Number(
-                entity.OriginalAmount || 0
-            );
-
-        let score = 100;
-
-        if (entity.IsOverdue) {
-            score -= 30;
-        }
-
-        if (original > 0) {
-
-            const ratio =
-                balance / original;
-
-            if (ratio > 0.8) {
-                score -= 20;
-            } else if (ratio > 0.5) {
-                score -= 10;
-            }
-
-        }
-
-        return Math.max(
-            Math.min(score, 100),
-            0
-        );
-
-    }
-
     // ==================================================
     // FUNCTIONS
     // ==================================================
 
     public async dashboard():
-        Promise<any> {
+        Promise<
+            Either<
+                AbstractError,
+                LiabilityDashboardReturnProperties
+            >
+        > {
 
         try {
 
@@ -582,16 +745,19 @@ export class LiabilityServiceImplementation
 
             const auth =
                 await this.authorizeRows(
-                    rows?.map(item=>item.toEntityObject()) as any,
+                    rows?.map(item => item.toEntityObject()) as any,
                     request.user
                 );
 
             if (auth.isLeft()) {
-                return auth;
+                return auth as any;
             }
 
             const safeRows =
                 auth.value;
+
+            const todayDay =
+                new Date().getDate();
 
             let total =
                 new Decimal(0);
@@ -602,24 +768,70 @@ export class LiabilityServiceImplementation
             let paid =
                 new Decimal(0);
 
+            let overdue =
+                new Decimal(0);
+
+            let percentageSum =
+                new Decimal(0);
+
+            let count = 0;
+
             for (const row of safeRows) {
 
-                total =
-                    total.plus(
-                        row.OriginalAmount || 0
+                const totalAmount =
+                    new Decimal(
+                        Number(row.TotalAmount) || 0
                     );
+
+                const balance =
+                    new Decimal(
+                        Number(row.OutstandingBalance) ??
+                            totalAmount
+                    );
+
+                total =
+                    total.plus(totalAmount);
 
                 open =
                     open.plus(
-                        row.CurrentBalance || 0
+                        row.Status === "OPEN"
+                            ? balance
+                            : new Decimal(0)
                     );
 
                 paid =
                     paid.plus(
-                        row.PaidAmount || 0
+                        totalAmount.minus(balance)
                     );
 
+                if (
+                    row.Status === "OPEN" &&
+                    row.DueDay &&
+                    Number(row.DueDay) < todayDay
+                ) {
+
+                    overdue =
+                        overdue.plus(balance);
+
+                }
+
+                percentageSum =
+                    percentageSum.plus(
+                        Number(row.PaymentPercentage) || 0
+                    );
+
+                count += 1;
+
             }
+
+            const healthScore =
+                count > 0
+                    ? Math.round(
+                        percentageSum
+                            .div(count)
+                            .toNumber()
+                    )
+                    : 100;
 
             const model =
                 LiabilityDashboardModel.with({
@@ -636,7 +848,7 @@ export class LiabilityServiceImplementation
                             paid,
 
                         OverdueDebt:
-                            new Decimal(0),
+                            overdue,
 
                         MonthlyCommitment:
                             new Decimal(0)
@@ -644,17 +856,10 @@ export class LiabilityServiceImplementation
                     },
 
                     HealthScore:
-                        80,
+                        healthScore,
 
                     Currency:
-                        safeRows?.[0]?.Currency
-                            ? CurrencyModel.singleModel({
-                                ...safeRows?.[0]?.Currency,
-                                code:
-                                    safeRows?.[0]?.Currency?.code ||
-                                    safeRows?.[0]?.Currency_code
-                            } as any)
-                            : undefined as any,
+                        undefined as any,
 
                     NextPayments: [],
 
@@ -706,7 +911,7 @@ export class LiabilityServiceImplementation
 
             const auth =
                 await this.authorizeRows(
-                    rows?.map(item=>item?.toEntityObject()) as any,
+                    rows?.map(item => item?.toEntityObject()) as any,
                     request.user
                 );
 
@@ -714,14 +919,116 @@ export class LiabilityServiceImplementation
                 return auth as any;
             }
 
+            const safeRows =
+                auth.value as any[];
+
+            const byStatus:
+                Record<string, {
+                    TotalAmount: Decimal;
+                    Contracts: number;
+                }> = {};
+
+            for (const row of safeRows) {
+
+                const status =
+                    row.Status || "OPEN";
+
+                if (!byStatus[status]) {
+
+                    byStatus[status] = {
+                        TotalAmount:
+                            new Decimal(0),
+                        Contracts: 0
+                    };
+
+                }
+
+                byStatus[status].TotalAmount =
+                    byStatus[status].TotalAmount.plus(
+                        Number(row.OutstandingBalance) ??
+                            (Number(row.TotalAmount) || 0)
+                    );
+
+                byStatus[status].Contracts += 1;
+
+            }
+
+            const liabilityIds =
+                safeRows
+                    .map((row: any) => row.ID)
+                    .filter(Boolean);
+
+            const transactions =
+                liabilityIds.length
+                    ? (
+                        await this
+                            .LiabilityTransactionRepository
+                            .findByLiabilityIds(
+                                liabilityIds
+                            ) || []
+                    )
+                    : [];
+
+            const monthly:
+                Record<string, Decimal> = {};
+
+            for (const transaction of transactions) {
+
+                const date =
+                    transaction.Date;
+
+                if (!date) continue;
+
+                const key =
+                    date.slice(0, 7);
+
+                if (!monthly[key]) {
+                    monthly[key] =
+                        new Decimal(0);
+                }
+
+                monthly[key] =
+                    monthly[key].plus(
+                        Number(
+                            transaction.Amount
+                                ?.toNumber()
+                        ) || 0
+                    );
+
+            }
+
             const model =
                 LiabilityAnalyticsModel.with({
 
                     ByType: [],
 
-                    ByStatus: [],
+                    ByStatus:
+                        Object.entries(byStatus).map(
+                            ([status, value]) => ({
+                                Status: status,
+                                TotalAmount:
+                                    value.TotalAmount,
+                                Contracts:
+                                    value.Contracts
+                            })
+                        ),
 
-                    MonthlyTrend: []
+                    MonthlyTrend:
+                        Object.entries(monthly)
+                            .sort(([a], [b]) =>
+                                a < b ? -1 : 1
+                            )
+                            .map(([key, amount]) => ({
+                                Year:
+                                    Number(
+                                        key.slice(0, 4)
+                                    ),
+                                Month:
+                                    Number(
+                                        key.slice(5, 7)
+                                    ),
+                                Amount: amount
+                            }))
 
                 });
 
@@ -770,7 +1077,12 @@ export class LiabilityServiceImplementation
 
                 return left(
                     new AbstractError(
-                        "Liability not found",
+                        this.getMessage(
+                            "error.liabilityNotFound",
+                            request,
+                            this.entityCode()
+                        ) ||
+                        "error.liabilityNotFound",
                         404,
                         ""
                     )
@@ -791,6 +1103,9 @@ export class LiabilityServiceImplementation
             const safeDebt =
                 auth.value;
 
+            const paid =
+                safeDebt.Status === "PAID";
+
             const model =
                 LiabilityPaymentScheduleModel.with({
 
@@ -801,13 +1116,13 @@ export class LiabilityServiceImplementation
                         safeDebt.Name as string,
 
                     TotalInstallments:
-                        safeDebt.Installments || 0,
+                        1,
 
                     PaidInstallments:
-                        safeDebt.PaidInstallments || 0,
+                        paid ? 1 : 0,
 
                     RemainingInstallments:
-                        safeDebt.RemainingInstallments || 0,
+                        paid ? 0 : 1,
 
                     Items: []
 
@@ -855,7 +1170,7 @@ export class LiabilityServiceImplementation
 
             const auth =
                 await this.authorizeRows(
-                    rows?.map(item=>item?.toEntityObject()) as any,
+                    rows?.map(item => item?.toEntityObject()) as any,
                     request.user
                 );
 

@@ -22,23 +22,58 @@ export class LiabilityRepositoryImplementation
         ignoreDraft?: boolean
     ): Promise<LiabilityModel | null> {
 
-        let Entity = this.getEntity(ignoreDraft);
+        // Read both the active and the draft sibling sets up front. The draft
+        // plugin activates a draft by deep-inserting the whole tree into the
+        // active tables, so the transaction handlers run with a request that
+        // targets the ACTIVE entity set. A debt created in the same draft only
+        // exists as a draft row at that point (activation inserts parents
+        // first), so a strict active-only lookup would reject the transaction
+        // with a spurious 404 "invalid debt".
+        const activeEntity =
+            this.getEntity(true);
 
-        let sql = SELECT.from(Entity).where({ ID: Id });
+        const draftEntity =
+            (activeEntity as any)?.drafts as entity | undefined;
 
-        let rows = await cds.run(sql);
+        const activeRows =
+            await cds.run(
+                SELECT.from(activeEntity)
+                    .where({ ID: Id })
+            ) || [];
 
-        if ((Entity as any)?.isDraft) {
+        const draftRows =
+            draftEntity
+                ? (
+                    await cds.run(
+                        SELECT.from(draftEntity)
+                            .where({ ID: Id })
+                    ) || []
+                )
+                : [];
 
-            Entity = this.getEntity(true);
+        // Prefer the row of the entity set the request works on: reads outside
+        // a draft session keep the committed values, while a draft-session read
+        // sees the uncommitted draft values. The sibling set is used as a
+        // fallback so the same lookup also works during draft activation and
+        // for brand-new entities that only exist as drafts.
+        const current =
+            this.getEntity(ignoreDraft);
 
-            sql = SELECT.from(Entity).where({ ID: Id });
+        const primary =
+            (current as any)?.isDraft
+                ? draftRows
+                : activeRows;
 
-            const activeRows = await cds.run(sql) || [];
+        const fallback =
+            (current as any)?.isDraft
+                ? activeRows
+                : draftRows;
 
-            rows = [...(rows || []), ...activeRows];
-
-        }
+        const rows =
+            this.mergeUnique(
+                primary,
+                fallback
+            );
 
         const model = LiabilityModel.mapModel(rows);
 
@@ -69,7 +104,10 @@ export class LiabilityRepositoryImplementation
 
             const activeRows = await cds.run(sql) || [];
 
-            rows = [...(rows || []), ...activeRows];
+            rows = this.mergeUnique(
+                rows,
+                activeRows
+            );
 
         }
 
@@ -100,7 +138,10 @@ export class LiabilityRepositoryImplementation
 
             const activeRows = await cds.run(sql) || [];
 
-            rows = [...(rows || []), ...activeRows];
+            rows = this.mergeUnique(
+                rows,
+                activeRows
+            );
 
         }
 
@@ -146,7 +187,10 @@ export class LiabilityRepositoryImplementation
 
             const activeRows = await cds.run(sql) || [];
 
-            rows = [...(rows || []), ...activeRows];
+            rows = this.mergeUnique(
+                rows,
+                activeRows
+            );
 
         }
 
@@ -195,34 +239,48 @@ export class LiabilityRepositoryImplementation
     }
 
 
-    public async updateAmounts(
+    public async updateComputedValues(
         Id: Liability["ID"],
         data: {
-            CurrentBalance?: number | Decimal;
-            PaidAmount?: number | Decimal;
+            OutstandingBalance?: number | Decimal;
+            PaymentPercentage?: number | Decimal;
             Status?: string;
-        }
+        },
+        Entity?: entity
     ): Promise<boolean> {
 
-        await UPDATE(
-            this.getEntity(true)
-        )
-            .set({
+        const values = {
 
-                CurrentBalance:
-                    data.CurrentBalance instanceof Decimal
-                        ? data.CurrentBalance.toNumber()
-                        : data.CurrentBalance,
+            OutstandingBalance:
+                data.OutstandingBalance instanceof Decimal
+                    ? data.OutstandingBalance.toNumber()
+                    : data.OutstandingBalance,
 
-                PaidAmount:
-                    data.PaidAmount instanceof Decimal
-                        ? data.PaidAmount.toNumber()
-                        : data.PaidAmount,
+            PaymentPercentage:
+                data.PaymentPercentage instanceof Decimal
+                    ? data.PaymentPercentage.toNumber()
+                    : data.PaymentPercentage,
 
-                Status:
-                    data.Status
+            Status:
+                data.Status
 
-            })
+        };
+
+        // Update the row of the entity set the current request is working on:
+        // - during a draft session the request targets the drafts entity, so
+        //   the DRAFT row is updated and the active row keeps its value until
+        //   activation (a discarded draft never corrupts the active balance);
+        // - during activation the request still targets the drafts entity and
+        //   the draft row is updated, which draftActivate then copies to the
+        //   active row together with the transactions;
+        // - in non-draft flows the active row is updated directly.
+        // Callers may pass an explicit `Entity` (e.g. the drafts entity of a
+        // liability that only exists as a draft) to override that resolution.
+        const target =
+            Entity ?? this.getEntity();
+
+        await UPDATE(target)
+            .set(values)
             .where({
                 ID: Id
             });
@@ -232,11 +290,108 @@ export class LiabilityRepositoryImplementation
     }
 
 
+    /**
+     * Tells whether the given liability has a row in the drafts table. A draft
+     * row exists for the whole lifecycle of a draft session (from `draftEdit`
+     * until `draftActivate`/discard), which is the reliable signal that the
+     * recalculation must read from and write to the draft tree.
+     *
+     * @param {Liability["ID"]} Id the liability ID
+     * @returns {Promise<boolean>} `true` when a draft row exists
+     */
+    public async hasDraftRow(
+        Id: Liability["ID"]
+    ): Promise<boolean> {
+
+        const activeEntity =
+            this.getEntity(true);
+
+        const draftsEntity =
+            (activeEntity as any)?.drafts as entity | undefined;
+
+        if (!draftsEntity) {
+            return false;
+        }
+
+        const rows =
+            await cds.run(
+                SELECT.from(draftsEntity)
+                    .where({ ID: Id })
+            );
+
+        return (rows?.length ?? 0) > 0;
+
+    }
+
+
+    /**
+     * Merges the draft rows with the active rows of the same entity set,
+     * keeping one row per ID (the draft row wins because it is first).
+     *
+     * Draft-enabled compositions are deep-copied into the draft tables when a
+     * draft is opened, so every active row has a draft sibling with the same
+     * ID. Reading both tables naively would return each row twice and double
+     * count the amounts when the debt balance is recalculated.
+     *
+     * @param {any[]} draftRows rows read from the draft entity set
+     * @param {any[]} activeRows rows read from the active entity set
+     * @returns {any[]} the deduplicated rows
+     */
+    private mergeUnique(
+        draftRows: any[],
+        activeRows: any[]
+    ): any[] {
+
+        const seen =
+            new Set<string>();
+
+        const merged: any[] = [];
+
+        for (const row of [
+            ...(draftRows || []),
+            ...(activeRows || [])
+        ]) {
+
+            const key =
+                row?.ID as string | undefined;
+
+            if (!key || seen.has(key)) {
+                continue;
+            }
+
+            seen.add(key);
+
+            merged.push(row);
+
+        }
+
+        return merged;
+
+    }
+
+
     protected getEntity(
         ignoreDraft?: boolean
     ): entity {
 
         return ServiceLocator.getEntity('Liabilities', ignoreDraft);
+
+    }
+
+
+    /**
+     * Returns the drafts entity set of the liabilities (e.g.
+     * `ExpenseManager.Liabilities.drafts`), or `undefined` when the entity is
+     * not draft-enabled. Used by the recalculation to write the computed values
+     * of the draft tree explicitly.
+     *
+     * @returns {entity | undefined} the drafts entity set
+     */
+    public getDraftsEntity(): entity | undefined {
+
+        return (
+            this.getEntity(true) as any
+        )?.drafts as entity | undefined;
 
     }
 

@@ -2,12 +2,12 @@ import cds, { entity, Request } from "@sap/cds";
 
 export class ServiceLocator {
 
-    private static GestorService: cds.Service;
+    private static ExpenseManagerService: cds.Service;
 
 
-    public static setGestorService(Service: any) {
+    public static setExpenseManagerService(Service: any) {
 
-        this.GestorService = Service;
+        this.ExpenseManagerService = Service;
 
     }
 
@@ -28,15 +28,15 @@ export class ServiceLocator {
     }
 
 
-    public static getGestorService(): cds.Service {
+    public static getExpenseManagerService(): cds.Service {
 
-        if (!this.GestorService) {
+        if (!this.ExpenseManagerService) {
 
             throw new Error("ExpenseManager service not initialized");
 
         }
 
-        return this.GestorService;
+        return this.ExpenseManagerService;
 
     }
 
@@ -58,14 +58,45 @@ export class ServiceLocator {
 
         const oServiceName = this.getServiceName();
 
+        const targetIsDraft = this.targetIsDraft();
+
+        if (!ignoreDraft && targetIsDraft && oServiceName) {
+
+            // During a draft session the request may target the drafts table of
+            // one entity while the caller needs a sibling of the same service
+            // (e.g. recalculating Liabilities from a LiabilityTransactions.drafts
+            // request). Resolving the sibling to its own drafts table keeps the
+            // recalculation inside the draft, so a discarded draft never corrupts
+            // the active rows. Without this, the write would target the active
+            // entity and the next movement would appear to have no effect.
+            const sibling = cds.entities[`${oServiceName}.${EntityName}`] as entity;
+
+            if (sibling?.drafts) {
+
+                return sibling.drafts as entity;
+
+            }
+
+            // The service owning the request may not project the entity at all
+            // (e.g. LiabilityTransactionService does not expose Liabilities).
+            // Fall back to the main ExpenseManager service drafts.
+            const oExpenseEntity = (this.ExpenseManagerService as any)?.entities?.[EntityName];
+
+            if (oExpenseEntity?.drafts) {
+
+                return oExpenseEntity.drafts as entity;
+
+            }
+
+        }
+
         const oEntityName = oServiceName ? `${oServiceName}.${EntityName}` : EntityName;
 
         let oEntity: entity = cds.entities[oEntityName];
 
         if (!ignoreDraft
-            && this.targetIsDraft()
-            && oServiceName == 'ExpenseManager'
-            && oEntity.drafts) {
+            && targetIsDraft
+            && oEntity?.drafts) {
 
             oEntity = oEntity?.drafts;
 
@@ -78,9 +109,9 @@ export class ServiceLocator {
 
         }
 
-        if (!oEntity && this.GestorService) {
+        if (!oEntity && this.ExpenseManagerService) {
 
-            oEntity = (this.GestorService as any).entities?.[EntityName];
+            oEntity = (this.ExpenseManagerService as any).entities?.[EntityName];
 
         }
 
@@ -109,6 +140,25 @@ export class ServiceLocator {
         }
 
         return request.context.permissionCache;
+
+    }
+
+
+    /**
+     * Per-request map of transactions whose liability changed during an update
+     * (transaction ID -> previous liability ID). Lets the after-update
+     * recalculation also recompute the liability the transaction was moved
+     * away from.
+     */
+    public static getLiabilityMoveCache() {
+
+        const request = this.getRequest() as any;
+
+        if (!request?.context?.liabilityMoveCache) {
+            request.context.liabilityMoveCache = new Map<string, string>();
+        }
+
+        return request.context.liabilityMoveCache as Map<string, string>;
 
     }
 

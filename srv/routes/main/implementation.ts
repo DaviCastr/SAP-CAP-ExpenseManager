@@ -29,7 +29,7 @@ export class MainRouteImplementation extends BaseRouteImplementation<any> implem
 
     public main(Service: ApplicationService): void {
 
-        ServiceLocator.setGestorService(Service);
+        ServiceLocator.setExpenseManagerService(Service);
 
         oPersonRouteFactory.main(Service);
 

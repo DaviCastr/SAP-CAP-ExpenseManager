@@ -1,46 +1,24 @@
 import Decimal from 'decimal.js';
 import { BaseModel } from './base';
-import { CurrencyModel } from './currency';
 import { Liability, Liabilities } from '@models/apps/dflc/expensemanager/entities';
 import { LiabilityTransactionModel } from './liability-transaction';
-import { InterestMode, LiabilityStatus, LiabilityType } from '@models/apps/dflc/expensemanager/types';
 import { PersonModel } from './person';
+import { CurrencyModel } from './currency';
 
 type LiabilityProperties = {
     Id: string;
     Name: string;
-    Creditor?: string;
     Description?: string;
-
-    Type?: string;
-    Status?: string;
-
-    OriginalAmount: Decimal;
-    CurrentBalance?: Decimal;
-    PaidAmount?: Decimal;
 
     Currency?: CurrencyModel;
 
-    InterestMode?: string;
-    InterestRate?: Decimal;
+    TotalAmount: Decimal;
+    OutstandingBalance?: Decimal;
+    PaymentPercentage?: Decimal;
 
-    Installments?: number;
-    InstallmentAmount?: Decimal;
+    Status?: string;
 
-    StartDate?: string;
-    FirstDueDate?: string;
-    EndDate?: string;
-    LastPaymentDate?: string;
-
-    ExternalReference?: string;
-
-    RemainingAmount?: Decimal;
-    ProgressPercent?: Decimal;
-    PaidInstallments?: number;
-    RemainingInstallments?: number;
-    NextDueDate?: string;
-    IsOverdue?: boolean;
-    HealthScore?: number;
+    DueDay?: number;
 
     Person?: PersonModel;
 
@@ -68,11 +46,6 @@ export class LiabilityModel extends BaseModel {
 
         return entities?.map((item: Liability) => {
 
-            const currency = CurrencyModel.singleModel({
-                ...item?.Currency,
-                code: item?.Currency?.code || item?.Currency_code as string
-            });
-
             const oPersonModel = PersonModel.singleModel({
                 ...item?.Person,
                 ID: item?.Person?.ID || item?.Person_ID as string
@@ -81,38 +54,17 @@ export class LiabilityModel extends BaseModel {
             return LiabilityModel.with({
                 Id: item.ID as string,
                 Name: item.Name as string,
-                Creditor: item.Creditor as string,
                 Description: item.Description as string,
 
-                Type: item.Type as LiabilityType,
-                Status: item.Status as LiabilityStatus,
+                Currency: CurrencyModel.singleModel(item?.Currency as any),
 
-                OriginalAmount: this.retrieveDecimal(item.OriginalAmount),
-                CurrentBalance: this.retrieveDecimal(item.CurrentBalance),
-                PaidAmount: this.retrieveDecimal(item.PaidAmount),
+                TotalAmount: this.retrieveDecimal(item.TotalAmount),
+                OutstandingBalance: this.retrieveDecimal(item.OutstandingBalance),
+                PaymentPercentage: this.retrieveDecimal(item.PaymentPercentage),
 
-                Currency: currency,
+                Status: item.Status as string,
 
-                InterestMode: item.InterestMode as InterestMode,
-                InterestRate: this.retrieveDecimal(item.InterestRate),
-
-                Installments: item.Installments as number,
-                InstallmentAmount: this.retrieveDecimal(item.InstallmentAmount),
-
-                StartDate: item.StartDate as string,
-                FirstDueDate: item.FirstDueDate as string,
-                EndDate: item.EndDate as string,
-                LastPaymentDate: item.LastPaymentDate as string,
-
-                ExternalReference: item.ExternalReference as string,
-
-                RemainingAmount: this.retrieveDecimal(item.RemainingAmount),
-                ProgressPercent: this.retrieveDecimal(item.ProgressPercent),
-                PaidInstallments: item.PaidInstallments as number,
-                RemainingInstallments: item.RemainingInstallments as number,
-                NextDueDate: item.NextDueDate as string,
-                IsOverdue: item.IsOverdue as boolean,
-                HealthScore: item.HealthScore as number,
+                DueDay: item.DueDay as number,
 
                 Person: oPersonModel,
 
@@ -130,66 +82,17 @@ export class LiabilityModel extends BaseModel {
 
     public get Id() { return this.props.Id; }
     public get Name() { return this.props.Name; }
-    public get Creditor() { return this.props.Creditor; }
     public get Description() { return this.props.Description; }
-
-    public get Type() { return this.props.Type; }
-    public get Status() { return this.props.Status; }
-
-    public get OriginalAmount() { return this.props.OriginalAmount; }
-    public get CurrentBalance() { return this.props.CurrentBalance; }
-    public get PaidAmount() { return this.props.PaidAmount; }
 
     public get Currency() { return this.props.Currency; }
 
-    public get InterestMode() { return this.props.InterestMode; }
-    public get InterestRate() { return this.props.InterestRate; }
+    public get TotalAmount() { return this.props.TotalAmount; }
+    public get OutstandingBalance() { return this.props.OutstandingBalance; }
+    public get PaymentPercentage() { return this.props.PaymentPercentage; }
 
-    public get Installments() { return this.props.Installments; }
-    public get InstallmentAmount() { return this.props.InstallmentAmount; }
+    public get Status() { return this.props.Status; }
 
-    public get StartDate() { return this.props.StartDate; }
-    public get FirstDueDate() { return this.props.FirstDueDate; }
-    public get EndDate() { return this.props.EndDate; }
-    public get LastPaymentDate() { return this.props.LastPaymentDate; }
-
-    public get ExternalReference() { return this.props.ExternalReference; }
-
-    public get RemainingAmount() { return this.props.RemainingAmount; }
-    public get ProgressPercent() { return this.props.ProgressPercent; }
-    public get PaidInstallments() { return this.props.PaidInstallments; }
-    public get RemainingInstallments() { return this.props.RemainingInstallments; }
-    public get NextDueDate() { return this.props.NextDueDate; }
-    public get IsOverdue() { return this.props.IsOverdue; }
-    public get HealthScore() { return this.props.HealthScore; }
-
-    public set RemainingAmount(remainingAmount: Decimal | undefined) {
-        this.props.RemainingAmount = remainingAmount;
-    }
-
-    public set ProgressPercent(progressPercent: Decimal | undefined) {
-        this.props.ProgressPercent = progressPercent;
-    }
-
-    public set PaidInstallments(paidInstallments: number | undefined) {
-        this.props.PaidInstallments = paidInstallments;
-    }
-
-    public set RemainingInstallments(remainingInstallments: number | undefined) {
-        this.props.RemainingInstallments = remainingInstallments;
-    }
-
-    public set NextDueDate(nextDueDate: string | null | undefined) {
-        this.props.NextDueDate = nextDueDate || undefined;
-    }
-
-    public set IsOverdue(isOverdue: boolean | undefined) {
-        this.props.IsOverdue = isOverdue;
-    }
-
-    public set HealthScore(healthScore: number | undefined) {
-        this.props.HealthScore = healthScore;
-    }
+    public get DueDay() { return this.props.DueDay; }
 
     public get Person() { return this.props.Person; }
 
@@ -209,38 +112,17 @@ export class LiabilityModel extends BaseModel {
         return this.cleanEntity({
             ID: this.props.Id,
             Name: this.props.Name,
-            Creditor: this.props.Creditor,
             Description: this.props.Description,
-
-            Type: this.props.Type,
-            Status: this.props.Status,
-
-            OriginalAmount: this.props.OriginalAmount?.toNumber(),
-            CurrentBalance: this.props.CurrentBalance?.toNumber(),
-            PaidAmount: this.props.PaidAmount?.toNumber(),
 
             Currency: this.props.Currency?.toEntityObject(),
 
-            InterestMode: this.props.InterestMode,
-            InterestRate: this.props.InterestRate?.toNumber(),
+            TotalAmount: this.props.TotalAmount?.toNumber(),
+            OutstandingBalance: this.props.OutstandingBalance?.toNumber(),
+            PaymentPercentage: this.props.PaymentPercentage?.toNumber(),
 
-            Installments: this.props.Installments,
-            InstallmentAmount: this.props.InstallmentAmount?.toNumber(),
+            Status: this.props.Status,
 
-            StartDate: this.props.StartDate,
-            FirstDueDate: this.props.FirstDueDate,
-            EndDate: this.props.EndDate,
-            LastPaymentDate: this.props.LastPaymentDate,
-
-            ExternalReference: this.props.ExternalReference,
-
-            RemainingAmount: this.props.RemainingAmount?.toNumber(),
-            ProgressPercent: this.props.ProgressPercent?.toNumber(),
-            PaidInstallments: this.props.PaidInstallments,
-            RemainingInstallments: this.props.RemainingInstallments,
-            NextDueDate: this.props.NextDueDate,
-            IsOverdue: this.props.IsOverdue,
-            HealthScore: this.props.HealthScore,
+            DueDay: this.props.DueDay,
 
             Person: this.props.Person?.toEntityObject(),
 

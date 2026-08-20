@@ -5,6 +5,7 @@ import {
     Liabilities,
     Person
 } from "@models/apps/dflc/expensemanager/entities";
+import { entity } from "@sap/cds";
 import Decimal from "decimal.js";
 
 export interface LiabilityRepository extends BaseRepository {
@@ -40,13 +41,20 @@ export interface LiabilityRepository extends BaseRepository {
         data: Partial<Liability>
     ): Promise<boolean>;
 
-    updateAmounts(
+    updateComputedValues(
         Id: Liability["ID"],
         data: {
-            CurrentBalance?: number | Decimal;
-            PaidAmount?: number | Decimal;
+            OutstandingBalance?: number | Decimal;
+            PaymentPercentage?: number | Decimal;
             Status?: string;
-        }
+        },
+        Entity?: entity
     ): Promise<boolean>;
+
+    hasDraftRow(
+        Id: Liability["ID"]
+    ): Promise<boolean>;
+
+    getDraftsEntity(): entity | undefined;
 
 }

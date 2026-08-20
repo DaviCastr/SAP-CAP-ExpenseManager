@@ -11,57 +11,24 @@ using {apps.dflc.expensemanager.types as types} from '../types/debt-types';
 
 entity Liabilities : cuid, managed {
 
-    Person                        : Association to entities.Persons @mandatory;
+    Person                : Association to entities.Persons @mandatory;
 
-    Name                          : String(120)                     @mandatory;
-    Creditor                      : String(120);
-    Description                   : String(500);
+    Name                  : String(120)                     @mandatory;
+    Description           : String(500);
 
-    Type                          : types.LiabilityType default #GENERAL;
-    Status                        : types.LiabilityStatus default #OPEN;
+    Currency              : Currency                        @mandatory;
 
     @Semantics.amount.currencyCode: 'Currency'
-    OriginalAmount                : Decimal(15, 2)                  @mandatory;
+    TotalAmount           : Decimal(15, 2)                  @mandatory;
 
     @Semantics.amount.currencyCode: 'Currency'
-    CurrentBalance                : Decimal(15, 2);
+    OutstandingBalance    : Decimal(15, 2);
+    PaymentPercentage     : Decimal(9, 2);
 
-    @Semantics.amount.currencyCode: 'Currency'
-    PaidAmount                    : Decimal(15, 2);
+    Status                : types.LiabilityStatus default #OPEN;
 
-    Currency                      : Currency                        @mandatory;
+    DueDay                : Integer;
 
-    InterestMode                  : types.InterestMode default #MANUAL;
-
-    InterestRate                  : Decimal(9, 4);
-
-    Installments                  : Integer default 1;
-
-    @Semantics.amount.currencyCode: 'Currency'
-    InstallmentAmount             : Decimal(15, 2);
-
-    StartDate                     : Date                            @mandatory;
-    FirstDueDate                  : Date;
-    EndDate                       : Date;
-    LastPaymentDate               : Date;
-
-    ExternalReference             : String(80);
-
-    @Semantics.amount.currencyCode: 'Currency'
-    virtual RemainingAmount       : Decimal(15, 2);
-
-    virtual ProgressPercent       : Decimal(9, 2);
-
-    virtual PaidInstallments      : Integer;
-
-    virtual RemainingInstallments : Integer;
-
-    virtual NextDueDate           : Date;
-
-    virtual IsOverdue             : Boolean;
-
-    virtual HealthScore           : Integer;
-
-    LiabilityTransactions         : Composition of many entities.LiabilityTransactions
-                                        on LiabilityTransactions.Liability = $self;
+    LiabilityTransactions : Composition of many entities.LiabilityTransactions
+                                    on LiabilityTransactions.Liability = $self;
 }

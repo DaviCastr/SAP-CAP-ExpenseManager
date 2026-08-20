@@ -3,7 +3,8 @@ import { AbstractError } from "@/errors";
 import { Either } from "@sweet-monads/either";
 
 import {
-    Liability
+    Liability,
+    Liabilities
 } from "@models/apps/dflc/expensemanager/entities";
 
 import {
@@ -24,6 +25,33 @@ import {
 
 export interface LiabilityService
     extends BaseService<Liability> {
+
+    afterCreate(
+        Liabilities: Liabilities
+    ): Promise<
+        Either<
+            AbstractError,
+            boolean
+        >
+    >;
+
+    afterUpdate(
+        Liabilities: Liabilities
+    ): Promise<
+        Either<
+            AbstractError,
+            boolean
+        >
+    >;
+
+    recalculateLiability(
+        liabilityId: string
+    ): Promise<
+        Either<
+            AbstractError,
+            boolean
+        >
+    >;
 
     dashboard():
         Promise<

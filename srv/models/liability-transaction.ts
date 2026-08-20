@@ -1,34 +1,27 @@
 import Decimal from 'decimal.js';
 import { BaseModel } from './base';
-import { CurrencyModel } from './currency';
 
 import {
     LiabilityTransaction,
     LiabilityTransactions
 } from '@models/apps/dflc/expensemanager/entities';
 import { LiabilityModel } from './liability';
+import { CurrencyModel } from './currency';
 
 export type LiabilityTransactionProperties = {
     Id: string;
 
     Liability?: LiabilityModel;
 
-    Type: string;
+    Date: string;
+
     Description?: string;
-
-    MovementDate: string;
-
-    Installment?: number;
-    TotalInstallments?: number;
-
-    Amount: Decimal;
-    BalanceAfter?: Decimal;
 
     Currency?: CurrencyModel;
 
-    IsAutomatic?: boolean;
+    Amount: Decimal;
 
-    ExternalReference?: string;
+    Type: string;
 
     CreatedAt?: string;
     CreatedBy?: string;
@@ -64,11 +57,6 @@ export class LiabilityTransactionModel extends BaseModel {
 
         return entities?.map((item: LiabilityTransaction) => {
 
-            const currency = CurrencyModel.singleModel({
-                ...item?.Currency,
-                code: item?.Currency?.code || item?.Currency_code as string
-            });
-
             const oLiabilityModel = LiabilityModel.singleModel({
                 ...item?.Liability,
                 ID: item?.Liability?.ID || item?.Liability_ID as string
@@ -79,22 +67,15 @@ export class LiabilityTransactionModel extends BaseModel {
 
                 Liability: oLiabilityModel,
 
-                Type: item.Type as string,
+                Date: item.Date as string,
+
                 Description: item.Description as string,
 
-                MovementDate: item.MovementDate as string,
-
-                Installment: item.Installment as number,
-                TotalInstallments: item.TotalInstallments as number,
+                Currency: CurrencyModel.singleModel(item?.Currency as any),
 
                 Amount: this.retrieveDecimal(item.Amount),
-                BalanceAfter: this.retrieveDecimal(item.BalanceAfter),
 
-                Currency: currency,
-
-                IsAutomatic: item.IsAutomatic as boolean,
-
-                ExternalReference: item.ExternalReference as string,
+                Type: item.Type as string,
 
                 CreatedAt: item.createdAt as string,
                 CreatedBy: item.createdBy as string,
@@ -116,13 +97,13 @@ export class LiabilityTransactionModel extends BaseModel {
 
     public get Type() { return this.props.Type; }
 
+    public get Currency() { return this.props.Currency; }
+
     public get Amount() { return this.props.Amount; }
 
-    public get BalanceAfter() { return this.props.BalanceAfter; }
+    public get Date() { return this.props.Date; }
 
-    public get MovementDate() { return this.props.MovementDate; }
-
-    public get Currency() { return this.props.Currency; }
+    public get Description() { return this.props.Description; }
 
     // ========================================================
     // RAW OBJECT
@@ -146,22 +127,15 @@ export class LiabilityTransactionModel extends BaseModel {
 
             Liability: this.props.Liability?.toEntityObject(),
 
-            Type: this.props.Type,
+            Date: this.props.Date,
+
             Description: this.props.Description,
-
-            MovementDate: this.props.MovementDate,
-
-            Installment: this.props.Installment,
-            TotalInstallments: this.props.TotalInstallments,
-
-            Amount: this.props.Amount?.toNumber(),
-            BalanceAfter: this.props.BalanceAfter?.toNumber(),
 
             Currency: this.props.Currency?.toEntityObject(),
 
-            IsAutomatic: this.props.IsAutomatic,
+            Amount: this.props.Amount?.toNumber(),
 
-            ExternalReference: this.props.ExternalReference,
+            Type: this.props.Type,
 
             createdAt: this.props.CreatedAt,
             createdBy: this.props.CreatedBy,

@@ -1,4 +1,5 @@
 import { ApplicationService, entity, Request } from "@sap/cds";
+import cds from "@sap/cds";
 import { BaseControllerResponse } from "@/controllers/base";
 import { LiabilityTransaction, LiabilityTransactions } from "@models/apps/dflc/expensemanager/entities";
 import { LiabilityTransactionRoute } from "./protocols";
@@ -95,6 +96,44 @@ export class LiabilityTransactionRouteImplementation
         Next: Function
     ): Promise<void> {
 
+        // A DELETE issued through the draft tree (URL prefix
+        // `.../Persons(ID,IsActiveEntity=false)/Liabilities(ID)`) is dispatched
+        // with the ACTIVE entity as request target, so the default delete would
+        // remove the row from the active table instead of the draft. Whenever a
+        // draft sibling row exists the draft row is deleted manually and the
+        // default handler is skipped, keeping the deletion inside the draft (a
+        // discarded draft then restores the row; activation removes it from the
+        // active table together with the rest of the draft tree).
+        const oEntity =
+            Request.target as entity;
+
+        const oTransactionId =
+            Request.data?.ID ??
+            (Request.params as any)?.[0]?.ID;
+
+        const oDraftsEntity =
+            (oEntity?.drafts as entity) || null;
+
+        let oDraftExists = false;
+
+        if (
+            oDraftsEntity &&
+            oTransactionId
+        ) {
+
+            const oDraftRows =
+                await cds.run(
+                    SELECT.from(oDraftsEntity)
+                        .where({
+                            ID: oTransactionId
+                        })
+                );
+
+            oDraftExists =
+                (oDraftRows?.length ?? 0) > 0;
+
+        }
+
         const oTransaction: LiabilityTransaction = {
             ...Request.data,
             ID: Request.data?.ID ?? Request.params[0]?.ID
@@ -113,7 +152,20 @@ export class LiabilityTransactionRouteImplementation
 
         }
 
-        await Next();
+        if (oDraftExists) {
+
+            await cds.run(
+                DELETE.from(oDraftsEntity as entity)
+                    .where({
+                        ID: oTransactionId
+                    })
+            );
+
+        } else {
+
+            await Next();
+
+        }
 
         const oResultAfter =
             await this.Controller

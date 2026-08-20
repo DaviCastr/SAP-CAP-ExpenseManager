@@ -8,6 +8,8 @@ import {
     LiabilityTransactions
 } from "@models/apps/dflc/expensemanager/entities";
 
+import { entity } from "@sap/cds";
+
 export interface LiabilityTransactionRepository extends BaseRepository {
 
     findById(
@@ -20,20 +22,16 @@ export interface LiabilityTransactionRepository extends BaseRepository {
     ): Promise<LiabilityTransactionModel[] | null>;
 
     findByLiabilityId(
-        LiabilityId: Liability["ID"]
+        LiabilityId: Liability["ID"],
+        Entity?: entity
     ): Promise<LiabilityTransactionModel[] | null>;
 
     findByLiabilityIds(
-        LiabilityIds: Liability["ID"][]
+        LiabilityIds: Liability["ID"][],
+        Entity?: entity
     ): Promise<LiabilityTransactionModel[] | null>;
 
-    findPaymentsByLiabilityId(
-        LiabilityId: Liability["ID"]
-    ): Promise<LiabilityTransactionModel[] | null>;
-
-    sumPaidAmount(
-        LiabilityId: Liability["ID"]
-    ): Promise<number>;
+    getDraftsEntity(): entity | undefined;
 
     createEntry(
         data: LiabilityTransaction | LiabilityTransactions
@@ -44,10 +42,4 @@ export interface LiabilityTransactionRepository extends BaseRepository {
         data: Partial<LiabilityTransaction>
     ): Promise<boolean>;
 
-    findByExternalReference(
-        ExternalReference: string
-    ): Promise<
-        LiabilityTransactionModel | null
-    > 
-    
 }

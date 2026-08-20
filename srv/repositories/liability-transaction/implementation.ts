@@ -42,10 +42,10 @@ export class LiabilityTransactionRepositoryImplementation
             const activeRows =
                 await cds.run(sql) || [];
 
-            rows = [
-                ...(rows || []),
-                ...activeRows
-            ];
+            rows = this.mergeUnique(
+                rows,
+                activeRows
+            );
 
         }
 
@@ -87,10 +87,10 @@ export class LiabilityTransactionRepositoryImplementation
             const activeRows =
                 await cds.run(sql) || [];
 
-            rows = [
-                ...(rows || []),
-                ...activeRows
-            ];
+            rows = this.mergeUnique(
+                rows,
+                activeRows
+            );
 
         }
 
@@ -100,54 +100,73 @@ export class LiabilityTransactionRepositoryImplementation
 
 
     public async findByLiabilityId(
-        LiabilityId: Liability["ID"]
+        LiabilityId: Liability["ID"],
+        Entity?: entity
     ): Promise<LiabilityTransactionModel[] | null> {
 
         return this.findByLiabilityIds(
-            [LiabilityId]
+            [LiabilityId],
+            Entity
         );
 
     }
 
 
     public async findByLiabilityIds(
-        LiabilityIds: Liability["ID"][]
+        LiabilityIds: Liability["ID"][],
+        Entity?: entity
     ): Promise<LiabilityTransactionModel[] | null> {
 
-        let Entity =
-            this.getEntity();
+        let rows;
 
-        let sql =
-            SELECT.from(Entity)
-                .where({
-                    Liability_ID: {
-                        in: LiabilityIds
-                    }
-                });
+        if (Entity) {
 
-        let rows =
-            await cds.run(sql);
+            rows =
+                await cds.run(
+                    SELECT.from(Entity)
+                        .where({
+                            Liability_ID: {
+                                in: LiabilityIds
+                            }
+                        })
+                );
 
-        if ((Entity as any)?.isDraft) {
+        } else {
 
-            Entity =
-                this.getEntity(true);
+            let current =
+                this.getEntity();
 
-            sql =
-                SELECT.from(Entity)
-                    .where({
-                        Liability_ID: {
-                            in: LiabilityIds
-                        }
-                    });
+            rows =
+                await cds.run(
+                    SELECT.from(current)
+                        .where({
+                            Liability_ID: {
+                                in: LiabilityIds
+                            }
+                        })
+                );
 
-            const activeRows =
-                await cds.run(sql) || [];
+            if ((current as any)?.isDraft) {
 
-            rows = [
-                ...(rows || []),
-                ...activeRows
-            ];
+                current =
+                    this.getEntity(true);
+
+                const activeRows =
+                    await cds.run(
+                        SELECT.from(current)
+                            .where({
+                                Liability_ID: {
+                                    in: LiabilityIds
+                                }
+                            })
+                    ) || [];
+
+                rows = this.mergeUnique(
+                    rows,
+                    activeRows
+                );
+
+            }
 
         }
 
@@ -156,122 +175,19 @@ export class LiabilityTransactionRepositoryImplementation
     }
 
 
-    public async findPaymentsByLiabilityId(
-        LiabilityId: Liability["ID"]
-    ): Promise<LiabilityTransactionModel[] | null> {
+    /**
+     * Returns the drafts entity set of the transactions (e.g.
+     * `ExpenseManager.LiabilityTransactions.drafts`), or `undefined` when the
+     * entity is not draft-enabled. Used by the recalculation to read the
+     * transactions of the draft tree explicitly.
+     *
+     * @returns {entity | undefined} the drafts entity set
+     */
+    public getDraftsEntity(): entity | undefined {
 
-        let Entity =
-            this.getEntity();
-
-        let sql =
-            SELECT.from(Entity)
-                .where({
-                    Liability_ID:
-                        LiabilityId,
-                    Type:
-                        "PAYMENT"
-                });
-
-        let rows =
-            await cds.run(sql);
-
-        if ((Entity as any)?.isDraft) {
-
-            Entity =
-                this.getEntity(true);
-
-            sql =
-                SELECT.from(Entity)
-                    .where({
-                        Liability_ID:
-                            LiabilityId,
-                        Type:
-                            "PAYMENT"
-                    });
-
-            const activeRows =
-                await cds.run(sql) || [];
-
-            rows = [
-                ...(rows || []),
-                ...activeRows
-            ];
-
-        }
-
-        return LiabilityTransactionModel.mapModel(rows);
-
-    }
-
-
-    public async findByExternalReference(
-        ExternalReference: string
-    ): Promise<
-        LiabilityTransactionModel | null
-    > {
-
-        let Entity =
-            this.getEntity();
-
-        let sql =
-            SELECT.from(Entity)
-                .where({
-                    ExternalReference
-                });
-
-        let rows =
-            await cds.run(sql);
-
-        if ((Entity as any)?.isDraft) {
-
-            Entity =
-                this.getEntity(true);
-
-            sql =
-                SELECT.from(Entity)
-                    .where({
-                        ExternalReference
-                    });
-
-            const activeRows =
-                await cds.run(sql) || [];
-
-            rows = [
-                ...(rows || []),
-                ...activeRows
-            ];
-
-        }
-
-        const models =
-            LiabilityTransactionModel.mapModel(rows);
-
-        return models?.[0] || null;
-
-    }
-
-
-    public async sumPaidAmount(
-        LiabilityId: Liability["ID"]
-    ): Promise<number> {
-
-        const rows =
-            await this.findPaymentsByLiabilityId(
-                LiabilityId
-            ) || [];
-
-        return rows.reduce(
-            (sum, item) => {
-
-                return sum +
-                    Number(
-                        item.Amount
-                            ?.toNumber() || 0
-                    );
-
-            },
-            0
-        );
+        return (
+            this.getEntity(true) as any
+        )?.drafts as entity | undefined;
 
     }
 
@@ -322,6 +238,52 @@ export class LiabilityTransactionRepositoryImplementation
             });
 
         return true;
+
+    }
+
+
+    /**
+     * Merges the draft rows with the active rows of the same entity set,
+     * keeping one row per ID (the draft row wins because it is first).
+     *
+     * Draft-enabled compositions are deep-copied into the draft tables when a
+     * draft is opened, so every active row has a draft sibling with the same
+     * ID. Reading both tables naively would return each row twice and double
+     * count the amounts when the liability balance is recalculated.
+     *
+     * @param {any[]} draftRows rows read from the draft entity set
+     * @param {any[]} activeRows rows read from the active entity set
+     * @returns {any[]} the deduplicated rows
+     */
+    private mergeUnique(
+        draftRows: any[],
+        activeRows: any[]
+    ): any[] {
+
+        const seen =
+            new Set<string>();
+
+        const merged: any[] = [];
+
+        for (const row of [
+            ...(draftRows || []),
+            ...(activeRows || [])
+        ]) {
+
+            const key =
+                row?.ID as string | undefined;
+
+            if (!key || seen.has(key)) {
+                continue;
+            }
+
+            seen.add(key);
+
+            merged.push(row);
+
+        }
+
+        return merged;
 
     }
 

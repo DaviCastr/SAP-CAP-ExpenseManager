@@ -23,12 +23,14 @@ export interface LiabilityTransactionRepository extends BaseRepository {
 
     findByLiabilityId(
         LiabilityId: Liability["ID"],
-        Entity?: entity
+        Entity?: entity,
+        additionalFilters?: {}
     ): Promise<LiabilityTransactionModel[] | null>;
 
     findByLiabilityIds(
         LiabilityIds: Liability["ID"][],
-        Entity?: entity
+        Entity?: entity,
+        additionalFilters?: {}
     ): Promise<LiabilityTransactionModel[] | null>;
 
     getDraftsEntity(): entity | undefined;

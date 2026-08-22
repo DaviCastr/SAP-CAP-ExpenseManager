@@ -8,6 +8,8 @@ import { oInvoiceRepositoryFactory } from "../repositories/invoice";
 import { oCardRepositoryFactory } from "../repositories/card";
 import { oCategoryRepositoryFactory } from "../repositories/category";
 import { oTransactionRepositoryFactory } from "../repositories/transaction";
+import { oLiabilityRepositoryFactory } from "../repositories/liability";
+import { oLiabilityTransactionRepositoryFactory } from "../repositories/liability-transaction";
 
 const makePersonService = (): PersonService => {
 
@@ -18,7 +20,9 @@ const makePersonService = (): PersonService => {
         oCategoryRepositoryFactory,
         oCardRepositoryFactory,
         oInvoiceRepositoryFactory,
-        oTransactionRepositoryFactory
+        oTransactionRepositoryFactory,
+        oLiabilityRepositoryFactory,
+        oLiabilityTransactionRepositoryFactory
     );
 
     ServiceRegistry.register('Persons', service);

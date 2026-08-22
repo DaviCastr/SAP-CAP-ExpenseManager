@@ -22,6 +22,9 @@ import { InvoiceModel } from "@/models/invoice";
 import { TransactionModel } from "@/models/transaction";
 import { CategoryModel } from "@/models/category";
 import { CardServiceImplementation } from "../card/implementation";
+import { LiabilityRepository } from "@/repositories/liability";
+import { LiabilityTransactionRepository } from "@/repositories/liability-transaction";
+import { LiabilityModel } from "@/models/liability";
 import { CardExpensesByCategoryModel, CardExpensesByCategoryReturnProperties, CategoryExpenses } from "@/models/card-expenses-by-category";
 import { CategoryServiceImplementation } from "../category/implementation";
 import { SimulateExpenseModel, SimulateExpenseReturnProperties } from "@/models/simulate-expense";
@@ -49,7 +52,9 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         private readonly CategoryRepository: CategoryRepository,
         private readonly CardRepository: CardRepository,
         private readonly InvoiceRepository: InvoiceRepository,
-        private readonly TransactionRepository: TransactionRepository
+        private readonly TransactionRepository: TransactionRepository,
+        private readonly LiabilityRepository: LiabilityRepository,
+        private readonly LiabilityTransactionRepository: LiabilityTransactionRepository
     ) {
 
         super(Repository, ShareRepository, EntityRepository);
@@ -107,6 +112,9 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             
             const cardsByPerson = await this.CardRepository.findByPersonIds(personIds) || [] as CardModel[];
 
+            const liabilitiesByPerson =
+                await this.LiabilityRepository.findByPersonId(personIds) || [];
+
             const mapCards = new Map<string, any[]>();
 
             for (const card of cardsByPerson) {
@@ -114,6 +122,22 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     mapCards.set(card?.Person?.Id, []);
                 }
                 mapCards.get(card.Person?.Id)!.push(card.toEntityObject());
+            }
+
+            const mapLiabilities = new Map<string, LiabilityModel[]>();
+
+            for (const liability of liabilitiesByPerson) {
+
+                const personKey = liability.Person?.Id as string;
+
+                if (!personKey) continue;
+
+                if (!mapLiabilities.has(personKey)) {
+                    mapLiabilities.set(personKey, []);
+                }
+
+                mapLiabilities.get(personKey)!.push(liability);
+
             }
 
             for (let Person of oPersonsFiltered) {
@@ -143,7 +167,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 }
 
                 const oCards = mapCards.get(oPersonModel?.Id as string) as Cards;
-                const oExpensesResult = await this.recoverExpenses(oCards);
+                const oLiabilities = mapLiabilities.get(oPersonModel?.Id as string) || [];
+                const oExpensesResult = await this.recoverExpenses(oCards, oLiabilities);
                 let oExpenses: {
                     totalExpenses: Decimal,
                     monthExpenses: Decimal,
@@ -1205,20 +1230,66 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             }
 
-            const rows =
-                await this.CardRepository.retrieveCompleteInvoiceTransactions(
+            const [rows, cards, liabilities, person] = await Promise.all([
+                this.CardRepository.retrieveCompleteInvoiceTransactions(
                     PersonId,
                     Number(Year),
                     Number(Month)
-                );
+                ),
+                this.CardRepository.findByPersonIds([PersonId]),
+                this.LiabilityRepository.findByPersonId(PersonId),
+                this.Repository.findById(PersonId)
+            ]);
+
+            const oExpensesResult = await this.recoverExpenses(
+                (cards || []).map(card => card.toEntityObject()) as Cards,
+                liabilities || [],
+                Number(Month),
+                Number(Year)
+            );
+
+            let expensesPayload: Partial<CompleteInvoiceReturnProperties> = {};
+
+            if (oExpensesResult.isRight()) {
+
+                const oExpenses = oExpensesResult.value;
+                const oExpenseTarget = person?.ExpenseTarget;
+
+                expensesPayload = {
+                    TotalExpenses:
+                        oExpenses.totalExpenses?.toDecimalPlaces(2).toNumber(),
+                    MonthExpenses:
+                        oExpenses.monthExpenses?.toDecimalPlaces(2).toNumber(),
+                    MonthExpensesToPay:
+                        oExpenses.monthExpensesToPay?.toDecimalPlaces(2).toNumber(),
+                    MonthExpensesClosed:
+                        oExpenses.monthExpensesClosed?.toDecimalPlaces(2).toNumber(),
+                    MonthExpensesPayed:
+                        oExpenses.monthExpensesPayed?.toDecimalPlaces(2).toNumber()
+                };
+
+                if (oExpenses.totalExpenses?.gt(oExpenseTarget || 0)) {
+                    expensesPayload.MonthCriticallity = 1;
+                } else if (oExpenses.totalExpenses && oExpenseTarget) {
+                    expensesPayload.MonthCriticallity = 3;
+                }
+
+                if (oExpenses.monthExpensesToPay?.gt(oExpenseTarget || 0)) {
+                    expensesPayload.CriticallityToPay = 1;
+                } else if (oExpenses.monthExpensesToPay && oExpenseTarget) {
+                    expensesPayload.CriticallityToPay = 3;
+                }
+
+            }
 
             if (!rows.length) {
-                return right(
-                    CompleteInvoiceModel.empty(
+                return right({
+                    ...CompleteInvoiceModel.empty(
                         Number(Year),
                         Number(Month)
-                    ).toEntityObject()
-                );
+                    ).toEntityObject(),
+                    ...expensesPayload
+                });
             }
 
             const resultAuth = await this.authorizeCompleteInvoiceObjects(
@@ -1239,7 +1310,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     )
                 );
 
-            return right(result.toEntityObject());
+            return right({
+                ...result.toEntityObject(),
+                ...expensesPayload
+            });
 
         } catch (error) {
 
@@ -1937,7 +2011,12 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async recoverExpenses(Cards: Cards): Promise<Either<AbstractError, {
+    private async recoverExpenses(
+        Cards: Cards,
+        Liabilities: LiabilityModel[],
+        TargetMonth?: number,
+        TargetYear?: number
+    ): Promise<Either<AbstractError, {
         totalExpenses: Decimal,
         monthExpenses: Decimal,
         monthExpensesToPay: Decimal,
@@ -1960,6 +2039,14 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             let oDay = Number(day);
             let oMonth = Number(month);
             let oYear = Number(year);
+
+            if (TargetYear) {
+                oYear = Number(TargetYear);
+            }
+
+            if (TargetMonth) {
+                oMonth = Number(TargetMonth);
+            }
 
             const cardIds = Cards.map(c => c.ID);
 
@@ -2052,6 +2139,48 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 });
 
             };
+
+            const oLiabilityIds = Liabilities
+                .map(oLiability => oLiability.Id)
+                .filter(Boolean);
+
+            if (oLiabilityIds.length) {
+
+                const oMonthStart =
+                    `${oYear}-${this.addLeftZeros(oMonth)}-01`;
+
+                const oLiabilityTransactions =
+                    await this.LiabilityTransactionRepository.findByLiabilityIds(
+                        oLiabilityIds,
+                        undefined,
+                        {
+                            Type: 'IN',
+                            Date: { '>=': oMonthStart }
+                        }
+                    ) || [];
+
+                for (const oTransaction of oLiabilityTransactions) {
+
+                    const oAmount =
+                        oTransaction.Amount || new Decimal(0);
+
+                    oTotalExpenses = oTotalExpenses.plus(oAmount);
+
+                    const [oTrxYear, oTrxMonth] =
+                        String(oTransaction.Date)
+                            .split('-')
+                            .map(Number) as [number, number];
+
+                    if (oTrxYear === oYear && oTrxMonth === oMonth) {
+
+                        oMonthExpenses = oMonthExpenses.plus(oAmount);
+                        oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
+
+                    }
+
+                }
+
+            }
 
             return right({
                 totalExpenses: oTotalExpenses,

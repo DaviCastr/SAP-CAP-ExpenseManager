@@ -99,12 +99,14 @@ export class LiabilityTransactionRepositoryImplementation
 
     public async findByLiabilityId(
         LiabilityId: Liability["ID"],
-        Entity?: entity
+        Entity?: entity,
+        additionalFilters?: {}
     ): Promise<LiabilityTransactionModel[] | null> {
 
         return this.findByLiabilityIds(
             [LiabilityId],
-            Entity
+            Entity,
+            additionalFilters
         );
 
     }
@@ -112,7 +114,8 @@ export class LiabilityTransactionRepositoryImplementation
 
     public async findByLiabilityIds(
         LiabilityIds: Liability["ID"][],
-        Entity?: entity
+        Entity?: entity,
+        additionalFilters?: {}
     ): Promise<LiabilityTransactionModel[] | null> {
 
         let rows;
@@ -123,6 +126,7 @@ export class LiabilityTransactionRepositoryImplementation
                 await cds.run(
                     SELECT.from(Entity)
                         .where({
+                            ...additionalFilters,
                             Liability_ID: {
                                 in: LiabilityIds
                             }
@@ -138,6 +142,7 @@ export class LiabilityTransactionRepositoryImplementation
                 await cds.run(
                     SELECT.from(current)
                         .where({
+                            ...additionalFilters,
                             Liability_ID: {
                                 in: LiabilityIds
                             }
@@ -154,6 +159,7 @@ export class LiabilityTransactionRepositoryImplementation
 
                 const activeSql = SELECT.from(current)
                     .where({
+                        ...additionalFilters,
                         Liability_ID: {
                             in: LiabilityIds
                         }

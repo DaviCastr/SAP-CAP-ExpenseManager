@@ -17,14 +17,13 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
         let oPersons = await cds.run(oSql);
 
-        if ((oPersonEntity as any)?.isDraft) {
+        if ((oPersonEntity as any)?.isDraft && !(oPersons || []).length) {
 
             oPersonEntity = this.getEntity(true);
 
             oSql = SELECT.from(oPersonEntity).where({ ID: Id });
 
-            const additionalPersons = await cds.run(oSql) || [];
-            oPersons = [...(oPersons || []), ...additionalPersons];
+            oPersons = await cds.run(oSql) || [];
 
         }
 
@@ -53,12 +52,21 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
         if ((oPersonEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oPersons);
+
             oPersonEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oPersonEntity).where`Cards.ID = ${CardId} `;
+            const oActiveSql = SELECT.from(oPersonEntity).where`Cards.ID = ${CardId} `;
 
-            const additionalPersons = await cds.run(oSql) || [];
-            oPersons = [...(oPersons || []), ...additionalPersons];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalPersons =
+                await cds.run(oActiveSql) || [];
+
+            oPersons = this.mergeUnique(oPersons, additionalPersons);
 
         }
 
@@ -86,12 +94,21 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
         if ((oPersonEntity as any)?.isDraft) {
 
-            oPersonEntity = this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, oPersons);
 
-            oSql = SELECT.from(oPersonEntity).where({ ID: { in: Ids } });
+            if (missingIds.length > 0) {
 
-            const additionalPersons = await cds.run(oSql) || [];
-            oPersons = [...(oPersons || []), ...additionalPersons];
+                oPersonEntity = this.getEntity(true);
+
+                const additionalPersons =
+                    await cds.run(
+                        SELECT.from(oPersonEntity).where({ ID: { in: missingIds } })
+                    ) || [];
+
+                oPersons = this.mergeUnique(oPersons, additionalPersons);
+
+            }
 
         }
 
@@ -112,12 +129,21 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
         if ((oPersonEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oPersons);
+
             oPersonEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oPersonEntity).where({ createdBy: createdBy });
+            const oActiveSql = SELECT.from(oPersonEntity).where({ createdBy: createdBy });
 
-            const additionalPersons = await cds.run(oSql) || [];
-            oPersons = [...(oPersons || []), ...additionalPersons];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalPersons =
+                await cds.run(oActiveSql) || [];
+
+            oPersons = this.mergeUnique(oPersons, additionalPersons);
 
         }
 
@@ -142,16 +168,25 @@ export class PersonRepositoryImplementation extends BaseRepositoryImplementation
 
         if ((oPersonEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oPersons);
+
             oPersonEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oPersonEntity);
+            const oActiveSql = SELECT.from(oPersonEntity);
 
             if (genericFilters) {
-                oSql.where(genericFilters);
+                oActiveSql.where(genericFilters);
             }
 
-            const additionalPersons = await cds.run(oSql) || [];
-            oPersons = [...(oPersons || []), ...additionalPersons];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalPersons =
+                await cds.run(oActiveSql) || [];
+
+            oPersons = this.mergeUnique(oPersons, additionalPersons);
 
         }
 

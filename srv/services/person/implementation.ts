@@ -104,7 +104,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             const oPersonsData: Persons = [];
 
             const personIds = oPersonsFiltered.map(c => c.ID);
-
+            
             const cardsByPerson = await this.CardRepository.findByPersonIds(personIds) || [] as CardModel[];
 
             const mapCards = new Map<string, any[]>();

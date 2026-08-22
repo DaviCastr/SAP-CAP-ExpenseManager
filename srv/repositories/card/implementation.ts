@@ -18,14 +18,13 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         let oCards = await cds.run(oSql);
 
-        if ((oCardEntity as any)?.isDraft) {
+        if ((oCardEntity as any)?.isDraft && !(oCards || []).length) {
 
             oCardEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oCardEntity).where({ Id: Id });
+            oSql = SELECT.from(oCardEntity).where({ ID: Id });
 
-            const additionalCards = await cds.run(oSql) || [];
-            oCards = [...(oCards || []), ...additionalCards];
+            oCards = await cds.run(oSql) || [];
 
         }
 
@@ -46,12 +45,22 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         if ((oCardEntity as any)?.isDraft) {
 
-            oCardEntity = this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, oCards);
 
-            oSql = SELECT.from(oCardEntity).where({ ID: { in: Ids }, ...additionalFilters });
+            if (missingIds.length > 0) {
 
-            const additionalCardts = await cds.run(oSql) || [];
-            oCards = [...(oCards || []), ...additionalCardts];
+                oCardEntity = this.getEntity(true);
+
+                const additionalCards =
+                    await cds.run(
+                        SELECT.from(oCardEntity)
+                            .where({ ID: { in: missingIds }, ...additionalFilters })
+                    ) || [];
+
+                oCards = this.mergeUnique(oCards, additionalCards);
+
+            }
 
         }
 
@@ -72,12 +81,21 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         if ((oCardEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oCards);
+
             oCardEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oCardEntity).where({ Person_ID: PersonId });
+            const oActiveSql = SELECT.from(oCardEntity).where({ Person_ID: PersonId });
 
-            const additionalCards = await cds.run(oSql) || [];
-            oCards = [...(oCards || []), ...additionalCards];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalCards =
+                await cds.run(oActiveSql) || [];
+
+            oCards = this.mergeUnique(oCards, additionalCards);
 
         }
 
@@ -98,12 +116,21 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         if ((oCardEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oCards);
+
             oCardEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds }, ...additionalFilters });
+            const oActiveSql = SELECT.from(oCardEntity).where({ Person_ID: { 'in': PersonIds }, ...additionalFilters });
 
-            const additionalCards = await cds.run(oSql) || [];
-            oCards = [...(oCards || []), ...additionalCards];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalCards =
+                await cds.run(oActiveSql) || [];
+
+            oCards = this.mergeUnique(oCards, additionalCards);
 
         }
 
@@ -126,12 +153,21 @@ export class CardRepositoryImplementation extends BaseRepositoryImplementation i
 
         if ((oCardEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oCards);
+
             oCardEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oCardEntity).where`Invoices.ID in ${invoiceIds}`;
+            const oActiveSql = SELECT.from(oCardEntity).where`Invoices.ID in ${invoiceIds}`;
 
-            const additionalCardts = await cds.run(oSql) || [];
-            oCards = [...(oCards || []), ...additionalCardts];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalCards =
+                await cds.run(oActiveSql) || [];
+
+            oCards = this.mergeUnique(oCards, additionalCards);
 
         }
 

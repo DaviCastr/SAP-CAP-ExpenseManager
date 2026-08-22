@@ -19,14 +19,13 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
         let oEntities = await cds.run(oSql);
 
-        if ((oEntityEntity as any)?.isDraft) {
+        if ((oEntityEntity as any)?.isDraft && !(oEntities || []).length) {
 
             oEntityEntity = this.getEntity(true);
 
             oSql = SELECT.from(oEntityEntity).where({ ID: Id });
 
-            const additionalEntities = await cds.run(oSql) || [];
-            oEntities = [...(oEntities || []), ...additionalEntities];
+            oEntities = await cds.run(oSql) || [];
 
         }
 
@@ -47,12 +46,21 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
         if ((oEntityEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oEntities);
+
             oEntityEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oEntityEntity).where({ Share_ID: ShareId });
+            const oActiveSql = SELECT.from(oEntityEntity).where({ Share_ID: ShareId });
 
-            const additionalEntities = await cds.run(oSql) || [];
-            oEntities = [...(oEntities || []), ...additionalEntities];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalEntities =
+                await cds.run(oActiveSql) || [];
+
+            oEntities = this.mergeUnique(oEntities, additionalEntities);
 
         }
 
@@ -75,12 +83,21 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
         if ((oEntityEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oEntities);
+
             oEntityEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oEntityEntity).where({ Share_ID: { in: ShareIds } });
+            const oActiveSql = SELECT.from(oEntityEntity).where({ Share_ID: { in: ShareIds } });
 
-            const additionalEntities = await cds.run(oSql) || [];
-            oEntities = [...(oEntities || []), ...additionalEntities];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalEntities =
+                await cds.run(oActiveSql) || [];
+
+            oEntities = this.mergeUnique(oEntities, additionalEntities);
 
         }
 
@@ -101,12 +118,21 @@ export class EntityRepositoryImplementation extends BaseRepositoryImplementation
 
         if ((oEntityEntity as any)?.isDraft) {
 
-            oEntityEntity = this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, oEntitys);
 
-            oSql = SELECT.from(oEntityEntity).where({ ID: { in: Ids } });
+            if (missingIds.length > 0) {
 
-            const additionalEntityts = await cds.run(oSql) || [];
-            oEntitys = [...(oEntitys || []), ...additionalEntityts];
+                oEntityEntity = this.getEntity(true);
+
+                const additionalEntityts =
+                    await cds.run(
+                        SELECT.from(oEntityEntity).where({ ID: { in: missingIds } })
+                    ) || [];
+
+                oEntitys = this.mergeUnique(oEntitys, additionalEntityts);
+
+            }
 
         }
 

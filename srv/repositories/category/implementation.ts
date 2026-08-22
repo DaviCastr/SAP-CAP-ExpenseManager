@@ -17,14 +17,13 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
         let oCategories = await cds.run(oSql);
 
-        if ((oCategoryEntity as any)?.isDraft) {
+        if ((oCategoryEntity as any)?.isDraft && !(oCategories || []).length) {
 
             oCategoryEntity = this.getEntity(true);
 
             oSql = SELECT.from(oCategoryEntity).where({ ID: Id });
 
-            const additionalCategories = await cds.run(oSql) || [];
-            oCategories = [...(oCategories || []), ...additionalCategories];
+            oCategories = await cds.run(oSql) || [];
 
         }
 
@@ -53,12 +52,21 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
         if ((oCategoryEntity as any)?.isDraft) {
 
-            oCategoryEntity = this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, oCategorys);
 
-            oSql = SELECT.from(oCategoryEntity).where({ ID: { in: Ids } });
+            if (missingIds.length > 0) {
 
-            const additionalCategoryts = await cds.run(oSql) || [];
-            oCategorys = [...(oCategorys || []), ...additionalCategoryts];
+                oCategoryEntity = this.getEntity(true);
+
+                const additionalCategoryts =
+                    await cds.run(
+                        SELECT.from(oCategoryEntity).where({ ID: { in: missingIds } })
+                    ) || [];
+
+                oCategorys = this.mergeUnique(oCategorys, additionalCategoryts);
+
+            }
 
         }
 
@@ -81,12 +89,21 @@ export class CategoryRepositoryImplementation extends BaseRepositoryImplementati
 
         if ((oCategoryEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oCategorys);
+
             oCategoryEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oCategoryEntity).where({ Person_ID: { in: personIds } });
+            const oActiveSql = SELECT.from(oCategoryEntity).where({ Person_ID: { in: personIds } });
 
-            const additionalCategoryts = await cds.run(oSql) || [];
-            oCategorys = [...(oCategorys || []), ...additionalCategoryts];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalCategoryts =
+                await cds.run(oActiveSql) || [];
+
+            oCategorys = this.mergeUnique(oCategorys, additionalCategoryts);
 
         }
 

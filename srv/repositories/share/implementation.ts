@@ -19,14 +19,13 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         let oShares = await cds.run(oSql);
 
-        if ((oShareEntity as any)?.isDraft) {
+        if ((oShareEntity as any)?.isDraft && !(oShares || []).length) {
 
             oShareEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oShareEntity).where({ Id: Id });
+            oSql = SELECT.from(oShareEntity).where({ ID: Id });
 
-            const additionalShares = await cds.run(oSql) || [];
-            oShares = [...(oShares || []), ...additionalShares];
+            oShares = await cds.run(oSql) || [];
 
         }
 
@@ -47,12 +46,21 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         if ((oShareEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oShares);
+
             oShareEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oShareEntity).where({ Person_ID: PersonId });
+            const oActiveSql = SELECT.from(oShareEntity).where({ Person_ID: PersonId });
 
-            const additionalShares = await cds.run(oSql) || [];
-            oShares = [...(oShares || []), ...additionalShares];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalShares =
+                await cds.run(oActiveSql) || [];
+
+            oShares = this.mergeUnique(oShares, additionalShares);
 
         }
 
@@ -75,12 +83,21 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         if ((oShareEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oShares);
+
             oShareEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oShareEntity).where({ Person_ID: { in: personIds } });
+            const oActiveSql = SELECT.from(oShareEntity).where({ Person_ID: { in: personIds } });
 
-            const additionalShares = await cds.run(oSql) || [];
-            oShares = [...(oShares || []), ...additionalShares];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalShares =
+                await cds.run(oActiveSql) || [];
+
+            oShares = this.mergeUnique(oShares, additionalShares);
 
         }
 
@@ -101,12 +118,21 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         if ((oShareEntity as any)?.isDraft) {
 
-            oShareEntity = this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, oShares);
 
-            oSql = SELECT.from(oShareEntity).where({ ID: { in: Ids } });
+            if (missingIds.length > 0) {
 
-            const additionalSharets = await cds.run(oSql) || [];
-            oShares = [...(oShares || []), ...additionalSharets];
+                oShareEntity = this.getEntity(true);
+
+                const additionalSharets =
+                    await cds.run(
+                        SELECT.from(oShareEntity).where({ ID: { in: missingIds } })
+                    ) || [];
+
+                oShares = this.mergeUnique(oShares, additionalSharets);
+
+            }
 
         }
 
@@ -127,12 +153,21 @@ export class ShareRepositoryImplementation extends BaseRepositoryImplementation 
 
         if ((oShareEntity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oShares);
+
             oShareEntity = this.getEntity(true);
 
-            oSql = SELECT.from(oShareEntity).where({ User: User });
+            const oActiveSql = SELECT.from(oShareEntity).where({ User: User });
 
-            const additionalShares = await cds.run(oSql) || [];
-            oShares = [...(oShares || []), ...additionalShares];
+            if (exclusionFilter) {
+                oActiveSql.where(exclusionFilter);
+            }
+
+            const additionalShares =
+                await cds.run(oActiveSql) || [];
+
+            oShares = this.mergeUnique(oShares, additionalShares);
 
         }
 

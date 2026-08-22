@@ -30,7 +30,7 @@ export class LiabilityTransactionRepositoryImplementation
         let rows =
             await cds.run(sql);
 
-        if ((Entity as any)?.isDraft) {
+        if ((Entity as any)?.isDraft && !(rows || []).length) {
 
             Entity =
                 this.getEntity(true);
@@ -39,13 +39,8 @@ export class LiabilityTransactionRepositoryImplementation
                 SELECT.from(Entity)
                     .where({ ID: Id });
 
-            const activeRows =
+            rows =
                 await cds.run(sql) || [];
-
-            rows = this.mergeUnique(
-                rows,
-                activeRows
-            );
 
         }
 
@@ -75,22 +70,25 @@ export class LiabilityTransactionRepositoryImplementation
 
         if ((Entity as any)?.isDraft) {
 
-            Entity =
-                this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, rows);
 
-            sql =
-                SELECT.from(Entity)
-                    .where({
-                        ID: { in: Ids }
-                    });
+            if (missingIds.length > 0) {
 
-            const activeRows =
-                await cds.run(sql) || [];
+                Entity =
+                    this.getEntity(true);
 
-            rows = this.mergeUnique(
-                rows,
-                activeRows
-            );
+                const activeRows =
+                    await cds.run(
+                        SELECT.from(Entity)
+                            .where({
+                                ID: { in: missingIds }
+                            })
+                    ) || [];
+
+                rows = this.mergeUnique(rows, activeRows);
+
+            }
 
         }
 
@@ -148,23 +146,27 @@ export class LiabilityTransactionRepositoryImplementation
 
             if ((current as any)?.isDraft) {
 
+                const exclusionFilter =
+                    this.excludeFoundFilter(rows);
+
                 current =
                     this.getEntity(true);
 
-                const activeRows =
-                    await cds.run(
-                        SELECT.from(current)
-                            .where({
-                                Liability_ID: {
-                                    in: LiabilityIds
-                                }
-                            })
-                    ) || [];
+                const activeSql = SELECT.from(current)
+                    .where({
+                        Liability_ID: {
+                            in: LiabilityIds
+                        }
+                    });
 
-                rows = this.mergeUnique(
-                    rows,
-                    activeRows
-                );
+                if (exclusionFilter) {
+                    activeSql.where(exclusionFilter);
+                }
+
+                const activeRows =
+                    await cds.run(activeSql) || [];
+
+                rows = this.mergeUnique(rows, activeRows);
 
             }
 
@@ -238,52 +240,6 @@ export class LiabilityTransactionRepositoryImplementation
             });
 
         return true;
-
-    }
-
-
-    /**
-     * Merges the draft rows with the active rows of the same entity set,
-     * keeping one row per ID (the draft row wins because it is first).
-     *
-     * Draft-enabled compositions are deep-copied into the draft tables when a
-     * draft is opened, so every active row has a draft sibling with the same
-     * ID. Reading both tables naively would return each row twice and double
-     * count the amounts when the liability balance is recalculated.
-     *
-     * @param {any[]} draftRows rows read from the draft entity set
-     * @param {any[]} activeRows rows read from the active entity set
-     * @returns {any[]} the deduplicated rows
-     */
-    private mergeUnique(
-        draftRows: any[],
-        activeRows: any[]
-    ): any[] {
-
-        const seen =
-            new Set<string>();
-
-        const merged: any[] = [];
-
-        for (const row of [
-            ...(draftRows || []),
-            ...(activeRows || [])
-        ]) {
-
-            const key =
-                row?.ID as string | undefined;
-
-            if (!key || seen.has(key)) {
-                continue;
-            }
-
-            seen.add(key);
-
-            merged.push(row);
-
-        }
-
-        return merged;
 
     }
 

@@ -15,15 +15,13 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         let oInvoices: Invoices = await cds.run(oSql);
 
-        if ((this.getEntity() as any)?.isDraft) {
+        if ((this.getEntity() as any)?.isDraft && !(oInvoices || []).length) {
 
             oSql = this.getReportBaseSql(true);
 
             oSql.where({ ID: Id });
 
-            const additionalInvoices: Invoices = await cds.run(oSql) || [];
-
-            oInvoices = [...(oInvoices || []), ...additionalInvoices];
+            oInvoices = await cds.run(oSql) || [];
 
         }
 
@@ -50,12 +48,21 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         if ((oInvoiceEntity as any)?.isDraft) {
 
-            oInvoiceEntity = this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, oInvoices);
 
-            oSql = SELECT.from(oInvoiceEntity).where({ ID: { in: Ids } });
+            if (missingIds.length > 0) {
 
-            const additionalInvoicets = await cds.run(oSql) || [];
-            oInvoices = [...(oInvoices || []), ...additionalInvoicets];
+                oInvoiceEntity = this.getEntity(true);
+
+                const additionalInvoicets =
+                    await cds.run(
+                        SELECT.from(oInvoiceEntity).where({ ID: { in: missingIds } })
+                    ) || [];
+
+                oInvoices = this.mergeUnique(oInvoices, additionalInvoicets);
+
+            }
 
         }
 
@@ -76,13 +83,21 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         if ((this.getEntity() as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oInvoices);
+
             oSql = this.getReportBaseSql(true);
 
             oSql.where({ ...additionalFilters, Card_ID: CardId });
 
-            const additionalInvoices: Invoices = await cds.run(oSql) || [];
+            if (exclusionFilter) {
+                oSql.where(exclusionFilter);
+            }
 
-            oInvoices = [...(oInvoices || []), ...additionalInvoices];
+            const additionalInvoices: Invoices =
+                await cds.run(oSql) || [];
+
+            oInvoices = this.mergeUnique(oInvoices, additionalInvoices);
 
         }
 
@@ -103,13 +118,21 @@ export class InvoiceRepositoryImplementation extends BaseRepositoryImplementatio
 
         if ((this.getEntity() as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oInvoices);
+
             oSql = this.getReportBaseSql(true);
 
             oSql.where({ ...additionalFilters, Card_ID: { 'in': CardIds } });
 
-            const additionalInvoices: Invoices = await cds.run(oSql) || [];
+            if (exclusionFilter) {
+                oSql.where(exclusionFilter);
+            }
 
-            oInvoices = [...(oInvoices || []), ...additionalInvoices];
+            const additionalInvoices: Invoices =
+                await cds.run(oSql) || [];
+
+            oInvoices = this.mergeUnique(oInvoices, additionalInvoices);
 
         }
 

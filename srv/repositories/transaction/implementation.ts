@@ -20,15 +20,13 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         let oTransactions: Transactions = await cds.run(oSql);
 
-        if ((this.getEntity() as any)?.isDraft) {
+        if ((this.getEntity() as any)?.isDraft && !(oTransactions || []).length) {
 
             oSql = this.getReportBaseSql(true);
 
             oSql.where({ ID: Id });
 
-            const additionalTransactions: Transactions = await cds.run(oSql) || [];
-
-            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+            oTransactions = await cds.run(oSql) || [];
 
         }
 
@@ -55,12 +53,21 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         if ((oTransactionEntity as any)?.isDraft) {
 
-            oTransactionEntity = this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, oTransactions);
 
-            oSql = SELECT.from(oTransactionEntity).where({ ID: { in: Ids } });
+            if (missingIds.length > 0) {
 
-            const additionalTransactionts = await cds.run(oSql) || [];
-            oTransactions = [...(oTransactions || []), ...additionalTransactionts];
+                oTransactionEntity = this.getEntity(true);
+
+                const additionalTransactionts =
+                    await cds.run(
+                        SELECT.from(oTransactionEntity).where({ ID: { in: missingIds } })
+                    ) || [];
+
+                oTransactions = this.mergeUnique(oTransactions, additionalTransactionts);
+
+            }
 
         }
 
@@ -87,9 +94,16 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         if ((this.getEntity() as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oTransactions);
+
             oSql = this.getReportBaseSql(true);
 
             oSql.where({ Category_ID: CategoryID });
+
+            if (exclusionFilter) {
+                oSql.where(exclusionFilter);
+            }
 
             if (Limit != 0 && Limit) {
 
@@ -97,9 +111,10 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             }
 
-            const additionalTransactions: Transactions = await cds.run(oSql) || [];
+            const additionalTransactions: Transactions =
+                await cds.run(oSql) || [];
 
-            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+            oTransactions = this.mergeUnique(oTransactions, additionalTransactions);
 
         }
 
@@ -128,9 +143,16 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
         if ((this.getEntity() as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(oTransactions);
+
             oSql = this.getReportBaseSql(true);
 
             oSql.where({ Invoice_ID: { in: invoiceIds }, ...additionalFilters });
+
+            if (exclusionFilter) {
+                oSql.where(exclusionFilter);
+            }
 
             if (Limit != 0 && Limit) {
 
@@ -138,9 +160,10 @@ export class TransactionRepositoryImplementation extends BaseRepositoryImplement
 
             }
 
-            const additionalTransactions: Transactions = await cds.run(oSql) || [];
+            const additionalTransactions: Transactions =
+                await cds.run(oSql) || [];
 
-            oTransactions = [...(oTransactions || []), ...additionalTransactions];
+            oTransactions = this.mergeUnique(oTransactions, additionalTransactions);
 
         }
 

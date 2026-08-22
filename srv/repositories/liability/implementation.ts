@@ -35,45 +35,36 @@ export class LiabilityRepositoryImplementation
         const draftEntity =
             (activeEntity as any)?.drafts as entity | undefined;
 
-        const activeRows =
-            await cds.run(
-                SELECT.from(activeEntity)
-                    .where({ ID: Id })
-            ) || [];
-
-        const draftRows =
-            draftEntity
-                ? (
-                    await cds.run(
-                        SELECT.from(draftEntity)
-                            .where({ ID: Id })
-                    ) || []
-                )
-                : [];
-
         // Prefer the row of the entity set the request works on: reads outside
         // a draft session keep the committed values, while a draft-session read
-        // sees the uncommitted draft values. The sibling set is used as a
-        // fallback so the same lookup also works during draft activation and
-        // for brand-new entities that only exist as drafts.
+        // sees the uncommitted draft values. The sibling set is only queried
+        // when the preferred set does not have the row (e.g. during draft
+        // activation or for brand-new entities that only exist as drafts), so
+        // a row is never selected twice.
         const current =
             this.getEntity(ignoreDraft);
 
-        const primary =
-            (current as any)?.isDraft
-                ? draftRows
-                : activeRows;
+        const preferDraft =
+            (current as any)?.isDraft;
 
-        const fallback =
-            (current as any)?.isDraft
-                ? activeRows
-                : draftRows;
+        const readRow = async (
+            Entity: entity | undefined | null
+        ): Promise<any[]> =>
+
+            Entity
+                ? (await cds.run(
+                    SELECT.from(Entity)
+                        .where({ ID: Id })
+                )) || []
+                : [];
+
+        const primaryRows =
+            await readRow(preferDraft ? draftEntity : activeEntity);
 
         const rows =
-            this.mergeUnique(
-                primary,
-                fallback
-            );
+            primaryRows.length > 0
+                ? primaryRows
+                : await readRow(preferDraft ? activeEntity : draftEntity);
 
         const model = LiabilityModel.mapModel(rows);
 
@@ -96,18 +87,23 @@ export class LiabilityRepositoryImplementation
 
         if ((Entity as any)?.isDraft) {
 
-            Entity = this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, rows);
 
-            sql = SELECT.from(Entity).where({
-                ID: { in: Ids }
-            });
+            if (missingIds.length > 0) {
 
-            const activeRows = await cds.run(sql) || [];
+                Entity = this.getEntity(true);
 
-            rows = this.mergeUnique(
-                rows,
-                activeRows
-            );
+                const activeRows =
+                    await cds.run(
+                        SELECT.from(Entity).where({
+                            ID: { in: missingIds }
+                        })
+                    ) || [];
+
+                rows = this.mergeUnique(rows, activeRows);
+
+            }
 
         }
 
@@ -117,31 +113,38 @@ export class LiabilityRepositoryImplementation
 
 
     public async findByPersonId(
-        PersonId: Person["ID"]
+        PersonId: Person["ID"] | Person["ID"][]
     ): Promise<LiabilityModel[] | null> {
 
         let Entity = this.getEntity();
 
+        const personIds = Array.isArray(PersonId) ? PersonId : [PersonId];
+
         let sql = SELECT.from(Entity).where({
-            Person_ID: PersonId
+            Person_ID: { 'in': personIds }
         });
 
         let rows = await cds.run(sql);
 
         if ((Entity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(rows);
+
             Entity = this.getEntity(true);
 
-            sql = SELECT.from(Entity).where({
-                Person_ID: PersonId
+            const activeSql = SELECT.from(Entity).where({
+                Person_ID: { 'in': personIds }
             });
 
-            const activeRows = await cds.run(sql) || [];
+            if (exclusionFilter) {
+                activeSql.where(exclusionFilter);
+            }
 
-            rows = this.mergeUnique(
-                rows,
-                activeRows
-            );
+            const activeRows =
+                await cds.run(activeSql) || [];
+
+            rows = this.mergeUnique(rows, activeRows);
 
         }
 
@@ -178,19 +181,24 @@ export class LiabilityRepositoryImplementation
 
         if ((Entity as any)?.isDraft) {
 
+            const exclusionFilter =
+                this.excludeFoundFilter(rows);
+
             Entity = this.getEntity(true);
 
-            sql = SELECT.from(Entity).where({
+            const activeSql = SELECT.from(Entity).where({
                 Person_ID: PersonId,
                 Status
             });
 
-            const activeRows = await cds.run(sql) || [];
+            if (exclusionFilter) {
+                activeSql.where(exclusionFilter);
+            }
 
-            rows = this.mergeUnique(
-                rows,
-                activeRows
-            );
+            const activeRows =
+                await cds.run(activeSql) || [];
+
+            rows = this.mergeUnique(rows, activeRows);
 
         }
 
@@ -320,52 +328,6 @@ export class LiabilityRepositoryImplementation
             );
 
         return (rows?.length ?? 0) > 0;
-
-    }
-
-
-    /**
-     * Merges the draft rows with the active rows of the same entity set,
-     * keeping one row per ID (the draft row wins because it is first).
-     *
-     * Draft-enabled compositions are deep-copied into the draft tables when a
-     * draft is opened, so every active row has a draft sibling with the same
-     * ID. Reading both tables naively would return each row twice and double
-     * count the amounts when the debt balance is recalculated.
-     *
-     * @param {any[]} draftRows rows read from the draft entity set
-     * @param {any[]} activeRows rows read from the active entity set
-     * @returns {any[]} the deduplicated rows
-     */
-    private mergeUnique(
-        draftRows: any[],
-        activeRows: any[]
-    ): any[] {
-
-        const seen =
-            new Set<string>();
-
-        const merged: any[] = [];
-
-        for (const row of [
-            ...(draftRows || []),
-            ...(activeRows || [])
-        ]) {
-
-            const key =
-                row?.ID as string | undefined;
-
-            if (!key || seen.has(key)) {
-                continue;
-            }
-
-            seen.add(key);
-
-            merged.push(row);
-
-        }
-
-        return merged;
 
     }
 

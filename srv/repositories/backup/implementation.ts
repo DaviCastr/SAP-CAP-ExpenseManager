@@ -19,14 +19,13 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
         let oBackups = await cds.run(oSql);
 
-        if ((oBackupEntity as any)?.isDraft) {
+        if ((oBackupEntity as any)?.isDraft && !(oBackups || []).length) {
 
             oBackupEntity = this.getEntity(true);
 
             oSql = SELECT.from(oBackupEntity).where({ ID: Id });
 
-            const additionalBackupts = await cds.run(oSql) || [];
-            oBackups = [...(oBackups || []), ...additionalBackupts];
+            oBackups = await cds.run(oSql) || [];
 
         }
 
@@ -47,12 +46,21 @@ export class BackupRepositoryImplementation extends BaseRepositoryImplementation
 
         if ((oBackupEntity as any)?.isDraft) {
 
-            oBackupEntity = this.getEntity(true);
+            const missingIds =
+                this.missingIds(Ids, oBackups);
 
-            oSql = SELECT.from(oBackupEntity).where({ ID: { in: Ids } });
+            if (missingIds.length > 0) {
 
-            const additionalBackupts = await cds.run(oSql) || [];
-            oBackups = [...(oBackups || []), ...additionalBackupts];
+                oBackupEntity = this.getEntity(true);
+
+                const additionalBackupts =
+                    await cds.run(
+                        SELECT.from(oBackupEntity).where({ ID: { in: missingIds } })
+                    ) || [];
+
+                oBackups = this.mergeUnique(oBackups, additionalBackupts);
+
+            }
 
         }
 

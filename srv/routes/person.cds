@@ -9,7 +9,7 @@ service PersonService {
     entity Persons as projection on entities.Persons;
 
     action   AddCardExpense(CardId: UUID, CategoryId: UUID, Description: String, Value: Decimal, Currency: String, TransactionDate: Date, Installments: Integer, FixedExpense: Boolean) returns entities.ActionResult;
-    action   SendInvoices(Year: Integer, Month: Integer)                                                                                                                                returns entities.ActionResult;
+    action   SendInvoices(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                                                returns entities.ActionResult;
     action   SimulateExpenses(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                            returns entities.ActionResult;
     action   SimulateFinancialFuture(PersonId: UUID, Year: Integer, Month: Integer)                                                                                                     returns entities.ActionResult;
 

@@ -25,6 +25,13 @@ import { CardServiceImplementation } from "../card/implementation";
 import { LiabilityRepository } from "@/repositories/liability";
 import { LiabilityTransactionRepository } from "@/repositories/liability-transaction";
 import { LiabilityModel } from "@/models/liability";
+import { LiabilityTransactionModel } from "@/models/liability-transaction";
+import {
+    LiabilityTransactionSummary,
+    summarizeTransactions,
+    outstandingBalance,
+    paymentPercentage
+} from "@/domain/liability-rules";
 import { CardExpensesByCategoryModel, CardExpensesByCategoryReturnProperties, CategoryExpenses } from "@/models/card-expenses-by-category";
 import { CategoryServiceImplementation } from "../category/implementation";
 import { SimulateExpenseModel, SimulateExpenseReturnProperties } from "@/models/simulate-expense";
@@ -361,7 +368,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             const request = ServiceLocator.getRequest();
 
-            const { Year, Month } = request.data;
+            const { PersonId, Year, Month } = request.data;
 
             this.validateEmailConfiguration(request);
 
@@ -375,9 +382,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 today.month = Number(Month);
             }
 
-            const persons = await this.Repository.findAll({
-                Email: { '!=': null }
-            }) || [];
+            const persons = await this.Repository.findAll(
+                PersonId
+                    ? {
+                        ID: PersonId
+                    } :
+                    {
+                        Email: { '!=': null }
+                    }
+            ) || [];
 
             if (!persons.length) {
                 return right(true);
@@ -392,7 +405,29 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 cardsAdditionalFilters
             ) || [];
 
-            if (!cards.length) {
+            // Dívidas seguem a MESMA regra de seleção dos cartões: sem
+            // mês/ano informado entram apenas as que ainda vencem no período
+            // corrente (DueDay >= hoje); com mês/ano, todas são consideradas.
+            const liabilities =
+                await this.LiabilityRepository.findByPersonId(
+                    persons.map(p => p.Id)
+                ) || [];
+
+            const selectedLiabilities = Year || Month
+                ? liabilities
+                : liabilities.filter(l => (l.DueDay ?? 0) >= today.day);
+
+            const selectedLiabilityIds =
+                selectedLiabilities.map(l => l.Id);
+
+            const liabilityTransactions =
+                selectedLiabilityIds.length
+                    ? await this.LiabilityTransactionRepository.findByLiabilityIds(
+                        selectedLiabilityIds
+                    ) || []
+                    : [];
+
+            if (!cards.length && !selectedLiabilities.length) {
                 return right(true);
             }
 
@@ -413,9 +448,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 invoicesAdditionalFilters
             ) || [];
 
-            if (!invoices.length) {
-                return right(true);
-            }
+            // Sem faturas ainda é possível enviar: a pessoa pode ter apenas
+            // dívidas selecionadas para o período.
 
             const transactions = await this.TransactionRepository.findByInvoiceIds(
                 invoices.map(i => i.Id)
@@ -462,13 +496,46 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 transactionsByInvoice.get(trx.Invoice?.Id)!.push(trx);
             }
 
+            const liabilitiesByPerson = new Map<string, LiabilityModel[]>();
+
+            for (const liability of selectedLiabilities) {
+
+                const personKey = liability.Person?.Id as string;
+
+                if (!personKey) continue;
+
+                if (!liabilitiesByPerson.has(personKey)) {
+                    liabilitiesByPerson.set(personKey, []);
+                }
+
+                liabilitiesByPerson.get(personKey)!.push(liability);
+            }
+
+            const liabilityTransactionsByLiability =
+                new Map<string, LiabilityTransactionModel[]>();
+
+            for (const movement of liabilityTransactions) {
+
+                const liabilityKey = movement.Liability?.Id as string;
+
+                if (!liabilityKey) continue;
+
+                if (!liabilityTransactionsByLiability.has(liabilityKey)) {
+                    liabilityTransactionsByLiability.set(liabilityKey, []);
+                }
+
+                liabilityTransactionsByLiability
+                    .get(liabilityKey)!.push(movement);
+            }
+
             const cache = ServiceLocator.getEmailSendingCache();
 
             for (const person of persons) {
 
                 const personCards = cardsByPerson.get(person.Id) || [];
 
-                if (!personCards.length) continue;
+                const personLiabilities =
+                    liabilitiesByPerson.get(person.Id) || [];
 
                 const invoicesToSend: InvoiceModel[] = [];
                 const attachments: any[] = [];
@@ -524,6 +591,46 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         });
 
                     }
+
+                }
+
+                // PDF de cada dívida selecionada: saldo devedor + últimas
+                // movimentações (mesma regra de seleção dos cartões).
+                for (const liability of personLiabilities) {
+
+                    const movements =
+                        liabilityTransactionsByLiability.get(liability.Id) || [];
+
+                    const summary = summarizeTransactions(movements);
+                    const balance =
+                        outstandingBalance(liability.TotalAmount, summary);
+
+                    // Nada a detalhar: quitada e sem histórico.
+                    if (balance.lessThanOrEqualTo(0) && !movements.length) {
+                        continue;
+                    }
+
+                    const lastMovements = [...movements]
+                        .sort((a, b) =>
+                            String(b.Date).localeCompare(String(a.Date)))
+                        .slice(0, 10);
+
+                    const pdfResult = await this.generateLiabilityPDF(
+                        cache._logoCache!,
+                        person,
+                        liability,
+                        balance,
+                        summary,
+                        lastMovements
+                    );
+
+                    if (pdfResult.isLeft()) continue;
+
+                    attachments.push({
+                        filename:
+                            `Divida ${this.sanitizeFileName(liability.Name)}.pdf`,
+                        content: pdfResult.value
+                    });
 
                 }
 
@@ -2000,6 +2107,284 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             );
 
         }
+
+    }
+
+
+    private async generateLiabilityPDF(
+        Logo: Buffer,
+        Person: PersonModel,
+        Liability: LiabilityModel,
+        Balance: Decimal,
+        Summary: LiabilityTransactionSummary,
+        LastMovements: LiabilityTransactionModel[]
+    ): Promise<Either<AbstractError, Buffer>> {
+
+        try {
+
+            const result = await new Promise(async (resolve, reject) => {
+
+                const doc = new PDFDocument({
+                    size: "A4",
+                    margin: 40,
+                });
+
+                const oPrimaryColor = "#085caf";
+                const oTextColor = "#333333";
+                const oCurrency = Liability?.Currency?.Code || '';
+
+                const oBufferArray: any[] = [];
+                const oBufferStream = new PassThrough();
+
+                oBufferStream.on('data', (chunk) => oBufferArray.push(chunk));
+                oBufferStream.on('end', () => resolve(Buffer?.concat(oBufferArray) as any));
+                oBufferStream.on('error', (err) => reject(`Erro no stream: ${err}`));
+
+                doc.pipe(oBufferStream);
+
+                const designHeader = (initialPage = false) => {
+                    if (!initialPage) doc.addPage();
+
+                    doc
+                        .rect(0, 0, doc.page.width, 80)
+                        .fill(oPrimaryColor);
+
+                    if (Logo) {
+                        const diameter = 60;
+                        const x = 40;
+                        const y = 10;
+                        doc
+                            .save()
+                            .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
+                            .clip()
+                            .image(Logo, x, y, { width: diameter, height: diameter })
+                            .restore();
+                    }
+
+                    doc
+                        .fillColor("white")
+                        .fontSize(30)
+                        .text("Expense Manager", 40, 30, { align: "center" });
+
+                    doc.moveDown(2);
+                };
+
+                const designFooter = () => {
+
+                    let verticalPosition = doc.page.height - 70;
+
+                    doc
+                        .rect(0, verticalPosition, doc.page.width, 80)
+                        .fill(oPrimaryColor)
+
+                };
+
+                const initialsFromName = (name: string): string => {
+
+                    const parts =
+                        String(name || '').trim().split(/\s+/).filter(Boolean);
+
+                    return parts
+                        .slice(0, 2)
+                        .map(part => part.charAt(0).toUpperCase())
+                        .join('') || '?';
+
+                };
+
+                const designLiabilitySummary = () => {
+
+                    // A dívida não possui imagem: círculo com as iniciais.
+                    const diameter = 120;
+                    const x = (doc.page.width - diameter) / 2;
+                    const y = 100;
+
+                    doc
+                        .save()
+                        .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
+                        .fill(oPrimaryColor)
+                        .restore();
+
+                    doc
+                        .fillColor("white")
+                        .fontSize(40)
+                        .text(
+                            initialsFromName(Liability?.Name),
+                            x,
+                            y + (diameter - 40) / 2,
+                            { width: diameter, align: "center" }
+                        );
+
+                    doc.moveDown(3);
+                    doc
+                        .fillColor(oTextColor)
+                        .fontSize(22)
+                        .text(`${Person?.Name}, o detalhamento da sua dívida ${Liability?.Name}`, { align: "center" });
+
+                    doc.moveDown(2);
+                    doc
+                        .rect(40, doc.y, doc.page.width - 80, 100)
+                        .strokeColor(oPrimaryColor)
+                        .lineWidth(2)
+                        .stroke();
+
+                    doc
+                        .fillColor(oTextColor)
+                        .fontSize(20)
+                        .text("Saldo devedor:", 60, doc.y + 10, { align: "left" });
+
+                    doc
+                        .fillColor(oPrimaryColor)
+                        .fontSize(45)
+                        .text(`${Balance.toNumber()} ${oCurrency}`, { align: "center" });
+
+                    doc.moveDown(2);
+
+                    const oPercentage =
+                        paymentPercentage(Liability?.TotalAmount, Summary);
+
+                    const oStatus =
+                        Balance.greaterThan(0) ? 'Em aberto' : 'Quitada';
+
+                    doc
+                        .fillColor(oTextColor)
+                        .fontSize(16)
+                        .text(`Este é o valor que ainda falta pagar.`, { align: "left" })
+                        .text(`Valor total da dívida: ${Liability?.TotalAmount?.toNumber() ?? 0} ${oCurrency}`, { align: "left" })
+                        .text(`Total pago até agora: ${Summary.TotalIn.toNumber()} ${oCurrency}`, { align: "left" })
+                        .text(`Acréscimos aplicados: ${Summary.TotalOut.toNumber()} ${oCurrency}`, { align: "left" })
+                        .text(`Percentual pago: ${oPercentage.toNumber()}%`, { align: "left" })
+                        .text(`Situação: ${oStatus}`, { align: "left" })
+                        .text(`Dia de vencimento mensal: ${this.addLeftZeros(Liability?.DueDay ?? 0)}`, { align: "left" });
+
+                    if (Liability?.Description) {
+                        doc.text(`Descrição: ${Liability.Description}`, { align: "left" });
+                    }
+
+                };
+
+                const designMovements = () => {
+
+                    doc
+                        .fillColor(oPrimaryColor)
+                        .fontSize(20)
+                        .text("Últimas movimentações", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
+
+                    doc.moveDown(1);
+
+                    doc
+                        .fillColor(oPrimaryColor)
+                        .fontSize(18)
+                        .text(`Quantidade de movimentações exibidas: ${LastMovements.length}`, doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
+
+                    doc.moveDown(1);
+
+                    const positions = {
+                        data: 60,
+                        description: 150,
+                        tipo: 360,
+                        valor: 460,
+                    };
+
+                    let verticalPosition = doc.y;
+
+                    doc
+                        .fontSize(16)
+                        .text("Data", positions.data, verticalPosition, { width: 90 })
+                        .text("Descrição", positions.description, verticalPosition, { width: 200 })
+                        .text("Tipo", positions.tipo, verticalPosition, { width: 90 })
+                        .text("Valor", positions.valor, verticalPosition, { width: 100, align: "right" });
+
+                    verticalPosition += 20;
+
+                    doc
+                        .moveTo(60, verticalPosition - 6)
+                        .lineTo(560, verticalPosition - 6)
+                        .strokeColor(oPrimaryColor)
+                        .lineWidth(1)
+                        .stroke();
+
+                    if (!LastMovements.length) {
+
+                        doc.moveDown(2);
+                        doc
+                            .fillColor(oTextColor)
+                            .fontSize(14)
+                            .text("Nenhuma movimentação registrada até o momento.", { align: "center" });
+
+                        return;
+
+                    }
+
+                    LastMovements.forEach((movement) => {
+
+                        doc.moveDown(2);
+
+                        const oMovementDate = new Date(`${movement?.Date}T00:00:00`);
+                        const oDay = String(oMovementDate.getDate()).padStart(2, "0");
+                        const oMonth = String(oMovementDate.getMonth() + 1).padStart(2, "0");
+                        const oYear = oMovementDate.getFullYear();
+
+                        const movementCurrency =
+                            movement?.Currency?.Code || oCurrency;
+
+                        doc
+                            .fillColor(oTextColor)
+                            .fontSize(12)
+                            .text(`${oDay}/${oMonth}/${oYear}`, positions.data, verticalPosition, { width: 90 })
+                            .text(movement.Description || '-', positions.description, verticalPosition, { width: 200 })
+                            .text(movement.Type === 'IN' ? 'Pagamento' : 'Acréscimo', positions.tipo, verticalPosition, { width: 90 })
+                            .text(`${movement.Amount?.toNumber()} ${movementCurrency}`, positions.valor, verticalPosition, { width: 100, align: "right" });
+
+                        verticalPosition += 15;
+                        doc
+                            .moveTo(60, verticalPosition - 5)
+                            .lineTo(560, verticalPosition - 5)
+                            .strokeColor("#CCCCCC")
+                            .lineWidth(0.5)
+                            .stroke();
+
+                    });
+
+                };
+
+                designHeader(true);
+                designLiabilitySummary();
+                designFooter();
+
+                designHeader();
+                designMovements();
+                designFooter();
+
+                doc.end();
+
+            });
+
+            return right(result as Buffer);
+
+        } catch (error) {
+
+            const errorInstance = error as Error;
+            return left(
+                new AbstractError(
+                    errorInstance.message,
+                    403,
+                    errorInstance.stack as string
+                )
+            );
+
+        }
+
+    }
+
+
+    private sanitizeFileName(name: string): string {
+
+        return String(name || 'divida')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[\\/:*?"<>|]/g, '')
+            .trim()
+            .slice(0, 60) || 'divida';
 
     }
 

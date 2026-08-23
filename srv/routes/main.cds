@@ -44,7 +44,8 @@ service ExpenseManager {
 
     action   ExportBackup()                                  returns entities.ActionResult;
 
-    action   SendInvoices(Year: Integer,
+    action   SendInvoices(PersonId: UUID,
+                          Year: Integer,
                           Month: Integer)                    returns entities.ActionResult;
 
     action   SimulateExpenses(PersonId: UUID,

@@ -2144,22 +2144,22 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                             // Mês corrente: o ciclo corrente dos cartões com
                             // referência deslocada está em aberto; nos demais,
-                            // venceu -> Payed, fechou sem vencer -> Closed e o
-                            // resto fica só no ToPay (derivado no fim).
+                            // fechou (independente de vencer ou não) -> Closed,
+                            // venceu -> Payed e o resto fica só no ToPay.
                             } else if (oShiftedReference) {
 
                                 oTotalExpenses = oTotalExpenses.plus(oAmount);
 
-                            } else if (oCardModel.DueDay < oDay) {
-
-                                oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
-
                             } else {
-
-                                oTotalExpenses = oTotalExpenses.plus(oAmount);
 
                                 if (oCardModel.ClosingDay <= oDay) {
                                     oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount);
+                                }
+
+                                if (oCardModel.DueDay < oDay) {
+                                    oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
+                                } else {
+                                    oTotalExpenses = oTotalExpenses.plus(oAmount);
                                 }
 
                             }

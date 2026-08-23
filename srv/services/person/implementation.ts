@@ -2040,6 +2040,9 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             let oMonth = Number(month);
             let oYear = Number(year);
 
+            const oSystemMonth = oMonth;
+            const oSystemYear = oYear;
+
             if (TargetYear) {
                 oYear = Number(TargetYear);
             }
@@ -2118,16 +2121,35 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     if (oInvoice.Year == oInvoiceYear && oInvoice.Month >= oInvoiceMonth || oInvoice.Year > oInvoiceYear) {
 
                         if (oInvoice.Month == oInvoiceMonth && oInvoice.Year == oInvoiceYear) {
-                            oMonthExpenses = oMonthExpenses.plus(oInvoice.TotalAmount || 0);
-                            if (oCardModel.ClosingDay > oDay) {
-                                oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice?.TotalAmount || 0)
-                                oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount || 0)
+
+                            const oAmount = oInvoice.TotalAmount || 0;
+
+                            const oInvoiceIsPast =
+                                (oInvoice.Year < oSystemYear) ||
+                                (oInvoice.Year == oSystemYear && oInvoice.Month < oSystemMonth);
+
+                            const oInvoiceIsFuture =
+                                (oInvoice.Year > oSystemYear) ||
+                                (oInvoice.Year == oSystemYear && oInvoice.Month > oSystemMonth);
+
+                            oMonthExpenses = oMonthExpenses.plus(oAmount);
+
+                            if (oInvoiceIsPast) {
+                                oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount);
+                                oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
+                            } else if (oInvoiceIsFuture) {
+                                oMonthExpensesToPay = oMonthExpensesToPay.plus(oAmount);
+                                oTotalExpenses = oTotalExpenses.plus(oAmount);
+                            } else if (oCardModel.ClosingDay > oDay) {
+                                oMonthExpensesToPay = oMonthExpensesToPay.plus(oAmount)
+                                oTotalExpenses = oTotalExpenses.plus(oAmount)
                             } else if (oCardModel.DueDay >= oDay) {
-                                oMonthExpensesClosed = oMonthExpensesClosed.plus(oInvoice.TotalAmount || 0)
-                                oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount || 0)
+                                oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount)
+                                oTotalExpenses = oTotalExpenses.plus(oAmount)
                             } else {
-                                oMonthExpensesPayed = oMonthExpensesPayed.plus(oInvoice.TotalAmount || 0)
+                                oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount)
                             }
+
                         } else if (oInvoice.Year == oNextYear && oInvoice.Month == oNextMonth && oCardModel.ClosingDay <= oDay) {
                             oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice.TotalAmount || 0)
                             oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount || 0)
@@ -2174,7 +2196,23 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     if (oTrxYear === oYear && oTrxMonth === oMonth) {
 
                         oMonthExpenses = oMonthExpenses.plus(oAmount);
-                        oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
+
+                        const oTrxIsPast =
+                            (oTrxYear < oSystemYear) ||
+                            (oTrxYear === oSystemYear && oTrxMonth < oSystemMonth);
+
+                        const oTrxIsFuture =
+                            (oTrxYear > oSystemYear) ||
+                            (oTrxYear === oSystemYear && oTrxMonth > oSystemMonth);
+
+                        if (oTrxIsPast) {
+                            oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount);
+                            oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
+                        } else if (oTrxIsFuture) {
+                            oMonthExpensesToPay = oMonthExpensesToPay.plus(oAmount);
+                        } else {
+                            oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
+                        }
 
                     }
 

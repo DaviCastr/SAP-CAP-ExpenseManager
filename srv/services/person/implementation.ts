@@ -1833,17 +1833,20 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const c = this.pdfPalette();
 
+        const titleY = Doc.y;
+
         Doc
             .fillColor(c.ink)
             .font('Helvetica-Bold')
             .fontSize(13)
-            .text(Title, 44, Doc.y, { lineBreak: false });
+            .text(Title, 44, titleY, { lineBreak: false });
 
+        // Texto com lineBreak:false não avança Doc.y: posições explícitas.
         Doc
-            .rect(44, Doc.y + 6, 26, 2.5)
+            .rect(44, titleY + 19, 26, 2.5)
             .fill(c.accent);
 
-        Doc.y += 16;
+        Doc.y = titleY + 30;
 
         if (Hint) {
 
@@ -1853,9 +1856,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 .fontSize(9.5)
                 .text(Hint, 44, Doc.y);
 
+            Doc.y += 8;
+
         }
 
-        Doc.y += 14;
+        Doc.y += 6;
 
     }
 
@@ -2178,7 +2183,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                     for (const [index, category] of oCategories.entries()) {
 
-                        if ((index + 1) % 19 === 0) {
+                        // Quebra apenas se houver próxima linha: evita página
+                        // em branco quando a lista fecha exata no limite.
+                        if ((index + 1) < oCategories.length &&
+                            (index + 1) % 19 === 0) {
                             shell.newPage();
                             doc.y += 6;
                             drawTableHead();
@@ -2305,7 +2313,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                     for (const [index, transaction] of Transactions.entries()) {
 
-                        if ((index + 1) % 24 === 0) {
+                        if ((index + 1) < Transactions.length &&
+                            (index + 1) % 24 === 0) {
                             shell.newPage();
                             doc.y += 6;
                             drawTxHead();

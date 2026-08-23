@@ -1779,26 +1779,107 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async generatePDF(
+    private pdfPalette() {
+
+        return {
+            primary: "#0b5d52",
+            primaryDark: "#073d3a",
+            accent: "#14a582",
+            tint: "#eafaf4",
+            ink: "#102a2b",
+            muted: "#687b7c",
+            surface: "#f4f7f8",
+            line: "#e7eeee",
+            lineSoft: "#d5e3e1",
+            white: "#ffffff",
+            positiveBg: "#e7f7f0",
+            positive: "#1f8f6e",
+            negativeBg: "#fdeef0",
+            negative: "#c23b4b"
+        };
+
+    }
+
+
+    private pdfFormatAmount(Value: number | null | undefined): string {
+
+        return Number(Value ?? 0).toLocaleString(
+            "pt-BR",
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+        );
+
+    }
+
+
+    private pdfFitText(Text: string | null | undefined, MaxChars: number): string {
+
+        const oClean =
+            String(Text ?? '').replace(/\s+/g, ' ').trim();
+
+        if (!oClean) return '-';
+
+        return oClean.length > MaxChars
+            ? `${oClean.slice(0, MaxChars - 1)}…`
+            : oClean;
+
+    }
+
+
+    private pdfSectionTitle(
+        Doc: InstanceType<typeof PDFDocument>,
+        Title: string,
+        Hint?: string
+    ): void {
+
+        const c = this.pdfPalette();
+
+        Doc
+            .fillColor(c.ink)
+            .font('Helvetica-Bold')
+            .fontSize(13)
+            .text(Title, 44, Doc.y, { lineBreak: false });
+
+        Doc
+            .rect(44, Doc.y + 6, 26, 2.5)
+            .fill(c.accent);
+
+        Doc.y += 16;
+
+        if (Hint) {
+
+            Doc
+                .fillColor(c.muted)
+                .font('Helvetica')
+                .fontSize(9.5)
+                .text(Hint, 44, Doc.y);
+
+        }
+
+        Doc.y += 14;
+
+    }
+
+
+    private async renderBrandedPdf(
         Logo: Buffer,
-        Person: PersonModel,
-        Invoice: InvoiceModel,
-        Card: CardModel,
-        Transactions: TransactionModel[],
-        CardExpensesByCategory: CardExpensesByCategoryModel
+        Subtitle: string,
+        BuildContent: (
+            Doc: InstanceType<typeof PDFDocument>,
+            Shell: { newPage: () => void }
+        ) => Promise<void>
     ): Promise<Either<AbstractError, Buffer>> {
 
         try {
 
             const result = await new Promise(async (resolve, reject) => {
 
+                const c = this.pdfPalette();
+
                 const doc = new PDFDocument({
                     size: "A4",
-                    margin: 40,
+                    margin: 44,
+                    bufferPages: true
                 });
-
-                const oPrimaryColor = "#085caf";
-                const oTextColor = "#333333";
 
                 const oBufferArray: any[] = [];
                 const oBufferStream = new PassThrough();
@@ -1809,17 +1890,20 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 doc.pipe(oBufferStream);
 
-                const designHeader = (initialPage = false) => {
-                    if (!initialPage) doc.addPage();
+                const drawBand = () => {
 
                     doc
-                        .rect(0, 0, doc.page.width, 80)
-                        .fill(oPrimaryColor);
+                        .rect(0, 0, doc.page.width, 86)
+                        .fill(c.primary);
+
+                    doc
+                        .rect(0, 86, doc.page.width, 3)
+                        .fill(c.accent);
 
                     if (Logo) {
-                        const diameter = 60;
-                        const x = 40;
-                        const y = 10;
+                        const diameter = 52;
+                        const x = 44;
+                        const y = 17;
                         doc
                             .save()
                             .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
@@ -1828,268 +1912,81 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             .restore();
                     }
 
-                    doc
-                        .fillColor("white")
-                        .fontSize(30)
-                        .text("Expense Manager", 40, 30, { align: "center" });
-
-                    doc.moveDown(2);
-                };
-
-                const designFooter = () => {
-
-                    let verticalPosition = doc.page.height - 70;
+                    const titleX = Logo ? 110 : 44;
 
                     doc
-                        .rect(0, verticalPosition, doc.page.width, 80)
-                        .fill(oPrimaryColor)
+                        .fillColor(c.white)
+                        .font('Helvetica-Bold')
+                        .fontSize(20)
+                        .text('Expense Manager', titleX, 22, { lineBreak: false });
+
+                    doc
+                        .fillColor('#bfe8d8')
+                        .font('Helvetica')
+                        .fontSize(9.5)
+                        .text(Subtitle, titleX, 48, { lineBreak: false });
+
+                    const today = this.getBrazilDate();
+
+                    doc
+                        .fillColor('#bfe8d8')
+                        .font('Helvetica')
+                        .fontSize(8.5)
+                        .text(
+                            `Gerado em ${this.addLeftZeros(today.day)}/` +
+                            `${this.addLeftZeros(today.month)}/${today.year}`,
+                            0, 66,
+                            { width: doc.page.width - 44, align: 'right', lineBreak: false }
+                        );
+
+                    doc.font('Helvetica');
+                    doc.y = 116;
 
                 };
 
-                const designInvoiceSummary = async () => {
-                    const oMonthDescription = this.getMessage(`month.${Invoice?.Month}`, ServiceLocator.getRequest());
-
-                    if (Card?.Image) {
-                        const diameter = 120;
-                        const x = (doc.page.width - diameter) / 2;
-                        const y = 100;
-                        const oImage = await this.readableToBuffer(Card?.Image);
-                        doc
-                            .save()
-                            .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
-                            .clip()
-                            .image(oImage as Buffer, x, y, { width: diameter, height: diameter })
-                            .restore();
+                const shell = {
+                    newPage: () => {
+                        doc.addPage();
+                        drawBand();
                     }
+                };
 
-                    doc.moveDown(3);
-                    doc
-                        .fillColor(oTextColor)
-                        .fontSize(22)
-                        .text(`${Person?.Name}, a sua invoice do cartão ${Card?.Name}`, { align: "center" });
+                drawBand();
 
-                    doc.moveDown(2);
+                await BuildContent(doc, shell);
+
+                const range = doc.bufferedPageRange();
+
+                for (let i = range.start; i < range.start + range.count; i++) {
+
+                    doc.switchToPage(i);
+
+                    const footerY = doc.page.height - 40;
+
                     doc
-                        .rect(40, doc.y, doc.page.width - 80, 100)
-                        .strokeColor(oPrimaryColor)
-                        .lineWidth(2)
+                        .moveTo(44, footerY)
+                        .lineTo(doc.page.width - 44, footerY)
+                        .lineWidth(0.75)
+                        .strokeColor(c.line)
                         .stroke();
 
                     doc
-                        .fillColor(oTextColor)
-                        .fontSize(20)
-                        .text("Total da sua invoice:", 60, doc.y + 10, { align: "left" });
+                        .fillColor(c.muted)
+                        .font('Helvetica')
+                        .fontSize(8)
+                        .text(
+                            'Documento gerado automaticamente pelo Expense Manager.',
+                            44, footerY + 9,
+                            { lineBreak: false }
+                        );
 
-                    doc
-                        .fillColor(oPrimaryColor)
-                        .fontSize(45)
-                        .text(`${Invoice?.TotalAmount?.toNumber()} ${Invoice?.Currency?.Code}`, { align: "center" });
+                    doc.text(
+                        `Página ${i - range.start + 1} de ${range.count}`,
+                        44, footerY + 9,
+                        { width: doc.page.width - 88, align: 'right', lineBreak: false }
+                    );
 
-                    doc.moveDown(2);
-
-                    doc
-                        .fillColor(oTextColor)
-                        .fontSize(20)
-                        .text(`Este é o valor que você precisa pagar nesse mês.`, 60, doc.y, { align: "left" });
-
-                    doc
-                        .fillColor(oTextColor)
-                        .fontSize(16)
-                        .text(`Mês: ${oMonthDescription}`, { align: "left" })
-                        .text(`Year: ${Invoice?.Year}`, { align: "left" })
-                        .text(`Data de Vencimento: ${this.addLeftZeros(Card?.DueDay)}/${this.addLeftZeros(Invoice?.Month)}/${Invoice?.Year}`, { align: "left" });
-
-                    doc
-                        .moveDown(2)
-                        .fillColor("black")
-                        .fontSize(20)
-                        .text("Fatura gerada", 45, doc.y, { align: "center" });;
-
-                };
-
-                const designCategoriesSummary = async () => {
-
-                    doc
-                        .fillColor(oPrimaryColor)
-                        .fontSize(20)
-                        .text("Gastos por categoria", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
-
-                    const positions = {
-                        image: 60,
-                        name: 90,
-                        totalCategory: 280,
-                        percent: 440,
-                    };
-
-                    doc.moveDown(2);
-
-                    let verticalPosition = doc.y;
-
-                    doc
-                        .fontSize(16)
-                        .text("", positions.image, verticalPosition, { width: 100 })
-                        .text("Nome", positions.name, verticalPosition, { width: 200 })
-                        .text("Total da Categoria", positions.totalCategory, verticalPosition, { width: 150 })
-                        .text("Porcentagem", positions.percent, verticalPosition, { width: 100 });
-
-                    verticalPosition += 25;
-
-                    doc
-                        .moveTo(60, verticalPosition - 6)
-                        .lineTo(560, verticalPosition - 6)
-                        .strokeColor(oPrimaryColor)
-                        .lineWidth(1)
-                        .stroke();
-
-                    let index = 0;
-                    for (const category of CardExpensesByCategory.Categories) {
-
-                        doc.moveDown(2);
-
-                        verticalPosition += 15
-
-                        if (category?.ImagePath) {
-
-                            const diameter = 26;
-                            const x = positions.image;
-                            const y = verticalPosition - 10;
-                            const oImageBuffer = await this.getCategoryImageCached(category?.ID);
-
-                            doc
-                                .save()
-                                .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
-                                .clip()
-                                .image(oImageBuffer as Buffer, x, y, { width: diameter, height: diameter })
-                                .restore();
-
-                        }
-
-                        doc
-                            .fillColor(oTextColor)
-                            .fontSize(12)
-                            .text(category.Name, positions.name, verticalPosition, { width: 200 })
-                            .text(`${category.TotalAmount?.toNumber()} ${CardExpensesByCategory?.Currency?.Code}`, positions.totalCategory, verticalPosition, { width: 130, align: "right" })
-                            .text(`${Number(category.Percent?.toNumber()).toFixed(2)}%`, positions.percent, verticalPosition, { width: 95, align: "right" });
-
-                        verticalPosition += 25;
-                        doc
-                            .moveTo(60, verticalPosition - 5)
-                            .lineTo(560, verticalPosition - 5)
-                            .strokeColor("#CCCCCC")
-                            .lineWidth(0.5)
-                            .stroke();
-
-                        if ((index + 1) % 15 === 0) {
-                            designFooter();
-                            designHeader();
-                            verticalPosition = doc.y + 20;
-                        }
-
-                        index++;
-
-                    };
-
-                };
-
-                const designTransactions = () => {
-
-                    doc
-                        .fillColor(oPrimaryColor)
-                        .fontSize(20)
-                        .text("Gastos da invoice", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
-
-                    doc.moveDown(1);
-
-                    doc
-                        .fillColor(oPrimaryColor)
-                        .fontSize(18)
-                        .text(`Quantidade de gastos totais: ${Transactions.length}`, doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
-
-                    doc.moveDown(1);
-
-                    Transactions.sort((a, b) => (new Date(a.Date) as any) - (new Date(b.Date) as any));
-
-                    const positions = {
-                        data: 60,
-                        description: 140,
-                        category: 340,
-                        parcela: 440,
-                        valor: 460,
-                    };
-
-                    let verticalPosition = doc.y;
-
-                    doc
-                        .fontSize(16)
-                        .text("Data", positions.data, verticalPosition, { width: 100 })
-                        .text("Descrição", positions.description, verticalPosition, { width: 200 })
-                        .text("Categoria", positions.category, verticalPosition, { width: 100 })
-                        .text("Installment", positions.parcela, verticalPosition, { width: 100 })
-                        .text("Amount", positions.valor, verticalPosition, { width: 100, align: "right" });
-
-                    verticalPosition += 20;
-
-                    doc
-                        .moveTo(60, verticalPosition - 6)
-                        .lineTo(560, verticalPosition - 6)
-                        .strokeColor(oPrimaryColor)
-                        .lineWidth(1)
-                        .stroke();
-
-                    Transactions.forEach((transaction, index) => {
-                        doc.moveDown(2);
-                        const oExpenseDate = new Date(`${transaction?.Date}T00:00:00`);
-                        const oYearTransacao = oExpenseDate.getFullYear();
-                        const oMonthTransacao = String(oExpenseDate.getMonth() + 1).padStart(2, "0");
-                        const oDayTransacao = String(oExpenseDate.getDate()).padStart(2, "0");
-
-                        let oCategory = CardExpensesByCategory.Categories.filter(category => category.ID == transaction.Category?.Id);
-                        let oCategoryName: string;
-                        if (oCategory.length > 0) {
-                            oCategoryName = oCategory[0].Name;
-                        } else {
-                            oCategoryName = "Sem categoria";
-                        }
-
-                        doc
-                            .fillColor(oTextColor)
-                            .fontSize(12)
-                            .text(`${oDayTransacao}/${oMonthTransacao}/${oYearTransacao}`, positions.data, verticalPosition, { width: 100 })
-                            .text(transaction.Description, positions.description, verticalPosition, { width: 200 })
-                            .text(oCategoryName, positions.category, verticalPosition, { width: 100 })
-                            .text(`${transaction.Installment} de ${transaction.TotalInstallments}`, positions.parcela, verticalPosition, { width: 100 })
-                            .text(`${transaction.Amount?.toNumber()} ${transaction?.Currency?.Code}`, positions.valor, verticalPosition, { width: 100, align: "right" });
-
-                        verticalPosition += 15;
-                        doc
-                            .moveTo(60, verticalPosition - 5)
-                            .lineTo(560, verticalPosition - 5)
-                            .strokeColor("#CCCCCC")
-                            .lineWidth(0.5)
-                            .stroke();
-
-                        if ((index + 1) % 30 === 0) {
-                            designFooter();
-                            designHeader();
-                            verticalPosition = doc.y + 20;
-                        }
-                    });
-
-                };
-
-                designHeader(true);
-                await designInvoiceSummary();
-                designFooter();
-
-                if (CardExpensesByCategory.Categories.length > 0) {
-                    designHeader();
-                    await designCategoriesSummary();
-                    designFooter();
                 }
-
-                designHeader();
-                designTransactions();
-                designFooter();
 
                 doc.end();
 
@@ -2113,6 +2010,376 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
+    private async generatePDF(
+        Logo: Buffer,
+        Person: PersonModel,
+        Invoice: InvoiceModel,
+        Card: CardModel,
+        Transactions: TransactionModel[],
+        CardExpensesByCategory: CardExpensesByCategoryModel
+    ): Promise<Either<AbstractError, Buffer>> {
+
+        const c = this.pdfPalette();
+        const oCurrency = Invoice?.Currency?.Code || '';
+        const oMonthDescription =
+            this.getMessage(`month.${Invoice?.Month}`, ServiceLocator.getRequest());
+
+        const oCategories = [...CardExpensesByCategory.Categories];
+
+        return this.renderBrandedPdf(
+            Logo,
+            `Fatura · ${Card?.Name} · ${oMonthDescription} de ${Invoice?.Year}`,
+            async (doc, shell) => {
+
+                const usableWidth = doc.page.width - 88;
+
+                const drawPill = (Text: string, X: number, Y: number, Bg: string, Fg: string) => {
+
+                    doc.font('Helvetica-Bold').fontSize(8);
+
+                    const width = doc.widthOfString(Text) + 16;
+
+                    doc.roundedRect(X, Y, width, 17, 8.5).fill(Bg);
+                    doc.fillColor(Fg).text(Text, X, Y + 5, { width, align: 'center', lineBreak: false });
+                    doc.font('Helvetica');
+
+                    return X + width + 6;
+
+                };
+
+                // ---------- Página 1: resumo ----------
+                if (Card?.Image) {
+
+                    const oImage = await this.readableToBuffer(Card.Image);
+                    const diameter = 84;
+                    const x = (doc.page.width - diameter) / 2;
+                    const y = doc.y;
+
+                    doc
+                        .save()
+                        .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
+                        .clip()
+                        .image(oImage as Buffer, x, y, { width: diameter, height: diameter })
+                        .restore();
+
+                    doc.y = y + diameter + 20;
+
+                }
+
+                doc
+                    .fillColor(c.muted)
+                    .font('Helvetica')
+                    .fontSize(10)
+                    .text(`${Person?.Name}, este é o detalhamento da sua fatura do cartão`,
+                        44, doc.y, { width: usableWidth, align: 'center' });
+
+                doc
+                    .fillColor(c.ink)
+                    .font('Helvetica-Bold')
+                    .fontSize(15)
+                    .text(Card?.Name || '', 44, doc.y + 2, { width: usableWidth, align: 'center' });
+
+                doc.y += 22;
+
+                const cardY = doc.y;
+                const cardH = 126;
+
+                doc
+                    .roundedRect(44, cardY, usableWidth, cardH, 10)
+                    .fillAndStroke(c.white, c.line);
+
+                doc
+                    .roundedRect(56, cardY + 16, 4, cardH - 32, 2)
+                    .fill(c.primary);
+
+                doc
+                    .fillColor(c.muted)
+                    .font('Helvetica-Bold')
+                    .fontSize(8)
+                    .text('TOTAL DA FATURA', 72, cardY + 20, { characterSpacing: 1.2, lineBreak: false });
+
+                doc
+                    .fillColor(c.primary)
+                    .font('Helvetica-Bold')
+                    .fontSize(30)
+                    .text(`${this.pdfFormatAmount(Invoice?.TotalAmount?.toNumber())} ${oCurrency}`,
+                        72, cardY + 36, { lineBreak: false });
+
+                const dueLabel =
+                    `Vence em ${this.addLeftZeros(Card?.DueDay)}/` +
+                    `${this.addLeftZeros(Invoice?.Month)}/${Invoice?.Year}`;
+
+                doc.font('Helvetica-Bold').fontSize(8);
+
+                let pillX = doc.page.width - 44 - (doc.widthOfString(dueLabel) + 16);
+
+                drawPill(dueLabel, pillX, cardY + 20, c.tint, c.primaryDark);
+
+                pillX -= (doc.widthOfString(`${oMonthDescription} de ${Invoice?.Year}`) + 16) + 8;
+
+                drawPill(`${oMonthDescription} de ${Invoice?.Year}`, pillX, cardY + 20, c.surface, c.muted);
+
+                doc
+                    .fillColor(c.muted)
+                    .font('Helvetica')
+                    .fontSize(9.5)
+                    .text('Este é o valor que você precisa pagar neste mês.',
+                        72, cardY + cardH - 28, { lineBreak: false });
+
+                doc.y = cardY + cardH + 24;
+
+                // ---------- Categorias ----------
+                if (oCategories.length) {
+
+                    shell.newPage();
+
+                    this.pdfSectionTitle(
+                        doc,
+                        'Gastos por categoria',
+                        'Distribuição das despesas da fatura entre as categorias.'
+                    );
+
+                    const totalOfCategories =
+                        oCategories.reduce((sum, cat) =>
+                            sum + (cat.TotalAmount?.toNumber() ?? 0), 0);
+
+                    const nameX = 80;
+                    const barX = 252;
+                    const barW = 138;
+                    const amountRight = 500;
+                    const percentRight = 551;
+
+                    const drawTableHead = () => {
+
+                        doc
+                            .fillColor(c.muted)
+                            .font('Helvetica-Bold')
+                            .fontSize(8)
+                            .text('CATEGORIA', nameX, doc.y, { characterSpacing: 1, lineBreak: false })
+                            .text('TOTAL', amountRight - 90, doc.y,
+                                { width: 90, align: 'right', characterSpacing: 1, lineBreak: false })
+                            .text('%', percentRight - 50, doc.y,
+                                { width: 50, align: 'right', characterSpacing: 1, lineBreak: false });
+
+                        doc.y += 14;
+
+                        doc
+                            .moveTo(44, doc.y)
+                            .lineTo(doc.page.width - 44, doc.y)
+                            .lineWidth(1)
+                            .strokeColor(c.lineSoft)
+                            .stroke();
+
+                        doc.y += 10;
+
+                    };
+
+                    drawTableHead();
+
+                    for (const [index, category] of oCategories.entries()) {
+
+                        if ((index + 1) % 19 === 0) {
+                            shell.newPage();
+                            doc.y += 6;
+                            drawTableHead();
+                        }
+
+                        const rowY = doc.y;
+
+                        if (category?.ImagePath) {
+                            const diameter = 22;
+                            const oImageBuffer =
+                                await this.getCategoryImageCached(category?.ID);
+                            doc
+                                .save()
+                                .circle(44 + diameter / 2, rowY + diameter / 2, diameter / 2)
+                                .clip()
+                                .image(oImageBuffer as Buffer, 44, rowY, { width: diameter, height: diameter })
+                                .restore();
+                        } else {
+                            doc
+                                .circle(44 + 11, rowY + 11, 11)
+                                .fill(c.tint);
+                        }
+
+                        const percentValue =
+                            Number(category.Percent?.toNumber() ?? 0);
+
+                        doc
+                            .fillColor(c.ink)
+                            .font('Helvetica-Bold')
+                            .fontSize(10.5)
+                            .text(this.pdfFitText(category.Name, 22),
+                                nameX, rowY + 3, { width: 165, lineBreak: false });
+
+                        doc
+                            .roundedRect(barX, rowY + 7, barW, 5, 2.5)
+                            .fill(c.surface);
+
+                        if (percentValue > 0 && totalOfCategories > 0) {
+                            const fillW = Math.max(3, Math.min(barW,
+                                barW * (percentValue / 100)));
+                            doc
+                                .roundedRect(barX, rowY + 7, fillW, 5, 2.5)
+                                .fill(c.accent);
+                        }
+
+                        doc
+                            .fillColor(c.ink)
+                            .text(
+                                `${this.pdfFormatAmount(category.TotalAmount?.toNumber())} ${CardExpensesByCategory?.Currency?.Code || oCurrency}`,
+                                amountRight - 170, rowY + 3,
+                                { width: 170, align: 'right', lineBreak: false }
+                            );
+
+                        doc
+                            .fillColor(c.muted)
+                            .font('Helvetica')
+                            .fontSize(9.5)
+                            .text(`${percentValue.toFixed(1)}%`,
+                                percentRight - 50, rowY + 4,
+                                { width: 50, align: 'right', lineBreak: false });
+
+                        doc.y = rowY + 30;
+
+                        doc
+                            .moveTo(44, doc.y - 6)
+                            .lineTo(doc.page.width - 44, doc.y - 6)
+                            .lineWidth(0.5)
+                            .strokeColor(c.line)
+                            .stroke();
+
+                    }
+
+                }
+
+                // ---------- Movimentos ----------
+                if (Transactions.length) {
+
+                    Transactions.sort((a, b) =>
+                        String(a.Date).localeCompare(String(b.Date)));
+
+                    shell.newPage();
+
+                    this.pdfSectionTitle(
+                        doc,
+                        'Movimentos da fatura',
+                        `${Transactions.length} lançamento(s) nesta fatura.`
+                    );
+
+                    const dateX = 44;
+                    const descX = 122;
+                    const catX = 330;
+                    const instX = 462;
+                    const valueRight = 551;
+
+                    const drawTxHead = () => {
+
+                        doc
+                            .fillColor(c.muted)
+                            .font('Helvetica-Bold')
+                            .fontSize(8)
+                            .text('DATA', dateX, doc.y, { characterSpacing: 1, lineBreak: false })
+                            .text('DESCRIÇÃO', descX, doc.y, { characterSpacing: 1, lineBreak: false })
+                            .text('CATEGORIA', catX, doc.y, { characterSpacing: 1, lineBreak: false })
+                            .text('PARCELA', instX, doc.y, { characterSpacing: 1, lineBreak: false })
+                            .text('VALOR', valueRight - 100, doc.y,
+                                { width: 100, align: 'right', characterSpacing: 1, lineBreak: false });
+
+                        doc.y += 13;
+
+                        doc
+                            .moveTo(44, doc.y)
+                            .lineTo(doc.page.width - 44, doc.y)
+                            .lineWidth(1)
+                            .strokeColor(c.lineSoft)
+                            .stroke();
+
+                        doc.y += 8;
+
+                    };
+
+                    drawTxHead();
+
+                    const rowH = 23;
+
+                    for (const [index, transaction] of Transactions.entries()) {
+
+                        if ((index + 1) % 24 === 0) {
+                            shell.newPage();
+                            doc.y += 6;
+                            drawTxHead();
+                        }
+
+                        const rowY = doc.y;
+
+                        if (index % 2 === 1) {
+                            doc
+                                .rect(44, rowY - 3, doc.page.width - 88, rowH)
+                                .fill(c.surface);
+                        }
+
+                        const oExpenseDate =
+                            new Date(`${transaction?.Date}T00:00:00`);
+
+                        const oDate =
+                            `${this.addLeftZeros(oExpenseDate.getDate())}/` +
+                            `${this.addLeftZeros(oExpenseDate.getMonth() + 1)}/` +
+                            `${oExpenseDate.getFullYear()}`;
+
+                        const oCategory =
+                            oCategories.find(cat =>
+                                cat.ID == transaction.Category?.Id);
+
+                        const installment =
+                            transaction.TotalInstallments > 1
+                                ? `${transaction.Installment}/${transaction.TotalInstallments}`
+                                : '-';
+
+                        doc
+                            .fillColor(c.muted)
+                            .font('Helvetica')
+                            .fontSize(9)
+                            .text(oDate, dateX, rowY, { width: 74, lineBreak: false });
+
+                        doc
+                            .fillColor(c.ink)
+                            .font('Helvetica-Bold')
+                            .fontSize(10)
+                            .text(this.pdfFitText(transaction.Description, 27),
+                                descX, rowY, { width: 200, lineBreak: false });
+
+                        doc
+                            .fillColor(c.muted)
+                            .font('Helvetica')
+                            .fontSize(9)
+                            .text(this.pdfFitText(oCategory?.Name || 'Sem categoria', 17),
+                                catX, rowY, { width: 126, lineBreak: false })
+                            .text(installment, instX, rowY,
+                                { width: 60, lineBreak: false });
+
+                        doc
+                            .fillColor(c.ink)
+                            .font('Helvetica-Bold')
+                            .fontSize(10)
+                            .text(
+                                `${this.pdfFormatAmount(transaction.Amount?.toNumber())} ${transaction?.Currency?.Code || oCurrency}`,
+                                valueRight - 120, rowY,
+                                { width: 120, align: 'right', lineBreak: false }
+                            );
+
+                        doc.y = rowY + rowH;
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+
+
     private async generateLiabilityPDF(
         Logo: Buffer,
         Person: PersonModel,
@@ -2122,65 +2389,33 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         LastMovements: LiabilityTransactionModel[]
     ): Promise<Either<AbstractError, Buffer>> {
 
-        try {
+        const c = this.pdfPalette();
+        const oCurrency = Liability?.Currency?.Code || '';
+        const oPercentage = paymentPercentage(Liability?.TotalAmount, Summary);
+        const oIsOpen = Balance.greaterThan(0);
 
-            const result = await new Promise(async (resolve, reject) => {
+        return this.renderBrandedPdf(
+            Logo,
+            `Dívida · ${Liability?.Name}`,
+            async (doc, shell) => {
 
-                const doc = new PDFDocument({
-                    size: "A4",
-                    margin: 40,
-                });
+                const usableWidth = doc.page.width - 88;
 
-                const oPrimaryColor = "#085caf";
-                const oTextColor = "#333333";
-                const oCurrency = Liability?.Currency?.Code || '';
+                const drawPill = (Text: string, X: number, Y: number, Bg: string, Fg: string) => {
 
-                const oBufferArray: any[] = [];
-                const oBufferStream = new PassThrough();
+                    doc.font('Helvetica-Bold').fontSize(8);
 
-                oBufferStream.on('data', (chunk) => oBufferArray.push(chunk));
-                oBufferStream.on('end', () => resolve(Buffer?.concat(oBufferArray) as any));
-                oBufferStream.on('error', (err) => reject(`Erro no stream: ${err}`));
+                    const width = doc.widthOfString(Text) + 16;
 
-                doc.pipe(oBufferStream);
+                    doc.roundedRect(X, Y, width, 17, 8.5).fill(Bg);
+                    doc.fillColor(Fg).text(Text, X, Y + 5, { width, align: 'center', lineBreak: false });
+                    doc.font('Helvetica');
 
-                const designHeader = (initialPage = false) => {
-                    if (!initialPage) doc.addPage();
-
-                    doc
-                        .rect(0, 0, doc.page.width, 80)
-                        .fill(oPrimaryColor);
-
-                    if (Logo) {
-                        const diameter = 60;
-                        const x = 40;
-                        const y = 10;
-                        doc
-                            .save()
-                            .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
-                            .clip()
-                            .image(Logo, x, y, { width: diameter, height: diameter })
-                            .restore();
-                    }
-
-                    doc
-                        .fillColor("white")
-                        .fontSize(30)
-                        .text("Expense Manager", 40, 30, { align: "center" });
-
-                    doc.moveDown(2);
-                };
-
-                const designFooter = () => {
-
-                    let verticalPosition = doc.page.height - 70;
-
-                    doc
-                        .rect(0, verticalPosition, doc.page.width, 80)
-                        .fill(oPrimaryColor)
+                    return X + width + 6;
 
                 };
 
+                // ---------- Página 1: resumo ----------
                 const initialsFromName = (name: string): string => {
 
                     const parts =
@@ -2193,188 +2428,295 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 };
 
-                const designLiabilitySummary = () => {
+                const diameter = 76;
+                const circleX = (doc.page.width - diameter) / 2;
+                const circleY = doc.y;
 
-                    // A dívida não possui imagem: círculo com as iniciais.
-                    const diameter = 120;
-                    const x = (doc.page.width - diameter) / 2;
-                    const y = 100;
+                doc
+                    .circle(circleX + diameter / 2, circleY + diameter / 2, diameter / 2)
+                    .fillAndStroke(c.tint, c.lineSoft);
+
+                doc
+                    .fillColor(c.primary)
+                    .font('Helvetica-Bold')
+                    .fontSize(24)
+                    .text(initialsFromName(Liability?.Name),
+                        circleX, circleY + (diameter - 24) / 2,
+                        { width: diameter, align: 'center', lineBreak: false });
+
+                doc.y = circleY + diameter + 20;
+
+                doc
+                    .fillColor(c.muted)
+                    .font('Helvetica')
+                    .fontSize(10)
+                    .text(`${Person?.Name}, este é o detalhamento da sua dívida`,
+                        44, doc.y, { width: usableWidth, align: 'center' });
+
+                doc
+                    .fillColor(c.ink)
+                    .font('Helvetica-Bold')
+                    .fontSize(15)
+                    .text(Liability?.Name || '', 44, doc.y + 2,
+                        { width: usableWidth, align: 'center' });
+
+                doc.y += 22;
+
+                const heroY = doc.y;
+                const heroH = 126;
+
+                doc
+                    .roundedRect(44, heroY, usableWidth, heroH, 10)
+                    .fillAndStroke(c.white, c.line);
+
+                doc
+                    .roundedRect(56, heroY + 16, 4, heroH - 32, 2)
+                    .fill(oIsOpen ? c.primary : c.positive);
+
+                doc
+                    .fillColor(c.muted)
+                    .font('Helvetica-Bold')
+                    .fontSize(8)
+                    .text('SALDO DEVEDOR', 72, heroY + 20, { characterSpacing: 1.2, lineBreak: false });
+
+                doc
+                    .fillColor(oIsOpen ? c.primary : c.positive)
+                    .font('Helvetica-Bold')
+                    .fontSize(30)
+                    .text(`${this.pdfFormatAmount(Balance.toNumber())} ${oCurrency}`,
+                        72, heroY + 36, { lineBreak: false });
+
+                const statusLabel = oIsOpen ? 'EM ABERTO' : 'QUITADA';
+                const statusBg = oIsOpen ? c.tint : c.positiveBg;
+                const statusFg = oIsOpen ? c.primaryDark : c.positive;
+
+                doc.font('Helvetica-Bold').fontSize(8);
+
+                drawPill(
+                    statusLabel,
+                    doc.page.width - 44 - (doc.widthOfString(statusLabel) + 16),
+                    heroY + 20, statusBg, statusFg
+                );
+
+                doc
+                    .fillColor(c.muted)
+                    .font('Helvetica')
+                    .fontSize(9.5)
+                    .text('Este é o valor que ainda falta pagar.',
+                        72, heroY + heroH - 28, { lineBreak: false });
+
+                doc.y = heroY + heroH + 18;
+
+                // Progresso do pagamento
+                const trackW = usableWidth;
+                const progressPct =
+                    Math.min(100, Math.max(0, oPercentage.toNumber()));
+
+                doc
+                    .roundedRect(44, doc.y, trackW, 6, 3)
+                    .fill(c.surface);
+
+                if (progressPct > 0) {
+                    doc
+                        .roundedRect(44, doc.y, Math.max(6, trackW * progressPct / 100), 6, 3)
+                        .fill(oIsOpen ? c.accent : c.positive);
+                }
+
+                doc
+                    .fillColor(c.muted)
+                    .font('Helvetica')
+                    .fontSize(9)
+                    .text(`${progressPct.toFixed(1)}% pago`,
+                        44, doc.y + 12,
+                        { width: trackW, align: 'right', lineBreak: false });
+
+                doc.y += 34;
+
+                // Grid de métricas (2 colunas)
+                const colGap = 14;
+                const colW = (usableWidth - colGap) / 2;
+                const miniH = 52;
+
+                const drawMiniCard = (Label: string, Value: string, X: number, Y: number) => {
 
                     doc
-                        .save()
-                        .circle(x + diameter / 2, y + diameter / 2, diameter / 2)
-                        .fill(oPrimaryColor)
-                        .restore();
+                        .roundedRect(X, Y, colW, miniH, 8)
+                        .fillAndStroke(c.white, c.line);
 
                     doc
-                        .fillColor("white")
-                        .fontSize(40)
+                        .fillColor(c.muted)
+                        .font('Helvetica-Bold')
+                        .fontSize(7.5)
+                        .text(Label.toUpperCase(), X + 14, Y + 11, { characterSpacing: 1, lineBreak: false });
+
+                    doc
+                        .fillColor(c.ink)
+                        .font('Helvetica-Bold')
+                        .fontSize(13)
+                        .text(Value, X + 14, Y + 25, { lineBreak: false });
+
+                };
+
+                drawMiniCard('Valor total da dívida',
+                    `${this.pdfFormatAmount(Liability?.TotalAmount?.toNumber())} ${oCurrency}`,
+                    44, doc.y);
+
+                drawMiniCard('Total pago até agora',
+                    `${this.pdfFormatAmount(Summary.TotalIn.toNumber())} ${oCurrency}`,
+                    44 + colW + colGap, doc.y);
+
+                doc.y += miniH + 12;
+
+                drawMiniCard('Acréscimos aplicados',
+                    `${this.pdfFormatAmount(Summary.TotalOut.toNumber())} ${oCurrency}`,
+                    44, doc.y);
+
+                drawMiniCard('Vencimento mensal',
+                    `Dia ${this.addLeftZeros(Liability?.DueDay ?? 0)}`,
+                    44 + colW + colGap, doc.y);
+
+                doc.y += miniH + 12;
+
+                if (Liability?.Description) {
+
+                    const descH = 46;
+
+                    doc
+                        .roundedRect(44, doc.y, usableWidth, descH, 8)
+                        .fillAndStroke(c.surface, c.line);
+
+                    doc
+                        .fillColor(c.muted)
+                        .font('Helvetica-Bold')
+                        .fontSize(7.5)
+                        .text('DESCRIÇÃO', 58, doc.y + 10, { characterSpacing: 1, lineBreak: false });
+
+                    doc
+                        .fillColor(c.ink)
+                        .font('Helvetica')
+                        .fontSize(10)
+                        .text(this.pdfFitText(Liability.Description, 90),
+                            58, doc.y + 23, { lineBreak: false });
+
+                    doc.y += descH + 4;
+
+                }
+
+                // ---------- Página 2: movimentações ----------
+                shell.newPage();
+
+                this.pdfSectionTitle(
+                    doc,
+                    'Últimas movimentações',
+                    LastMovements.length
+                        ? `Exibindo as ${LastMovements.length} mais recentes.`
+                        : undefined
+                );
+
+                const dateX = 44;
+                const descX = 134;
+                const typeX = 372;
+                const valueRight = 551;
+
+                if (!LastMovements.length) {
+
+                    const emptyY = doc.y + 10;
+
+                    doc
+                        .roundedRect(44, emptyY, usableWidth, 60, 8)
+                        .fillAndStroke(c.tint, c.line);
+
+                    doc
+                        .fillColor(c.primaryDark)
+                        .font('Helvetica')
+                        .fontSize(10.5)
+                        .text('Nenhuma movimentação registrada até o momento.',
+                            44, emptyY + 24,
+                            { width: usableWidth, align: 'center', lineBreak: false });
+
+                    return;
+
+                }
+
+                doc
+                    .fillColor(c.muted)
+                    .font('Helvetica-Bold')
+                    .fontSize(8)
+                    .text('DATA', dateX, doc.y, { characterSpacing: 1, lineBreak: false })
+                    .text('DESCRIÇÃO', descX, doc.y, { characterSpacing: 1, lineBreak: false })
+                    .text('TIPO', typeX, doc.y, { characterSpacing: 1, lineBreak: false })
+                    .text('VALOR', valueRight - 100, doc.y,
+                        { width: 100, align: 'right', characterSpacing: 1, lineBreak: false });
+
+                doc.y += 13;
+
+                doc
+                    .moveTo(44, doc.y)
+                    .lineTo(doc.page.width - 44, doc.y)
+                    .lineWidth(1)
+                    .strokeColor(c.lineSoft)
+                    .stroke();
+
+                doc.y += 8;
+
+                const rowH = 24;
+
+                for (const [index, movement] of LastMovements.entries()) {
+
+                    const rowY = doc.y;
+
+                    if (index % 2 === 1) {
+                        doc
+                            .rect(44, rowY - 3, doc.page.width - 88, rowH)
+                            .fill(c.surface);
+                    }
+
+                    const oMovementDate =
+                        new Date(`${movement?.Date}T00:00:00`);
+
+                    const oDate =
+                        `${this.addLeftZeros(oMovementDate.getDate())}/` +
+                        `${this.addLeftZeros(oMovementDate.getMonth() + 1)}/` +
+                        `${oMovementDate.getFullYear()}`;
+
+                    const isIn = movement.Type === 'IN';
+
+                    const typeText = isIn ? 'Pagamento' : 'Acréscimo';
+                    const typeBg = isIn ? c.positiveBg : c.negativeBg;
+                    const typeFg = isIn ? c.positive : c.negative;
+
+                    doc
+                        .fillColor(c.muted)
+                        .font('Helvetica')
+                        .fontSize(9)
+                        .text(oDate, dateX, rowY, { width: 84, lineBreak: false });
+
+                    doc
+                        .fillColor(c.ink)
+                        .font('Helvetica-Bold')
+                        .fontSize(10)
+                        .text(this.pdfFitText(movement.Description, 30),
+                            descX, rowY, { width: 230, lineBreak: false });
+
+                    doc.font('Helvetica-Bold').fontSize(8);
+                    drawPill(typeText, typeX, rowY - 2, typeBg, typeFg);
+
+                    doc
+                        .fillColor(isIn ? c.positive : c.ink)
+                        .font('Helvetica-Bold')
+                        .fontSize(10)
                         .text(
-                            initialsFromName(Liability?.Name),
-                            x,
-                            y + (diameter - 40) / 2,
-                            { width: diameter, align: "center" }
+                            `${this.pdfFormatAmount(movement.Amount?.toNumber())} ${movement?.Currency?.Code || oCurrency}`,
+                            valueRight - 120, rowY,
+                            { width: 120, align: 'right', lineBreak: false }
                         );
 
-                    doc.moveDown(3);
-                    doc
-                        .fillColor(oTextColor)
-                        .fontSize(22)
-                        .text(`${Person?.Name}, o detalhamento da sua dívida ${Liability?.Name}`, { align: "center" });
+                    doc.y = rowY + rowH;
 
-                    doc.moveDown(2);
-                    doc
-                        .rect(40, doc.y, doc.page.width - 80, 100)
-                        .strokeColor(oPrimaryColor)
-                        .lineWidth(2)
-                        .stroke();
+                }
 
-                    doc
-                        .fillColor(oTextColor)
-                        .fontSize(20)
-                        .text("Saldo devedor:", 60, doc.y + 10, { align: "left" });
-
-                    doc
-                        .fillColor(oPrimaryColor)
-                        .fontSize(45)
-                        .text(`${Balance.toNumber()} ${oCurrency}`, { align: "center" });
-
-                    doc.moveDown(2);
-
-                    const oPercentage =
-                        paymentPercentage(Liability?.TotalAmount, Summary);
-
-                    const oStatus =
-                        Balance.greaterThan(0) ? 'Em aberto' : 'Quitada';
-
-                    doc
-                        .fillColor(oTextColor)
-                        .fontSize(16)
-                        .text(`Este é o valor que ainda falta pagar.`, { align: "left" })
-                        .text(`Valor total da dívida: ${Liability?.TotalAmount?.toNumber() ?? 0} ${oCurrency}`, { align: "left" })
-                        .text(`Total pago até agora: ${Summary.TotalIn.toNumber()} ${oCurrency}`, { align: "left" })
-                        .text(`Acréscimos aplicados: ${Summary.TotalOut.toNumber()} ${oCurrency}`, { align: "left" })
-                        .text(`Percentual pago: ${oPercentage.toNumber()}%`, { align: "left" })
-                        .text(`Situação: ${oStatus}`, { align: "left" })
-                        .text(`Dia de vencimento mensal: ${this.addLeftZeros(Liability?.DueDay ?? 0)}`, { align: "left" });
-
-                    if (Liability?.Description) {
-                        doc.text(`Descrição: ${Liability.Description}`, { align: "left" });
-                    }
-
-                };
-
-                const designMovements = () => {
-
-                    doc
-                        .fillColor(oPrimaryColor)
-                        .fontSize(20)
-                        .text("Últimas movimentações", doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
-
-                    doc.moveDown(1);
-
-                    doc
-                        .fillColor(oPrimaryColor)
-                        .fontSize(18)
-                        .text(`Quantidade de movimentações exibidas: ${LastMovements.length}`, doc.page.width / 2 - 100, doc.y, { width: 200, align: "center", underline: false });
-
-                    doc.moveDown(1);
-
-                    const positions = {
-                        data: 60,
-                        description: 150,
-                        tipo: 360,
-                        valor: 460,
-                    };
-
-                    let verticalPosition = doc.y;
-
-                    doc
-                        .fontSize(16)
-                        .text("Data", positions.data, verticalPosition, { width: 90 })
-                        .text("Descrição", positions.description, verticalPosition, { width: 200 })
-                        .text("Tipo", positions.tipo, verticalPosition, { width: 90 })
-                        .text("Valor", positions.valor, verticalPosition, { width: 100, align: "right" });
-
-                    verticalPosition += 20;
-
-                    doc
-                        .moveTo(60, verticalPosition - 6)
-                        .lineTo(560, verticalPosition - 6)
-                        .strokeColor(oPrimaryColor)
-                        .lineWidth(1)
-                        .stroke();
-
-                    if (!LastMovements.length) {
-
-                        doc.moveDown(2);
-                        doc
-                            .fillColor(oTextColor)
-                            .fontSize(14)
-                            .text("Nenhuma movimentação registrada até o momento.", { align: "center" });
-
-                        return;
-
-                    }
-
-                    LastMovements.forEach((movement) => {
-
-                        doc.moveDown(2);
-
-                        const oMovementDate = new Date(`${movement?.Date}T00:00:00`);
-                        const oDay = String(oMovementDate.getDate()).padStart(2, "0");
-                        const oMonth = String(oMovementDate.getMonth() + 1).padStart(2, "0");
-                        const oYear = oMovementDate.getFullYear();
-
-                        const movementCurrency =
-                            movement?.Currency?.Code || oCurrency;
-
-                        doc
-                            .fillColor(oTextColor)
-                            .fontSize(12)
-                            .text(`${oDay}/${oMonth}/${oYear}`, positions.data, verticalPosition, { width: 90 })
-                            .text(movement.Description || '-', positions.description, verticalPosition, { width: 200 })
-                            .text(movement.Type === 'IN' ? 'Pagamento' : 'Acréscimo', positions.tipo, verticalPosition, { width: 90 })
-                            .text(`${movement.Amount?.toNumber()} ${movementCurrency}`, positions.valor, verticalPosition, { width: 100, align: "right" });
-
-                        verticalPosition += 15;
-                        doc
-                            .moveTo(60, verticalPosition - 5)
-                            .lineTo(560, verticalPosition - 5)
-                            .strokeColor("#CCCCCC")
-                            .lineWidth(0.5)
-                            .stroke();
-
-                    });
-
-                };
-
-                designHeader(true);
-                designLiabilitySummary();
-                designFooter();
-
-                designHeader();
-                designMovements();
-                designFooter();
-
-                doc.end();
-
-            });
-
-            return right(result as Buffer);
-
-        } catch (error) {
-
-            const errorInstance = error as Error;
-            return left(
-                new AbstractError(
-                    errorInstance.message,
-                    403,
-                    errorInstance.stack as string
-                )
-            );
-
-        }
+            }
+        );
 
     }
 

@@ -2104,16 +2104,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 }
 
-                let oNextMonth = oInvoiceMonth;
-                let oNextYear = oInvoiceYear;
-
-                if (oInvoiceMonth < 12) {
-                    oNextMonth += 1;
-                } else {
-                    oNextMonth = 1
-                    oNextYear += 1
-                }
-
                 const oInvoices = mapInvoices.get(oCardModel.Id) || [];
 
                 oInvoices?.forEach(oInvoice => {
@@ -2134,25 +2124,33 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                             oMonthExpenses = oMonthExpenses.plus(oAmount);
 
+                            // Passado: tudo fechado e pago.
                             if (oInvoiceIsPast) {
+
                                 oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount);
                                 oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
+
+                            // Futuro: nada vencido nem fechado ainda.
                             } else if (oInvoiceIsFuture) {
-                                oMonthExpensesToPay = oMonthExpensesToPay.plus(oAmount);
+
                                 oTotalExpenses = oTotalExpenses.plus(oAmount);
-                            } else if (oCardModel.ClosingDay > oDay) {
-                                oMonthExpensesToPay = oMonthExpensesToPay.plus(oAmount)
-                                oTotalExpenses = oTotalExpenses.plus(oAmount)
-                            } else if (oCardModel.DueDay >= oDay) {
-                                oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount)
-                                oTotalExpenses = oTotalExpenses.plus(oAmount)
+
+                            // Mês corrente: venceu -> Payed; fechou sem vencer ->
+                            // Closed; em aberto fica só no ToPay (derivado no fim).
+                            } else if (oCardModel.DueDay < oDay) {
+
+                                oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
+
                             } else {
-                                oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount)
+
+                                oTotalExpenses = oTotalExpenses.plus(oAmount);
+
+                                if (oCardModel.ClosingDay <= oDay) {
+                                    oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount);
+                                }
+
                             }
 
-                        } else if (oInvoice.Year == oNextYear && oInvoice.Month == oNextMonth && oCardModel.ClosingDay <= oDay) {
-                            oMonthExpensesToPay = oMonthExpensesToPay.plus(oInvoice.TotalAmount || 0)
-                            oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount || 0)
                         } else {
                             oTotalExpenses = oTotalExpenses.plus(oInvoice.TotalAmount || 0)
                         }
@@ -2208,9 +2206,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         if (oTrxIsPast) {
                             oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount);
                             oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
-                        } else if (oTrxIsFuture) {
-                            oMonthExpensesToPay = oMonthExpensesToPay.plus(oAmount);
-                        } else {
+                        } else if (!oTrxIsFuture) {
                             oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
                         }
 
@@ -2219,6 +2215,12 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 }
 
             }
+
+            // O valor a pagar do período é o que resta do total do mês
+            // depois de descontar o que já venceu/pagou (inclui o fechado
+            // e ainda não vencido, além do que está em aberto).
+            oMonthExpensesToPay =
+                oMonthExpenses.minus(oMonthExpensesPayed);
 
             return right({
                 totalExpenses: oTotalExpenses,

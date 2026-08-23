@@ -40,6 +40,7 @@ import fs from "fs";
 import handlebars from "handlebars";
 import PDFDocument from "pdfkit";
 import nodemailer from "nodemailer";
+import { UUID } from "crypto";
 
 export class PersonServiceImplementation extends BaseServiceImplementation<Person> implements PersonService {
 
@@ -92,7 +93,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         if (result.isLeft()) return result;
 
-        return this.checkPerson(Person); 
+        return this.checkPerson(Person);
 
     }
 
@@ -109,7 +110,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             const oPersonsData: Persons = [];
 
             const personIds = oPersonsFiltered.map(c => c.ID);
-            
+
             const cardsByPerson = await this.CardRepository.findByPersonIds(personIds) || [] as CardModel[];
 
             const liabilitiesByPerson =
@@ -145,7 +146,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 const oPersonModel = PersonModel.singleModel(Person);
 
-                if(!oPersonModel) continue;
+                if (!oPersonModel) continue;
 
                 if ('Image' in Person
                     //  ||
@@ -439,7 +440,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             for (const invoice of invoices) {
 
-                if(!invoice?.Card) continue;
+                if (!invoice?.Card) continue;
 
                 if (!invoicesByCard.has(invoice.Card?.Id)) {
                     invoicesByCard.set(invoice.Card?.Id, []);
@@ -452,7 +453,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             for (const trx of transactions) {
 
-                if(!trx.Invoice) continue;
+                if (!trx.Invoice) continue;
 
                 if (!transactionsByInvoice.has(trx.Invoice?.Id)) {
                     transactionsByInvoice.set(trx.Invoice?.Id, []);
@@ -1348,11 +1349,22 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private validateAddCardExpenseInput(input: any, request: any): void {
+    private validateAddCardExpenseInput(input:
+        {
+            CardId?: UUID,
+            PersonId?: UUID,
+            InvoiceId?: UUID,
+            CategoryId: UUID,
+            Description: string,
+            Value: number,
+            Currency: string,
+            TransactionDate: string,
+            Installments: number
+        }, request: any): void {
 
         const required: string[] = [];
 
-        if (!input.Card?.Id) required.push('Card?.Id');
+        if (!input.CardId) required.push('CardId');
         if (!input.CategoryId) required.push('CategoryId');
         if (!input.Description) required.push('Description');
         if (!input.Value) required.push('Value');
@@ -2073,7 +2085,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             for (const inv of invoicesByCard) {
 
-                if(!inv?.Card) continue;
+                if (!inv?.Card) continue;
 
                 if (!mapInvoices.has(inv?.Card?.Id)) {
                     mapInvoices.set(inv?.Card?.Id, []);
@@ -2151,15 +2163,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                                 oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount);
                                 oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
 
-                            // Futuro: nada vencido nem fechado ainda.
+                                // Futuro: nada vencido nem fechado ainda.
                             } else if (oInvoiceIsFuture) {
 
                                 oTotalExpenses = oTotalExpenses.plus(oAmount);
 
-                            // Mês corrente: o ciclo corrente dos cartões com
-                            // referência deslocada está em aberto; nos demais,
-                            // fechou (independente de vencer ou não) -> Closed,
-                            // venceu -> Payed e o resto fica só no ToPay.
+                                // Mês corrente: o ciclo corrente dos cartões com
+                                // referência deslocada está em aberto; nos demais,
+                                // fechou (independente de vencer ou não) -> Closed,
+                                // venceu -> Payed e o resto fica só no ToPay.
                             } else if (oShiftedReference) {
 
                                 oTotalExpenses = oTotalExpenses.plus(oAmount);
@@ -2415,21 +2427,21 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         const today = this.getBrazilDate();
 
         return {
-            PersonId: data.Person?.Id,
-            CardId: data.Card?.Id,
-            InvoiceId: data.Invoice?.Id,
+            PersonId: data.PersonId || data.Person?.Id,
+            CardId: data.Card?.Id || data.Invoice?.Card?.Id,
+            InvoiceId: data.InvoiceId || data.Invoice?.Id,
             TotalOnwards: !!data.TotalOnwards,
             Month: Number(data.Month || today.month),
             Year: Number(data.Year || today.year)
         };
     }
 
-    private validateCardExpensesByCategoriesInput(input: any): Either<AbstractError, true> {
+    private validateCardExpensesByCategoriesInput(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }): Either<AbstractError, true> {
 
         if (
-            !input.Person?.Id &&
-            !input.Card?.Id &&
-            !input.Invoice?.Id
+            !input.PersonId &&
+            !input.CardId &&
+            !input.InvoiceId
         ) {
             return this.fail(
                 "error.fillAtLeastFieldsObrigatory",
@@ -2441,8 +2453,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         if (
             input.TotalOnwards &&
-            !input.Person?.Id &&
-            !input.Card?.Id
+            !input.PersonId &&
+            !input.CardId
         ) {
             return this.fail(
                 "error.fillAtLeastFieldsObrigatory",
@@ -2457,7 +2469,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
 
     private async cardExpensesByCategoriesCheckAuthorization(
-        input: any,
+        input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID },
         user: any
     ): Promise<Either<AbstractError, true>> {
 
@@ -2470,11 +2482,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         const categoryService =
             ServiceRegistry.get("Categories") as CategoryServiceImplementation;
 
-        if (input.Person?.Id) {
+        if (input.PersonId) {
 
             const result =
                 await this.afterRead(
-                    [{ ID: input.Person?.Id }],
+                    [{ ID: input.PersonId }],
                     user
                 );
 
@@ -2492,7 +2504,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             const categoryAuth =
                 await categoryService.afterRead(
-                    [{ Person: { ID: input.Person?.Id } }],
+                    [{ Person: { ID: input.PersonId } }],
                     user
                 );
 
@@ -2510,11 +2522,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         }
 
-        if (input.Card?.Id) {
+        if (input.CardId) {
 
             const result =
                 await cardService.afterRead(
-                    [{ ID: input.Card?.Id }],
+                    [{ ID: input.CardId }],
                     user
                 );
 
@@ -2532,11 +2544,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         }
 
-        if (input.Invoice?.Id) {
+        if (input.InvoiceId) {
 
             const result =
                 await invoiceService.afterRead(
-                    [{ ID: input.Invoice?.Id }],
+                    [{ ID: input.InvoiceId }],
                     user
                 );
 
@@ -2558,17 +2570,17 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async loadContext(input: any): Promise<{
+    private async loadContext(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }): Promise<{
         categories: CategoryModel[],
         cards: CardModel[],
         invoices: InvoiceModel[]
     }> {
 
-        if (input.Person?.Id) {
+        if (input.PersonId) {
             return this.loadByPerson(input);
         }
 
-        if (input.Card?.Id) {
+        if (input.CardId) {
             return this.loadByCard(input);
         }
 
@@ -2576,11 +2588,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async loadByPerson(input: any) {
+    private async loadByPerson(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }) {
 
         const categories =
             await this.CategoryRepository
-                .findByPersonIds([input.Person?.Id]) || [];
+                .findByPersonIds([input.PersonId]) || [];
 
         const cards =
             input.Card?.Id && !input.TotalOnwards
@@ -2630,7 +2642,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async loadByCard(input: any) {
+    private async loadByCard(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }) {
 
         const card =
             await this.CardRepository
@@ -2682,7 +2694,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async loadByInvoice(input: any) {
+    private async loadByInvoice(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }) {
 
         const invoice =
             await this.InvoiceRepository
@@ -3860,7 +3872,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         for (const invoice of invoices) {
 
-            if(!invoice?.Card) continue;
+            if (!invoice?.Card) continue;
 
             if (!invoicesByCard.has(invoice.Card?.Id)) {
                 invoicesByCard.set(invoice.Card?.Id, []);
@@ -3872,7 +3884,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         for (const transaction of transactions) {
 
-            if(!transaction?.Invoice) continue;
+            if (!transaction?.Invoice) continue;
 
             if (!transactionsByInvoice.has(transaction.Invoice?.Id)) {
                 transactionsByInvoice.set(transaction.Invoice?.Id, []);
@@ -4060,7 +4072,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         }
 
-        if(!categories.length) return right(true);
+        if (!categories.length) return right(true);
 
         const resultAuthCategory = await categoryService.afterRead([categories[0]] as any, user);
 

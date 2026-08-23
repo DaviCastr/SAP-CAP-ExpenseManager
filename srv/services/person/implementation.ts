@@ -2077,10 +2077,17 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 const oCardModel = CardModel.singleModel(Card);
 
+                // Cartões com fechamento após o vencimento têm a fatura de
+                // referência deslocada para o mês seguinte; essa fatura é o
+                // ciclo CORRENTE (ainda em aberto), então nunca deve ser
+                // classificada como paga/fechada pelas comparações de dia.
+                const oShiftedReference =
+                    oCardModel.ClosingDay > oCardModel.DueDay;
+
                 let oInvoiceMonth = oMonth;
                 let oInvoiceYear = oYear;
 
-                if (oCardModel.ClosingDay > oCardModel.DueDay) {
+                if (oShiftedReference) {
 
                     if (oInvoiceMonth == 12) {
                         oInvoiceMonth = 1;
@@ -2135,8 +2142,14 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                                 oTotalExpenses = oTotalExpenses.plus(oAmount);
 
-                            // Mês corrente: venceu -> Payed; fechou sem vencer ->
-                            // Closed; em aberto fica só no ToPay (derivado no fim).
+                            // Mês corrente: o ciclo corrente dos cartões com
+                            // referência deslocada está em aberto; nos demais,
+                            // venceu -> Payed, fechou sem vencer -> Closed e o
+                            // resto fica só no ToPay (derivado no fim).
+                            } else if (oShiftedReference) {
+
+                                oTotalExpenses = oTotalExpenses.plus(oAmount);
+
                             } else if (oCardModel.DueDay < oDay) {
 
                                 oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);

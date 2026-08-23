@@ -8,24 +8,28 @@
     <title>Expense Manager</title>
 </head>
 
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; color: #555555;">
-    <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f4f4f4">
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f8; color: #102a2b;">
+    <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f4f7f8">
         <tr>
-            <td align="center" style="padding: 20px;">
+            <td align="center" style="padding: 24px 12px;">
                 <!-- Main container -->
-                <table width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width: 600px; width: 100%; border-collapse: collapse;">
+                <table width="600" cellspacing="0" cellpadding="0" border="0"
+                    style="max-width: 600px; width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 24px rgba(7,61,58,.08);">
+
                     <!-- Header -->
-                    <tr bgcolor="#085caf">
-                        <td align="center" style="padding: 20px;">
-                            <table width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse: collapse;">
+                    <tr>
+                        <td bgcolor="#0b5d52"
+                            style="background-color: #0b5d52; padding: 22px 28px; border-bottom: 3px solid #14a582;">
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0"
+                                style="border-collapse: collapse;">
                                 <tr>
-                                    <!-- Logotipo -->
-                                    <td align="left" style="width: 10%;">
-                                        <img src="cid:Logo" alt="Logotipo" style="width: 7vh; height: auto; display: block;">
+                                    <td align="left" width="56">
+                                        <img src="cid:Logo" alt="Expense Manager" width="48" height="48"
+                                            style="width: 48px; height: 48px; display: block; border-radius: 12px;">
                                     </td>
-                                    <!-- Título -->
-                                    <td align="left" style="width: 90%;">
-                                        <h1 style="color: #ffffff; font-size: 150%; margin: 0;">Expense Manager</h1>
+                                    <td align="left" style="padding-left: 14px;">
+                                        <div style="color: #ffffff; font-size: 20px; font-weight: 700; line-height: 26px;">Expense&nbsp;Manager</div>
+                                        <div style="color: #bfe8d8; font-size: 12px; line-height: 18px;">Gestão simples das suas finanças pessoais</div>
                                     </td>
                                 </tr>
                             </table>
@@ -34,27 +38,97 @@
 
                     <!-- Content -->
                     <tr>
-                        <td style="padding: 20px; text-align: left; font-size: 16px; line-height: 24px; color: #555555;">
-                            <center>
-                                <img src="cid:PersonImage" alt="Foto do usuário" style="width: 120px; height: 120px; border-radius: 50%; display: block; margin-bottom: 20px;">
-                            </center>
-                            <p><strong>Olá, {{Name}}</strong></p>
-                            <p>Você possui {{InvoiceCount}} faturas este mês.</p>
-                            <p><strong>Dados do Pagamento:</strong></p>
-                            <p><strong>Valor total consolidado:</strong> {{TotalAmount}} {{Currency}}</p>
-                            <p><strong>Cartões:</strong></p>
-                            {{#each Cards}}
-                            <p><strong>-{{CardName}}: {{Amount}} {{Currency}}</strong>, vencimento: {{DueDate}}</p>
-                            {{/each}}
-                            <p><strong>Os PDFs detalhados seguem anexos.</strong></p>
-                            <p>Abraços,<br>Expense Manager.</p>
+                        <td style="padding: 28px;">
+
+                            {{#if HasPhoto}}
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse: collapse;">
+                                <tr>
+                                    <td align="center" style="padding-bottom: 16px;">
+                                        <img src="cid:PersonImage" alt="" width="88" height="88"
+                                            style="width: 88px; height: 88px; border-radius: 50%; display: block; border: 3px solid #eafaf4;">
+                                    </td>
+                                </tr>
+                            </table>
+                            {{/if}}
+
+                            <div style="font-size: 21px; font-weight: 700; color: #102a2b; line-height: 28px;">
+                                Olá, {{FirstName}}!
+                            </div>
+                            <div style="font-size: 14px; color: #687b7c; line-height: 22px; margin-top: 4px;">
+                                Este é o resumo da sua fatura do cartão referente a <strong style="color: #0b5d52;">{{PeriodLabel}}</strong>.
+                                Os PDFs com o detalhamento completo seguem em anexo.
+                            </div>
+
+                            <!-- Total do período -->
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0"
+                                style="border-collapse: separate; border-spacing: 0; margin-top: 20px; background-color: #eafaf4; border-radius: 12px;">
+                                <tr>
+                                    <td style="padding: 18px 22px;">
+                                        <div style="font-size: 11px; letter-spacing: 1.2px; color: #687b7c; font-weight: 700;">TOTAL DA FATURA</div>
+                                        <div style="font-size: 30px; font-weight: 700; color: #0b5d52; line-height: 38px; margin-top: 2px;">
+                                            {{TotalFormatted}} <span style="font-size: 15px; font-weight: 600; color: #087c67;">{{Currency}}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Contadores -->
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse: separate; border-spacing: 8px 0; margin-top: 12px;">
+                                <tr>
+                                    <td width="50%" bgcolor="#f4f7f8" style="background-color: #f4f7f8; border-radius: 10px; padding: 12px 16px;">
+                                        <span style="font-size: 11px; letter-spacing: 1px; color: #687b7c; font-weight: 700;">FATURAS</span><br>
+                                        <span style="font-size: 20px; font-weight: 700; color: #102a2b;">{{InvoiceCount}}</span>
+                                    </td>
+                                    <td width="50%" bgcolor="#f4f7f8" style="background-color: #f4f7f8; border-radius: 10px; padding: 12px 16px;">
+                                        <span style="font-size: 11px; letter-spacing: 1px; color: #687b7c; font-weight: 700;">ANEXOS</span><br>
+                                        <span style="font-size: 20px; font-weight: 700; color: #102a2b;">{{AttachmentCount}}</span>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Faturas -->
+                            <div style="font-size: 15px; font-weight: 700; color: #102a2b; margin-top: 26px;">
+                                Faturas por cartão
+                            </div>
+                            <div style="width: 26px; height: 3px; background-color: #14a582; border-radius: 2px; margin-top: 6px;"></div>
+
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0"
+                                style="border-collapse: collapse; margin-top: 12px; font-size: 14px;">
+                                {{#each Cards}}
+                                <tr>
+                                    <td style="padding: 11px 4px; border-bottom: 1px solid #e7eeee; color: #102a2b; font-weight: 600;">
+                                        {{CardName}}
+                                        <span style="display: block; font-weight: 400; color: #687b7c; font-size: 12px; margin-top: 2px;">
+                                            Vence em {{DueDate}}
+                                        </span>
+                                    </td>
+                                    <td align="right" style="padding: 11px 4px; border-bottom: 1px solid #e7eeee; color: #0b5d52; font-weight: 700; white-space: nowrap;">
+                                        {{AmountFormatted}} {{Currency}}
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </table>
+
+                            <p style="font-size: 13px; color: #687b7c; line-height: 20px; margin-top: 22px;">
+                                Você recebeu um PDF por cartão com os gastos por categoria,
+                                movimentos da fatura e valores destacados.
+                            </p>
+
+                            <p style="font-size: 13px; color: #687b7c; line-height: 20px;">
+                                Abraços,<br><strong style="color: #102a2b;">Equipe Expense Manager</strong>
+                            </p>
                         </td>
                     </tr>
 
                     <!-- Footer -->
-                    <tr bgcolor="#085caf">
-                        <td align="center" style="padding: 20px; color: #ffffff; font-size: 14px;">
-                            <p style="margin: 0;">© {{Year}} Expense Manager. Todos os direitos reservados.</p>
+                    <tr>
+                        <td bgcolor="#073d3a" style="background-color: #073d3a; padding: 18px 28px;" align="center">
+                            <div style="color: #bfe8d8; font-size: 12px; line-height: 18px;">
+                                © {{Year}} Expense Manager · Todos os direitos reservados
+                            </div>
+                            <div style="color: #687b7c; font-size: 11px; line-height: 17px; margin-top: 4px;">
+                                Esta é uma mensagem automática. Por favor, não responda.
+                            </div>
                         </td>
                     </tr>
                 </table>

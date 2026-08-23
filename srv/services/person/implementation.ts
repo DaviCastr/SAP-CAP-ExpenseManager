@@ -541,6 +541,13 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 const invoicesToSend: InvoiceModel[] = [];
                 const attachments: any[] = [];
+                const debtSummaries: {
+                    DebtName: string;
+                    BalanceFormatted: string;
+                    Currency: string;
+                    PercentPaid: number;
+                    DueDay: string;
+                }[] = [];
 
                 let totalAmount = new Decimal(0);
                 let currency = '';
@@ -617,6 +624,19 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             String(b.Date).localeCompare(String(a.Date)))
                         .slice(0, 10);
 
+                    debtSummaries.push({
+                        DebtName: liability.Name,
+                        BalanceFormatted:
+                            this.pdfFormatAmount(balance.toNumber()),
+                        Currency: liability.Currency?.Code || '',
+                        PercentPaid:
+                            paymentPercentage(
+                                liability.TotalAmount,
+                                summary
+                            ).toNumber(),
+                        DueDay: this.addLeftZeros(liability.DueDay ?? 0)
+                    });
+
                     const pdfResult = await this.generateLiabilityPDF(
                         cache._logoCache!,
                         person,
@@ -656,15 +676,27 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 }
 
-                const template = Year || Month ? cache._predictionTemplateCache : cache._mailTemplateCache;
+                const oIsPrediction = Boolean(Year || Month);
+
+                const oPeriodLabel =
+                    `${this.getMessage(`month.${today.month}`, request)} de ${today.year}`;
+
+                const template = oIsPrediction
+                    ? cache._predictionTemplateCache
+                    : cache._mailTemplateCache;
 
                 const html = template({
-                    Name: person.Name,
+                    FirstName:
+                        String(person.Name || '').trim().split(/\s+/)[0],
                     Year: today.year,
-                    Month: this.addLeftZeros(today.month),
-                    TotalAmount: totalAmount.toNumber(),
+                    PeriodLabel: oPeriodLabel,
+                    HasPhoto: Boolean(person.Image),
+                    TotalFormatted:
+                        this.pdfFormatAmount(totalAmount.toNumber()),
                     Currency: currency,
                     InvoiceCount: invoicesToSend.length,
+                    AttachmentCount:
+                        attachments.filter(a => !a.cid).length,
                     Cards: invoicesToSend.map(inv => {
 
                         const card =
@@ -675,20 +707,25 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             DueDate:
                                 `${this.addLeftZeros(card?.DueDay || 0)}/` +
                                 `${this.addLeftZeros(inv.Month)}/${inv.Year}`,
-                            Amount: inv.TotalAmount.toNumber(),
+                            MonthLabel:
+                                `${this.getMessage(`month.${inv.Month}`, request)} de ${inv.Year}`,
+                            AmountFormatted:
+                                this.pdfFormatAmount(inv.TotalAmount.toNumber()),
                             Currency: inv.Currency?.Code
                         };
 
-                    })
+                    }),
+                    HasDebts: debtSummaries.length > 0,
+                    Debts: debtSummaries
                 });
 
                 await cache._smtpInstance.sendMail({
                     from: `"Expense Manager" <${process.env.SMTPAddres}>`,
                     to: person.Email,
                     subject:
-                        Year || Month
-                            ? `Previsão/Detalhamento de duas invoicesByCard de ${this.addLeftZeros(today.month)}/${today.year}`
-                            : `Suas invoicesByCard de ${this.addLeftZeros(today.month)}/${today.year}`,
+                        oIsPrediction
+                            ? `Detalhamento do período · ${this.addLeftZeros(today.month)}/${today.year}`
+                            : `Suas faturas · ${this.addLeftZeros(today.month)}/${today.year}`,
                     html,
                     attachments
                 });

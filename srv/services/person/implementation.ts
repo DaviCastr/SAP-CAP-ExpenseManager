@@ -1966,6 +1966,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                     doc.switchToPage(i);
 
+                    // O rodapé fica abaixo da área útil; sem zerar a margem
+                    // o pdfkit cria páginas em branco extras ao carimbar.
+                    doc.page.margins.bottom = 0;
+
                     const footerY = doc.page.height - 40;
 
                     doc

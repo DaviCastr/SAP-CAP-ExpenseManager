@@ -23,6 +23,11 @@ export interface LiabilityRepository extends BaseRepository {
         PersonId: Person["ID"] | Person["ID"][]
     ): Promise<LiabilityModel[] | null>;
 
+    findByPersonIds(
+        PersonIds: Person["ID"][],
+        additionalFilters?: {}
+    ): Promise<LiabilityModel[] | null>;
+
     findOpenByPersonId(
         PersonId: Person["ID"]
     ): Promise<LiabilityModel[] | null>;

@@ -153,6 +153,48 @@ export class LiabilityRepositoryImplementation
     }
 
 
+    public async findByPersonIds(
+        PersonIds: Person["ID"][],
+        additionalFilters?: {}
+    ): Promise<LiabilityModel[] | null> {
+
+        let Entity = this.getEntity();
+
+        let sql = SELECT.from(Entity).where({
+            Person_ID: { 'in': PersonIds },
+            ...additionalFilters
+        });
+
+        let rows = await cds.run(sql);
+
+        if ((Entity as any)?.isDraft) {
+
+            const exclusionFilter =
+                this.excludeFoundFilter(rows);
+
+            Entity = this.getEntity(true);
+
+            const activeSql = SELECT.from(Entity).where({
+                Person_ID: { 'in': PersonIds },
+                ...additionalFilters
+            });
+
+            if (exclusionFilter) {
+                activeSql.where(exclusionFilter);
+            }
+
+            const activeRows =
+                await cds.run(activeSql) || [];
+
+            rows = this.mergeUnique(rows, activeRows);
+
+        }
+
+        return LiabilityModel.mapModel(rows);
+
+    }
+
+
     public async findOpenByPersonId(
         PersonId: Person["ID"]
     ): Promise<LiabilityModel[] | null> {

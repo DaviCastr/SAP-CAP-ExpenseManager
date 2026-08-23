@@ -405,17 +405,19 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 cardsAdditionalFilters
             ) || [];
 
-            // Dívidas seguem a MESMA regra de seleção dos cartões: sem
-            // mês/ano informado entram apenas as que ainda vencem no período
-            // corrente (DueDay >= hoje); com mês/ano, todas são consideradas.
-            const liabilities =
-                await this.LiabilityRepository.findByPersonId(
-                    persons.map(p => p.Id)
-                ) || [];
+            // Dívidas seguem a MESMA regra de seleção dos cartões, filtrada
+            // direto no banco: sem mês/ano informado entram apenas as que
+            // ainda vencem no período corrente (DueDay >= hoje); com mês/ano,
+            // todas. Em ambos os casos somente as EM ABERTO.
+            const liabilitiesAdditionalFilters = Year || Month
+                ? { Status: 'OPEN' }
+                : { Status: 'OPEN', DueDay: { '>=': today.day } };
 
-            const selectedLiabilities = Year || Month
-                ? liabilities
-                : liabilities.filter(l => (l.DueDay ?? 0) >= today.day);
+            const selectedLiabilities =
+                await this.LiabilityRepository.findByPersonIds(
+                    persons.map(p => p.Id),
+                    liabilitiesAdditionalFilters
+                ) || [];
 
             const selectedLiabilityIds =
                 selectedLiabilities.map(l => l.Id);

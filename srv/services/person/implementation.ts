@@ -2436,7 +2436,13 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         };
     }
 
-    private validateCardExpensesByCategoriesInput(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }): Either<AbstractError, true> {
+    private validateCardExpensesByCategoriesInput(input:
+        {
+            CardId?: UUID,
+            PersonId?: UUID,
+            InvoiceId?: UUID,
+            TotalOnwards: boolean
+        }): Either<AbstractError, true> {
 
         if (
             !input.PersonId &&
@@ -2570,11 +2576,19 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async loadContext(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }): Promise<{
-        categories: CategoryModel[],
-        cards: CardModel[],
-        invoices: InvoiceModel[]
-    }> {
+    private async loadContext(input:
+        {
+            Year: number,
+            Month: number,
+            CardId?: UUID,
+            PersonId?: UUID,
+            InvoiceId?: UUID,
+            TotalOnwards?: boolean
+        }): Promise<{
+            categories: CategoryModel[],
+            cards: CardModel[],
+            invoices: InvoiceModel[]
+        }> {
 
         if (input.PersonId) {
             return this.loadByPerson(input);
@@ -2588,17 +2602,25 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async loadByPerson(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }) {
+    private async loadByPerson(input:
+        {
+            Year: number,
+            Month: number,
+            CardId?: UUID,
+            PersonId?: UUID,
+            InvoiceId?: UUID,
+            TotalOnwards?: boolean
+        }) {
 
         const categories =
             await this.CategoryRepository
                 .findByPersonIds([input.PersonId]) || [];
 
         const cards =
-            input.Card?.Id && !input.TotalOnwards
-                ? [CardModel.singleModel({ ID: input.Card?.Id })]
+            input.CardId && !input.TotalOnwards
+                ? [CardModel.singleModel({ ID: input.CardId })]
                 : await this.CardRepository
-                    .findByPersonIds([input.Person?.Id]) || [];
+                    .findByPersonIds([input.PersonId]) || [];
 
         if (!cards.length) {
             return {
@@ -2642,11 +2664,18 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async loadByCard(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }) {
+    private async loadByCard(input: {
+        Year: number,
+        Month: number,
+        CardId?: UUID,
+        PersonId?: UUID,
+        InvoiceId?: UUID,
+        TotalOnwards?: boolean
+    }) {
 
         const card =
             await this.CardRepository
-                .findById(input.Card?.Id);
+                .findById(input.CardId);
 
         if (!card) {
             return {
@@ -2694,11 +2723,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async loadByInvoice(input: { CardId?: UUID, PersonId?: UUID, InvoiceId?: UUID }) {
+    private async loadByInvoice(input:
+        {
+            CardId?: UUID,
+            PersonId?: UUID,
+            InvoiceId?: UUID
+        }) {
 
         const invoice =
             await this.InvoiceRepository
-                .findById(input.Invoice?.Id);
+                .findById(input.InvoiceId);
 
         if (!invoice) {
             return {
@@ -2710,7 +2744,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         const cards =
             await this.CardRepository
-                .findByInvoiceIds(input.Invoice?.Id);
+                .findByInvoiceIds(input.InvoiceId);
 
         const card = cards?.[0];
 

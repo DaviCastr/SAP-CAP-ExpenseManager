@@ -2452,7 +2452,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             return this.fail(
                 "error.fillAtLeastFieldsObrigatory",
                 {
-                    fields: "Person?.Id, Card?.Id, Invoice?.Id"
+                    fields: "PersonId, CardId, InvoiceId"
                 }
             );
         }
@@ -2465,7 +2465,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             return this.fail(
                 "error.fillAtLeastFieldsObrigatory",
                 {
-                    fields: "Person?.Id, Card?.Id"
+                    fields: "PersonId, CardId"
                 }
             );
         }

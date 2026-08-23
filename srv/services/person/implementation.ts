@@ -2051,6 +2051,20 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 oMonth = Number(TargetMonth);
             }
 
+            // O desvio de referência (cartão que fecha após o vencimento)
+            // existe apenas para identificar o ciclo corrente no mês vigente;
+            // em meses passados/futuros a fatura analisada é a rotulada com o
+            // próprio mês/ano consultado.
+            const oTargetIsPast =
+                (oYear < oSystemYear) ||
+                (oYear == oSystemYear && oMonth < oSystemMonth);
+
+            const oTargetIsFuture =
+                (oYear > oSystemYear) ||
+                (oYear == oSystemYear && oMonth > oSystemMonth);
+
+            const oApplyShift = !oTargetIsPast && !oTargetIsFuture;
+
             const cardIds = Cards.map(c => c.ID);
 
             const invoicesByCard = await this.InvoiceRepository.findByCardIDs(cardIds, { Year: { '>=': oYear } }) || [];
@@ -2087,7 +2101,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 let oInvoiceMonth = oMonth;
                 let oInvoiceYear = oYear;
 
-                if (oShiftedReference) {
+                if (oApplyShift && oShiftedReference) {
 
                     if (oInvoiceMonth == 12) {
                         oInvoiceMonth = 1;

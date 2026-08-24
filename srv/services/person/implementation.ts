@@ -2617,23 +2617,36 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 };
 
+                // Avatar oculto por enquanto; implementação preservada
+                // para reativação futura (ex.: imagem da dívida).
+                const showAvatar = false;
+
                 const diameter = 76;
                 const circleX = (doc.page.width - diameter) / 2;
                 const circleY = doc.y;
 
-                doc
-                    .circle(circleX + diameter / 2, circleY + diameter / 2, diameter / 2)
-                    .fillAndStroke(c.tint, c.lineSoft);
+                if (showAvatar) {
 
-                doc
-                    .fillColor(c.primary)
-                    .font('Helvetica-Bold')
-                    .fontSize(24)
-                    .text(initialsFromName(Liability?.Name),
-                        circleX, circleY + (diameter - 24) / 2,
-                        { width: diameter, align: 'center', lineBreak: false });
+                    doc
+                        .circle(circleX + diameter / 2,
+                            circleY + diameter / 2, diameter / 2)
+                        .fillAndStroke(c.tint, c.lineSoft);
 
-                doc.y = circleY + diameter + 20;
+                    doc
+                        .fillColor(c.primary)
+                        .font('Helvetica-Bold')
+                        .fontSize(24)
+                        .text(initialsFromName(Liability?.Name),
+                            circleX, circleY + (diameter - 24) / 2,
+                            {
+                                width: diameter,
+                                align: 'center',
+                                lineBreak: false
+                            });
+
+                    doc.y = circleY + diameter + 20;
+
+                }
 
                 doc
                     .fillColor(c.muted)
@@ -3430,9 +3443,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         `${MonthDescription} de ${Year}.`);
 
                     const txDateX = 44;
-                    const txDescX = 122;
-                    const txCatX = 330;
-                    const txInstX = 462;
+                    const txDescX = 102;
+                    const txCardX = 276;
+                    const txCatX = 356;
+                    const txInstX = 460;
                     const txValueRight = 551;
 
                     const drawTxHead = () => {
@@ -3445,7 +3459,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                                 { characterSpacing: 1, lineBreak: false })
                             .text('DESCRIÇÃO', txDescX, doc.y,
                                 { characterSpacing: 1, lineBreak: false })
-                            .text('CARTÃO', txCatX - 130, doc.y,
+                            .text('CARTÃO', txCardX, doc.y,
                                 { characterSpacing: 1, lineBreak: false })
                             .text('CATEGORIA', txCatX, doc.y,
                                 { characterSpacing: 1, lineBreak: false })
@@ -3511,15 +3525,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             .font('Helvetica')
                             .fontSize(9)
                             .text(oDate, txDateX, rowY,
-                                { width: 74, lineBreak: false });
+                                { width: 56, lineBreak: false });
 
                         doc
                             .fillColor(c.ink)
                             .font('Helvetica-Bold')
                             .fontSize(10)
-                            .text(this.pdfFitText(tx.Description || '', 27),
+                            .text(this.pdfFitText(tx.Description || '', 21),
                                 txDescX, rowY,
-                                { width: 200, lineBreak: false });
+                                { width: 164, lineBreak: false });
 
                         doc
                             .fillColor(c.muted)
@@ -3531,22 +3545,23 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             const imgBuf =
                                 cardImageBuffers.get(tx.Card.ID)!;
                             doc.save()
-                                .circle(txCatX - 124, rowY + 4, 5.5)
+                                .circle(txCardX + 5.5, rowY + 4, 5.5)
                                 .clip()
-                                .image(imgBuf, txCatX - 130, rowY - 1.5,
+                                .image(imgBuf, txCardX, rowY - 1.5,
                                     { width: 11, height: 11 })
                                 .restore();
                         }
 
-                        doc.text(this.pdfFitText(tx.Card?.Name || '', 10),
-                            txCatX - 118, rowY, { width: 82, lineBreak: false })
+                        doc.text(this.pdfFitText(tx.Card?.Name || '', 9),
+                            txCardX + 13, rowY,
+                            { width: 62, lineBreak: false })
                             .text(
                                 this.pdfFitText(
-                                    tx.Category?.Name || 'Sem categoria', 14),
+                                    tx.Category?.Name || 'Sem categoria', 13),
                                 txCatX, rowY,
-                                { width: 126, lineBreak: false })
+                                { width: 96, lineBreak: false })
                             .text(installment, txInstX, rowY,
-                                { width: 60, lineBreak: false });
+                                { width: 34, lineBreak: false });
 
                         doc
                             .fillColor(c.ink)
@@ -3580,9 +3595,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     // ---------- dívidas em aberto ----------
                     if (Liabilities.length) {
 
-                        if (doc.y + 150 > oMaxY) {
-                            shell.newPage();
-                        }
+                        // Página separada das movimentações.
+                        shell.newPage();
 
                         this.pdfSectionTitle(doc, 'Dívidas em aberto',
                             `${Liabilities.length} dívida(s)`);

@@ -543,8 +543,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 const attachments: any[] = [];
                 const debtSummaries: {
                     DebtName: string;
-                    BalanceFormatted: string;
-                    Currency: string;
+                    BalanceWithSymbol: string;
                     PercentPaid: number;
                     DueDay: string;
                 }[] = [];
@@ -626,9 +625,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                     debtSummaries.push({
                         DebtName: liability.Name,
-                        BalanceFormatted:
-                            this.pdfFormatAmount(balance.toNumber()),
-                        Currency: liability.Currency?.Code || '',
+                        BalanceWithSymbol:
+                            this.pdfMoney(
+                                liability.Currency?.Code,
+                                balance.toNumber()
+                            ),
                         PercentPaid:
                             paymentPercentage(
                                 liability.TotalAmount,
@@ -688,12 +689,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 const html = template({
                     FirstName:
                         String(person.Name || '').trim().split(/\s+/)[0],
-                    Year: today.year,
+                    CopyrightYear: this.getBrazilDate().year,
                     PeriodLabel: oPeriodLabel,
                     HasPhoto: Boolean(person.Image),
-                    TotalFormatted:
-                        this.pdfFormatAmount(totalAmount.toNumber()),
-                    Currency: currency,
+                    TotalWithSymbol:
+                        this.pdfMoney(currency, totalAmount.toNumber()),
                     InvoiceCount: invoicesToSend.length,
                     AttachmentCount:
                         attachments.filter(a => !a.cid).length,
@@ -709,14 +709,21 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                                 `${this.addLeftZeros(inv.Month)}/${inv.Year}`,
                             MonthLabel:
                                 `${this.getMessage(`month.${inv.Month}`, request)} de ${inv.Year}`,
-                            AmountFormatted:
-                                this.pdfFormatAmount(inv.TotalAmount.toNumber()),
-                            Currency: inv.Currency?.Code
+                            AmountWithSymbol:
+                                this.pdfMoney(
+                                    inv.Currency?.Code,
+                                    inv.TotalAmount?.toNumber()
+                                )
                         };
 
                     }),
                     HasDebts: debtSummaries.length > 0,
-                    Debts: debtSummaries
+                    Debts: debtSummaries.map(d => ({
+                        DebtName: d.DebtName,
+                        BalanceWithSymbol: d.BalanceWithSymbol,
+                        PercentPaid: d.PercentPaid,
+                        DueDay: d.DueDay
+                    }))
                 });
 
                 await cache._smtpInstance.sendMail({
@@ -1848,6 +1855,31 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
+    private currencySymbol(Code: string | null | undefined): string {
+
+        switch (String(Code ?? '').toUpperCase()) {
+
+            case 'BRL': return 'R$';
+            case 'USD': return 'US$';
+            case 'EUR': return '€';
+            default: return String(Code ?? '');
+
+        }
+
+    }
+
+
+    private pdfMoney(Code: string | null | undefined, Value: number | null | undefined): string {
+
+        const oSymbol = this.currencySymbol(Code);
+
+        return oSymbol
+            ? `${oSymbol} ${this.pdfFormatAmount(Value)}`
+            : this.pdfFormatAmount(Value);
+
+    }
+
+
     private pdfFitText(Text: string | null | undefined, MaxChars: number): string {
 
         const oClean =
@@ -2148,7 +2180,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     .fillColor(c.primary)
                     .font('Helvetica-Bold')
                     .fontSize(30)
-                    .text(`${this.pdfFormatAmount(Invoice?.TotalAmount?.toNumber())} ${oCurrency}`,
+                    .text(this.pdfMoney(oCurrency, Invoice?.TotalAmount?.toNumber()),
                         72, cardY + 36, { lineBreak: false });
 
                 const dueLabel =
@@ -2276,7 +2308,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         doc
                             .fillColor(c.ink)
                             .text(
-                                `${this.pdfFormatAmount(category.TotalAmount?.toNumber())} ${CardExpensesByCategory?.Currency?.Code || oCurrency}`,
+                                this.pdfMoney(
+                                    CardExpensesByCategory?.Currency?.Code || oCurrency,
+                                    category.TotalAmount?.toNumber()
+                                ),
                                 amountRight - 170, rowY + 3,
                                 { width: 170, align: 'right', lineBreak: false }
                             );
@@ -2382,9 +2417,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                                 cat.ID == transaction.Category?.Id);
 
                         const installment =
-                            transaction.TotalInstallments > 1
-                                ? `${transaction.Installment}/${transaction.TotalInstallments}`
-                                : '-';
+                            `${transaction.Installment}/${transaction.TotalInstallments}`;
 
                         doc
                             .fillColor(c.muted)
@@ -2413,7 +2446,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                             .font('Helvetica-Bold')
                             .fontSize(10)
                             .text(
-                                `${this.pdfFormatAmount(transaction.Amount?.toNumber())} ${transaction?.Currency?.Code || oCurrency}`,
+                                this.pdfMoney(
+                                    transaction?.Currency?.Code || oCurrency,
+                                    transaction.Amount?.toNumber()
+                                ),
                                 valueRight - 120, rowY,
                                 { width: 120, align: 'right', lineBreak: false }
                             );
@@ -2533,7 +2569,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     .fillColor(oIsOpen ? c.primary : c.positive)
                     .font('Helvetica-Bold')
                     .fontSize(30)
-                    .text(`${this.pdfFormatAmount(Balance.toNumber())} ${oCurrency}`,
+                    .text(this.pdfMoney(oCurrency, Balance.toNumber()),
                         72, heroY + 36, { lineBreak: false });
 
                 const statusLabel = oIsOpen ? 'EM ABERTO' : 'QUITADA';
@@ -2608,17 +2644,17 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 };
 
                 drawMiniCard('Valor total da dívida',
-                    `${this.pdfFormatAmount(Liability?.TotalAmount?.toNumber())} ${oCurrency}`,
+                    this.pdfMoney(oCurrency, Liability?.TotalAmount?.toNumber()),
                     44, doc.y);
 
                 drawMiniCard('Total pago até agora',
-                    `${this.pdfFormatAmount(Summary.TotalIn.toNumber())} ${oCurrency}`,
+                    this.pdfMoney(oCurrency, Summary.TotalIn.toNumber()),
                     44 + colW + colGap, doc.y);
 
                 doc.y += miniH + 12;
 
                 drawMiniCard('Acréscimos aplicados',
-                    `${this.pdfFormatAmount(Summary.TotalOut.toNumber())} ${oCurrency}`,
+                    this.pdfMoney(oCurrency, Summary.TotalOut.toNumber()),
                     44, doc.y);
 
                 drawMiniCard('Vencimento mensal',
@@ -2756,7 +2792,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .font('Helvetica-Bold')
                         .fontSize(10)
                         .text(
-                            `${this.pdfFormatAmount(movement.Amount?.toNumber())} ${movement?.Currency?.Code || oCurrency}`,
+                            this.pdfMoney(
+                                movement?.Currency?.Code || oCurrency,
+                                movement.Amount?.toNumber()
+                            ),
                             valueRight - 120, rowY,
                             { width: 120, align: 'right', lineBreak: false }
                         );

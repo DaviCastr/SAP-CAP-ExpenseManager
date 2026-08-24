@@ -66,7 +66,7 @@
                                     <td style="padding: 18px 22px;">
                                         <div style="font-size: 11px; letter-spacing: 1.2px; color: #687b7c; font-weight: 700;">TOTAL DA FATURA</div>
                                         <div style="font-size: 30px; font-weight: 700; color: #0b5d52; line-height: 38px; margin-top: 2px;">
-                                            {{TotalFormatted}} <span style="font-size: 15px; font-weight: 600; color: #087c67;">{{Currency}}</span>
+                                            {{TotalWithSymbol}}
                                         </div>
                                     </td>
                                 </tr>
@@ -103,7 +103,7 @@
                                         </span>
                                     </td>
                                     <td align="right" style="padding: 11px 4px; border-bottom: 1px solid #e7eeee; color: #0b5d52; font-weight: 700; white-space: nowrap;">
-                                        {{AmountFormatted}} {{Currency}}
+                                        {{AmountWithSymbol}}
                                     </td>
                                 </tr>
                                 {{/each}}
@@ -124,7 +124,7 @@
                     <tr>
                         <td bgcolor="#073d3a" style="background-color: #073d3a; padding: 18px 28px;" align="center">
                             <div style="color: #bfe8d8; font-size: 12px; line-height: 18px;">
-                                © {{Year}} Expense Manager · Todos os direitos reservados
+                                © {{CopyrightYear}} Expense Manager · Todos os direitos reservados
                             </div>
                             <div style="color: #687b7c; font-size: 11px; line-height: 17px; margin-top: 4px;">
                                 Esta é uma mensagem automática. Por favor, não responda.

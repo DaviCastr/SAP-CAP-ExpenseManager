@@ -28,6 +28,8 @@ entity Liabilities : cuid, managed {
     Status                : types.LiabilityStatus default #OPEN;
 
     DueDay                : Integer;
+    InvoiceSentMonth      : Integer;
+    InvoiceSentYear       : Integer;
 
     LiabilityTransactions : Composition of many entities.LiabilityTransactions
                                     on LiabilityTransactions.Liability = $self;

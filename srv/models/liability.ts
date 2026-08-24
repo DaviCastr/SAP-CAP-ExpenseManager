@@ -20,6 +20,9 @@ type LiabilityProperties = {
 
     DueDay?: number;
 
+    InvoiceSentMonth?: number;
+    InvoiceSentYear?: number;
+
     Person?: PersonModel;
 
     LiabilityTransactions?: LiabilityTransactionModel[];
@@ -66,6 +69,9 @@ export class LiabilityModel extends BaseModel {
 
                 DueDay: item.DueDay as number,
 
+                InvoiceSentMonth: item.InvoiceSentMonth as number,
+                InvoiceSentYear: item.InvoiceSentYear as number,
+
                 Person: oPersonModel,
 
                 LiabilityTransactions: LiabilityTransactionModel.mapModel(item?.LiabilityTransactions || []),
@@ -93,6 +99,10 @@ export class LiabilityModel extends BaseModel {
     public get Status() { return this.props.Status; }
 
     public get DueDay() { return this.props.DueDay; }
+
+    public get InvoiceSentMonth() { return this.props.InvoiceSentMonth; }
+
+    public get InvoiceSentYear() { return this.props.InvoiceSentYear; }
 
     public get Person() { return this.props.Person; }
 
@@ -123,6 +133,9 @@ export class LiabilityModel extends BaseModel {
             Status: this.props.Status,
 
             DueDay: this.props.DueDay,
+
+            InvoiceSentMonth: this.props.InvoiceSentMonth,
+            InvoiceSentYear: this.props.InvoiceSentYear,
 
             Person: this.props.Person?.toEntityObject(),
 

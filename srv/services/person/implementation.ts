@@ -1,5 +1,5 @@
 import { AbstractError } from "@/errors";
-import { Persons, Person, Cards, Invoice, Transaction } from "@models/apps/dflc/expensemanager/entities";
+import { Persons, Person, Cards, Invoice, Transaction, Liability } from "@models/apps/dflc/expensemanager/entities";
 import { Either, right, left } from "@sweet-monads/either";
 import { PersonService } from "./protocols";
 import { PersonModel } from "@/models/person";
@@ -22,6 +22,7 @@ import { InvoiceModel } from "@/models/invoice";
 import { TransactionModel } from "@/models/transaction";
 import { CategoryModel } from "@/models/category";
 import { CardServiceImplementation } from "../card/implementation";
+import { LiabilityServiceImplementation } from "../liability/implementation";
 import { LiabilityRepository } from "@/repositories/liability";
 import { LiabilityTransactionRepository } from "@/repositories/liability-transaction";
 import { LiabilityModel } from "@/models/liability";
@@ -375,6 +376,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             const today = this.getBrazilDate();
 
+            // Modo manual (botão da tela): mês/ano informados explicitamente,
+            // ignorando os controles de envio (InvoiceSent / InvoiceSent*).
+            // Sem mês/ano = modo automático (agendador).
+            const oIsManualSend = Boolean(Year || Month);
+
             if (Year) {
                 today.year = Number(Year);
             }
@@ -535,6 +541,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 const invoicesToSend: InvoiceModel[] = [];
                 const attachments: any[] = [];
+                const sentLiabilityIds: string[] = [];
                 const catInfoById = new Map<string, string>();
                 const debtSummaries: {
                     DebtName: string;
@@ -616,6 +623,14 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 for (const liability of personLiabilities) {
 
+                    // Modo automático: pula dívidas cujo PDF já foi
+                    // enviado neste mês/ano (evita reenvio a cada 4h).
+                    if (!oIsManualSend &&
+                        liability.InvoiceSentMonth === today.month &&
+                        liability.InvoiceSentYear === today.year) {
+                        continue;
+                    }
+
                     const movements =
                         liabilityTransactionsByLiability.get(liability.Id) || [];
 
@@ -666,6 +681,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     );
 
                     if (pdfResult.isLeft()) continue;
+
+                    sentLiabilityIds.push(liability.Id);
 
                     attachments.push({
                         filename:
@@ -729,6 +746,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     Movements: d.Movements
                 }));
 
+                // O PDF geral só é gerado/enviado se houver pelo menos
+                // um anexo real (fatura de cartão ou PDF de dívida).
+                if (!attachments.length) continue;
+
                 const consolidatedResult =
                     await this.generateConsolidatedPDF(
                         cache._logoCache!,
@@ -747,8 +768,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         content: consolidatedResult.value
                     });
                 }
-
-                if (!attachments.length) continue;
 
                 attachments.push({
                     filename: 'logo.png',
@@ -836,6 +855,24 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         )
                     )
                 );
+
+                // Registra mês/ano de envio das dívidas; usado pelo
+                // modo automático para não reenviar no mesmo período.
+                if (sentLiabilityIds.length) {
+
+                    await Promise.all(
+                        sentLiabilityIds.map(id =>
+                            this.LiabilityRepository.updateEntry(
+                                id,
+                                {
+                                    InvoiceSentMonth: today.month,
+                                    InvoiceSentYear: today.year
+                                } as Partial<Liability>
+                            )
+                        )
+                    );
+
+                }
 
             }
 
@@ -1486,9 +1523,35 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 this.Repository.findById(PersonId)
             ]);
 
+            // Autorização na leitura dos dados: apenas liabilities que o
+            // usuário logado pode ler entram nas estatísticas da fatura
+            // completa (o mesmo mecanismo de afterRead usado nas entidades).
+            const liabilityService =
+                ServiceRegistry.get('Liabilities') as LiabilityServiceImplementation;
+
+            const resultAuthLiabilities =
+                await liabilityService.afterRead(
+                    (liabilities || []).map(liability =>
+                        liability.toEntityObject()) as any,
+                    request.user
+                );
+
+            if (resultAuthLiabilities.isLeft()) {
+                return resultAuthLiabilities as any;
+            }
+
+            const authorizedLiabilityIds = new Set<string>(
+                (resultAuthLiabilities.value || []).map(
+                    (liability: any) => liability.ID as string)
+            );
+
+            const visibleLiabilities = (liabilities || [])
+                .filter(liability =>
+                    authorizedLiabilityIds.has(liability.Id));
+
             const oExpensesResult = await this.recoverExpenses(
                 (cards || []).map(card => card.toEntityObject()) as Cards,
-                liabilities || [],
+                visibleLiabilities,
                 Number(Month),
                 Number(Year)
             );
@@ -3094,6 +3157,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         [...cardTotals.values()]
                             .sort((a, b) => b.Total - a.Total);
 
+                    // O PDF precisa funcionar com apenas cartões ou
+                    // apenas dívidas; sem transações o herói passa a
+                    // exibir o total em dívidas em aberto.
+                    const hasCards = cardSummary.length > 0;
+
+                    const debtsTotal = Liabilities
+                        .reduce((acc, d) =>
+                            acc + Number(d.Balance ?? 0), 0);
+
                     // ---------- página 1: resumo ----------
                     doc.y = 138;
 
@@ -3131,15 +3203,21 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .fillColor(c.muted)
                         .font('Helvetica')
                         .fontSize(8.5)
-                        .text('TOTAL DE DESPESAS NO MÊS',
+                        .text(hasCards
+                            ? 'TOTAL DE DESPESAS NO MÊS'
+                            : 'TOTAL EM DÍVIDAS EM ABERTO',
                             72, heroY + 16,
-                            { characterSpacing: 1.2, lineBreak: false });
+                        { characterSpacing: 1.2, lineBreak: false });
 
                     doc
                         .fillColor(c.primary)
                         .font('Helvetica-Bold')
                         .fontSize(28)
-                        .text(this.pdfMoney(CurrencyCode, totalAll),
+                        .text(
+                            this.pdfMoney(
+                                CurrencyCode,
+                                hasCards ? totalAll : debtsTotal
+                            ),
                             72, heroY + 31, { lineBreak: false });
 
                     doc
@@ -3147,91 +3225,227 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         .font('Helvetica')
                         .fontSize(9.5)
                         .text(
-                            `${Transactions.length} transações · ` +
-                            `${cardSummary.length} cartões · ` +
-                            `${categorySummary.length} categorias`,
+                            hasCards
+                                ? `${Transactions.length} transações · ` +
+                                  `${cardSummary.length} cartões · ` +
+                                  `${categorySummary.length} categorias`
+                                : `${Liabilities.length} dívida(s) em aberto`,
                             72, heroY + 68, { lineBreak: false }
                         );
 
                     doc.y = heroY + heroH + 20;
 
-                    // tabela resumo por cartão
-                    this.pdfSectionTitle(doc, 'Resumo por cartão',
-                        `${cardSummary.length} cartão(ões) neste mês.`);
+                    // tabela resumo por cartão (apenas com transações)
+                    if (hasCards) {
 
-                    const sumNameX = 80;
-                    const sumCountX = 330;
-                    const sumValueRight = 551;
+                        this.pdfSectionTitle(doc, 'Resumo por cartão',
+                            `${cardSummary.length} cartão(ões) neste mês.`);
 
-                    const drawSumHead = () => {
+                        const sumNameX = 80;
+                        const sumCountX = 330;
+                        const sumValueRight = 551;
 
-                        doc
-                            .fillColor(c.muted)
-                            .font('Helvetica-Bold')
-                            .fontSize(8)
-                            .text('CARTÃO', sumNameX, doc.y,
-                                { characterSpacing: 1, lineBreak: false })
-                            .text('TRANSAÇÕES', sumCountX, doc.y,
-                                { characterSpacing: 1, lineBreak: false })
-                            .text('VALOR', sumValueRight - 100, doc.y,
-                                {
-                                    width: 100,
-                                    align: 'right',
-                                    characterSpacing: 1,
-                                    lineBreak: false
-                                });
+                        const drawSumHead = () => {
 
-                        doc.y += 14;
+                            doc
+                                .fillColor(c.muted)
+                                .font('Helvetica-Bold')
+                                .fontSize(8)
+                                .text('CARTÃO', sumNameX, doc.y,
+                                    { characterSpacing: 1, lineBreak: false })
+                                .text('TRANSAÇÕES', sumCountX, doc.y,
+                                    { characterSpacing: 1, lineBreak: false })
+                                .text('VALOR', sumValueRight - 100, doc.y,
+                                    {
+                                        width: 100,
+                                        align: 'right',
+                                        characterSpacing: 1,
+                                        lineBreak: false
+                                    });
 
-                        doc
-                            .moveTo(44, doc.y)
-                            .lineTo(doc.page.width - 44, doc.y)
-                            .lineWidth(1)
-                            .strokeColor(c.lineSoft)
-                            .stroke();
+                            doc.y += 14;
 
-                        doc.y += 10;
+                            doc
+                                .moveTo(44, doc.y)
+                                .lineTo(doc.page.width - 44, doc.y)
+                                .lineWidth(1)
+                                .strokeColor(c.lineSoft)
+                                .stroke();
 
-                    };
+                            doc.y += 10;
 
-                    drawSumHead();
+                        };
 
-                    for (const [index, cs] of cardSummary.entries()) {
+                        drawSumHead();
 
-                        if ((index + 1) < cardSummary.length &&
-                            (index + 1) % 22 === 0) {
-                            shell.newPage();
-                            doc.y += 6;
-                            drawSumHead();
+                        for (const [index, cs] of cardSummary.entries()) {
+
+                            if ((index + 1) < cardSummary.length &&
+                                (index + 1) % 22 === 0) {
+                                shell.newPage();
+                                doc.y += 6;
+                                drawSumHead();
+                            }
+
+                            const rowY = doc.y;
+
+                            // círculo com a imagem do cartão
+                            const diameter = 22;
+
+                            if (cs.Name && uniqueCardIds.length &&
+                                cardImageBuffers.size) {
+
+                                const cardEntry =
+                                    [...cardTotals.entries()]
+                                        .find(([, v]) => v === cs);
+
+                                const imgBuf = cardEntry
+                                    ? cardImageBuffers.get(cardEntry[0])
+                                    : undefined;
+
+                                if (imgBuf) {
+                                    doc
+                                        .save()
+                                        .circle(44 + diameter / 2,
+                                            rowY + diameter / 2, diameter / 2)
+                                        .clip()
+                                        .image(imgBuf, 44, rowY,
+                                            {
+                                                width: diameter,
+                                                height: diameter
+                                            })
+                                        .restore();
+                                } else {
+                                    doc
+                                        .circle(44 + 11, rowY + 11, 11)
+                                        .fill(c.tint);
+                                }
+
+                            } else {
+                                doc
+                                    .circle(44 + 11, rowY + 11, 11)
+                                    .fill(c.tint);
+                            }
+
+                            doc
+                                .fillColor(c.ink)
+                                .font('Helvetica-Bold')
+                                .fontSize(10.5)
+                                .text(this.pdfFitText(cs.Name, 27),
+                                    sumNameX, rowY + 3,
+                                    { width: 240, lineBreak: false });
+
+                            doc
+                                .fillColor(c.muted)
+                                .font('Helvetica')
+                                .fontSize(9)
+                                .text(`${cs.Count} transação(ões)`,
+                                    sumCountX, rowY + 4,
+                                    { width: 126, lineBreak: false });
+
+                            doc
+                                .fillColor(c.ink)
+                                .font('Helvetica-Bold')
+                                .fontSize(10)
+                                .text(this.pdfMoney(CurrencyCode, cs.Total),
+                                    sumValueRight - 120, rowY + 3,
+                                    { width: 120, align: 'right', lineBreak: false });
+
+                            doc.y = rowY + 30;
+
+                            doc
+                                .moveTo(44, doc.y - 6)
+                                .lineTo(doc.page.width - 44, doc.y - 6)
+                                .lineWidth(0.5)
+                                .strokeColor(c.line)
+                                .stroke();
+
                         }
 
-                        const rowY = doc.y;
+                    }
 
-                        // círculo com a imagem do cartão
-                        const diameter = 22;
+                    // ---------- categorias ----------
+                    if (hasCards) {
 
-                        if (cs.Name && uniqueCardIds.length &&
-                            cardImageBuffers.size) {
+                        shell.newPage();
 
-                            const cardEntry =
-                                [...cardTotals.entries()]
-                                    .find(([, v]) => v === cs);
+                        this.pdfSectionTitle(doc, 'Gastos por categoria',
+                            'Distribuição das despesas do mês entre as categorias.');
 
-                            const imgBuf = cardEntry
-                                ? cardImageBuffers.get(cardEntry[0])
-                                : undefined;
+                        const catNameX = 80;
+                        const catBarX = 252;
+                        const catBarW = 138;
+                        const catAmountRight = 500;
+                        const catPercentRight = 551;
 
-                            if (imgBuf) {
+                        const drawCatHead = () => {
+
+                            doc
+                                .fillColor(c.muted)
+                                .font('Helvetica-Bold')
+                                .fontSize(8)
+                                .text('CATEGORIA', catNameX, doc.y,
+                                    { characterSpacing: 1, lineBreak: false })
+                                .text('TOTAL', catAmountRight - 90, doc.y,
+                                    {
+                                        width: 90,
+                                        align: 'right',
+                                        characterSpacing: 1,
+                                        lineBreak: false
+                                    })
+                                .text('%', catPercentRight - 50, doc.y,
+                                    {
+                                        width: 50,
+                                        align: 'right',
+                                        characterSpacing: 1,
+                                        lineBreak: false
+                                    });
+
+                            doc.y += 14;
+
+                            doc
+                                .moveTo(44, doc.y)
+                                .lineTo(doc.page.width - 44, doc.y)
+                                .lineWidth(1)
+                                .strokeColor(c.lineSoft)
+                                .stroke();
+
+                            doc.y += 10;
+
+                        };
+
+                        drawCatHead();
+
+                        for (const [index, cat] of categorySummary.entries()) {
+
+                            // Quebra apenas se houver próxima linha: evita
+                            // página em branco no limite exato.
+                            if ((index + 1) < categorySummary.length &&
+                                (index + 1) % 19 === 0) {
+                                shell.newPage();
+                                doc.y += 6;
+                                drawCatHead();
+                            }
+
+                            const rowY = doc.y;
+
+                            const percent = totalAll > 0
+                                ? (cat.TotalAmount / totalAll) * 100
+                                : 0;
+
+                            // círculo com a imagem da categoria
+                            const diameter = 22;
+
+                            if (cat.Id && catImageBuffers.has(cat.Id)) {
+                                const imgBuf =
+                                    catImageBuffers.get(cat.Id)!;
                                 doc
                                     .save()
                                     .circle(44 + diameter / 2,
                                         rowY + diameter / 2, diameter / 2)
                                     .clip()
                                     .image(imgBuf, 44, rowY,
-                                        {
-                                            width: diameter,
-                                            height: diameter
-                                        })
+                                        { width: diameter, height: diameter })
                                     .restore();
                             } else {
                                 doc
@@ -3239,339 +3453,217 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                                     .fill(c.tint);
                             }
 
-                        } else {
                             doc
-                                .circle(44 + 11, rowY + 11, 11)
-                                .fill(c.tint);
-                        }
+                                .fillColor(c.ink)
+                                .font('Helvetica-Bold')
+                                .fontSize(10.5)
+                                .text(this.pdfFitText(cat.Name, 22),
+                                    catNameX, rowY + 3,
+                                    { width: 165, lineBreak: false });
 
-                        doc
-                            .fillColor(c.ink)
-                            .font('Helvetica-Bold')
-                            .fontSize(10.5)
-                            .text(this.pdfFitText(cs.Name, 27),
-                                sumNameX, rowY + 3,
-                                { width: 240, lineBreak: false });
+                            doc.font('Helvetica').fontSize(7.5)
+                                .fillColor(c.muted)
+                                .text(`${cat.Count} transação(ões)`,
+                                    catNameX, rowY + 17,
+                                    { width: 165, lineBreak: false });
 
-                        doc
-                            .fillColor(c.muted)
-                            .font('Helvetica')
-                            .fontSize(9)
-                            .text(`${cs.Count} transação(ões)`,
-                                sumCountX, rowY + 4,
-                                { width: 126, lineBreak: false });
-
-                        doc
-                            .fillColor(c.ink)
-                            .font('Helvetica-Bold')
-                            .fontSize(10)
-                            .text(this.pdfMoney(CurrencyCode, cs.Total),
-                                sumValueRight - 120, rowY + 3,
-                                { width: 120, align: 'right', lineBreak: false });
-
-                        doc.y = rowY + 30;
-
-                        doc
-                            .moveTo(44, doc.y - 6)
-                            .lineTo(doc.page.width - 44, doc.y - 6)
-                            .lineWidth(0.5)
-                            .strokeColor(c.line)
-                            .stroke();
-
-                    }
-
-                    // ---------- categorias ----------
-                    shell.newPage();
-
-                    this.pdfSectionTitle(doc, 'Gastos por categoria',
-                        'Distribuição das despesas do mês entre as categorias.');
-
-                    const catNameX = 80;
-                    const catBarX = 252;
-                    const catBarW = 138;
-                    const catAmountRight = 500;
-                    const catPercentRight = 551;
-
-                    const drawCatHead = () => {
-
-                        doc
-                            .fillColor(c.muted)
-                            .font('Helvetica-Bold')
-                            .fontSize(8)
-                            .text('CATEGORIA', catNameX, doc.y,
-                                { characterSpacing: 1, lineBreak: false })
-                            .text('TOTAL', catAmountRight - 90, doc.y,
-                                {
-                                    width: 90,
-                                    align: 'right',
-                                    characterSpacing: 1,
-                                    lineBreak: false
-                                })
-                            .text('%', catPercentRight - 50, doc.y,
-                                {
-                                    width: 50,
-                                    align: 'right',
-                                    characterSpacing: 1,
-                                    lineBreak: false
-                                });
-
-                        doc.y += 14;
-
-                        doc
-                            .moveTo(44, doc.y)
-                            .lineTo(doc.page.width - 44, doc.y)
-                            .lineWidth(1)
-                            .strokeColor(c.lineSoft)
-                            .stroke();
-
-                        doc.y += 10;
-
-                    };
-
-                    drawCatHead();
-
-                    for (const [index, cat] of categorySummary.entries()) {
-
-                        // Quebra apenas se houver próxima linha: evita
-                        // página em branco no limite exato.
-                        if ((index + 1) < categorySummary.length &&
-                            (index + 1) % 19 === 0) {
-                            shell.newPage();
-                            doc.y += 6;
-                            drawCatHead();
-                        }
-
-                        const rowY = doc.y;
-
-                        const percent = totalAll > 0
-                            ? (cat.TotalAmount / totalAll) * 100
-                            : 0;
-
-                        // círculo com a imagem da categoria
-                        const diameter = 22;
-
-                        if (cat.Id && catImageBuffers.has(cat.Id)) {
-                            const imgBuf =
-                                catImageBuffers.get(cat.Id)!;
-                            doc
-                                .save()
-                                .circle(44 + diameter / 2,
-                                    rowY + diameter / 2, diameter / 2)
-                                .clip()
-                                .image(imgBuf, 44, rowY,
-                                    { width: diameter, height: diameter })
-                                .restore();
-                        } else {
-                            doc
-                                .circle(44 + 11, rowY + 11, 11)
-                                .fill(c.tint);
-                        }
-
-                        doc
-                            .fillColor(c.ink)
-                            .font('Helvetica-Bold')
-                            .fontSize(10.5)
-                            .text(this.pdfFitText(cat.Name, 22),
-                                catNameX, rowY + 3,
-                                { width: 165, lineBreak: false });
-
-                        doc.font('Helvetica').fontSize(7.5)
-                            .fillColor(c.muted)
-                            .text(`${cat.Count} transação(ões)`,
-                                catNameX, rowY + 17,
-                                { width: 165, lineBreak: false });
-
-                        doc
-                            .roundedRect(catBarX, rowY + 7,
-                                catBarW, 5, 2.5)
-                            .fill(c.surface);
-
-                        if (percent > 0) {
-                            const fillW =
-                                Math.max(3, Math.min(catBarW,
-                                    catBarW * (percent / 100)));
                             doc
                                 .roundedRect(catBarX, rowY + 7,
-                                    fillW, 5, 2.5)
-                                .fill(c.accent);
+                                    catBarW, 5, 2.5)
+                                .fill(c.surface);
+
+                            if (percent > 0) {
+                                const fillW =
+                                    Math.max(3, Math.min(catBarW,
+                                        catBarW * (percent / 100)));
+                                doc
+                                    .roundedRect(catBarX, rowY + 7,
+                                        fillW, 5, 2.5)
+                                    .fill(c.accent);
+                            }
+
+                            doc
+                                .fillColor(c.ink)
+                                .font('Helvetica-Bold')
+                                .fontSize(10.5)
+                                .text(
+                                    this.pdfMoney(CurrencyCode, cat.TotalAmount),
+                                    catAmountRight - 170, rowY + 3,
+                                    { width: 170, align: 'right', lineBreak: false }
+                                );
+
+                            doc
+                                .fillColor(c.muted)
+                                .font('Helvetica')
+                                .fontSize(9.5)
+                                .text(`${percent.toFixed(1)}%`,
+                                    catPercentRight - 50, rowY + 4,
+                                    { width: 50, align: 'right', lineBreak: false });
+
+                            doc.y = rowY + 32;
+
+                            doc
+                                .moveTo(44, doc.y - 6)
+                                .lineTo(doc.page.width - 44, doc.y - 6)
+                                .lineWidth(0.5)
+                                .strokeColor(c.line)
+                                .stroke();
+
                         }
-
-                        doc
-                            .fillColor(c.ink)
-                            .font('Helvetica-Bold')
-                            .fontSize(10.5)
-                            .text(
-                                this.pdfMoney(CurrencyCode, cat.TotalAmount),
-                                catAmountRight - 170, rowY + 3,
-                                { width: 170, align: 'right', lineBreak: false }
-                            );
-
-                        doc
-                            .fillColor(c.muted)
-                            .font('Helvetica')
-                            .fontSize(9.5)
-                            .text(`${percent.toFixed(1)}%`,
-                                catPercentRight - 50, rowY + 4,
-                                { width: 50, align: 'right', lineBreak: false });
-
-                        doc.y = rowY + 32;
-
-                        doc
-                            .moveTo(44, doc.y - 6)
-                            .lineTo(doc.page.width - 44, doc.y - 6)
-                            .lineWidth(0.5)
-                            .strokeColor(c.line)
-                            .stroke();
 
                     }
 
                     // ---------- transações ----------
-                    shell.newPage();
+                    if (hasCards) {
 
-                    const sortedTx = [...Transactions]
-                        .sort((a: any, b: any) =>
-                            String(a.Date ?? '')
-                                .localeCompare(String(b.Date ?? '')));
+                        shell.newPage();
 
-                    this.pdfSectionTitle(doc, 'Movimentos do mês',
-                        `${sortedTx.length} lançamento(s) em ` +
-                        `${MonthDescription} de ${Year}.`);
+                        const sortedTx = [...Transactions]
+                            .sort((a: any, b: any) =>
+                                String(a.Date ?? '')
+                                    .localeCompare(String(b.Date ?? '')));
 
-                    const txDateX = 44;
-                    const txDescX = 102;
-                    const txCardX = 276;
-                    const txCatX = 356;
-                    const txInstX = 460;
-                    const txValueRight = 551;
+                        this.pdfSectionTitle(doc, 'Movimentos do mês',
+                            `${sortedTx.length} lançamento(s) em ` +
+                            `${MonthDescription} de ${Year}.`);
 
-                    const drawTxHead = () => {
+                        const txDateX = 44;
+                        const txDescX = 102;
+                        const txCardX = 276;
+                        const txCatX = 356;
+                        const txInstX = 460;
+                        const txValueRight = 551;
 
-                        doc
-                            .fillColor(c.muted)
-                            .font('Helvetica-Bold')
-                            .fontSize(8)
-                            .text('DATA', txDateX, doc.y,
-                                { characterSpacing: 1, lineBreak: false })
-                            .text('DESCRIÇÃO', txDescX, doc.y,
-                                { characterSpacing: 1, lineBreak: false })
-                            .text('CARTÃO', txCardX, doc.y,
-                                { characterSpacing: 1, lineBreak: false })
-                            .text('CATEGORIA', txCatX, doc.y,
-                                { characterSpacing: 1, lineBreak: false })
-                            .text('PARCELA', txInstX, doc.y,
-                                { characterSpacing: 1, lineBreak: false })
-                            .text('VALOR', txValueRight - 100, doc.y,
-                                {
-                                    width: 100,
-                                    align: 'right',
-                                    characterSpacing: 1,
-                                    lineBreak: false
-                                });
+                        const drawTxHead = () => {
 
-                        doc.y += 13;
-
-                        doc
-                            .moveTo(44, doc.y)
-                            .lineTo(doc.page.width - 44, doc.y)
-                            .lineWidth(1)
-                            .strokeColor(c.lineSoft)
-                            .stroke();
-
-                        doc.y += 8;
-
-                    };
-
-                    drawTxHead();
-
-                    const txRowH = 23;
-
-                    for (const [index, tx] of sortedTx.entries()) {
-
-                        if ((index + 1) < sortedTx.length &&
-                            (index + 1) % 24 === 0) {
-                            shell.newPage();
-                            doc.y += 6;
-                            drawTxHead();
-                        }
-
-                        const rowY = doc.y;
-
-                        if (index % 2 === 1) {
                             doc
-                                .rect(44, rowY - 3,
-                                    doc.page.width - 88, txRowH)
-                                .fill(c.surface);
+                                .fillColor(c.muted)
+                                .font('Helvetica-Bold')
+                                .fontSize(8)
+                                .text('DATA', txDateX, doc.y,
+                                    { characterSpacing: 1, lineBreak: false })
+                                .text('DESCRIÇÃO', txDescX, doc.y,
+                                    { characterSpacing: 1, lineBreak: false })
+                                .text('CARTÃO', txCardX, doc.y,
+                                    { characterSpacing: 1, lineBreak: false })
+                                .text('CATEGORIA', txCatX, doc.y,
+                                    { characterSpacing: 1, lineBreak: false })
+                                .text('PARCELA', txInstX, doc.y,
+                                    { characterSpacing: 1, lineBreak: false })
+                                .text('VALOR', txValueRight - 100, doc.y,
+                                    {
+                                        width: 100,
+                                        align: 'right',
+                                        characterSpacing: 1,
+                                        lineBreak: false
+                                    });
+
+                            doc.y += 13;
+
+                            doc
+                                .moveTo(44, doc.y)
+                                .lineTo(doc.page.width - 44, doc.y)
+                                .lineWidth(1)
+                                .strokeColor(c.lineSoft)
+                                .stroke();
+
+                            doc.y += 8;
+
+                        };
+
+                        drawTxHead();
+
+                        const txRowH = 23;
+
+                        for (const [index, tx] of sortedTx.entries()) {
+
+                            if ((index + 1) < sortedTx.length &&
+                                (index + 1) % 24 === 0) {
+                                shell.newPage();
+                                doc.y += 6;
+                                drawTxHead();
+                            }
+
+                            const rowY = doc.y;
+
+                            if (index % 2 === 1) {
+                                doc
+                                    .rect(44, rowY - 3,
+                                        doc.page.width - 88, txRowH)
+                                    .fill(c.surface);
+                            }
+
+                            const oExpenseDate =
+                                new Date(`${tx.Date}T00:00:00`);
+
+                            const oDate =
+                                `${this.addLeftZeros(oExpenseDate.getDate())}/` +
+                                `${this.addLeftZeros(oExpenseDate.getMonth() + 1)}/` +
+                                `${oExpenseDate.getFullYear()}`;
+
+                            const installment =
+                                `${tx.Installment ?? 1}/` +
+                                `${tx.TotalInstallments ?? 1}`;
+
+                            doc
+                                .fillColor(c.muted)
+                                .font('Helvetica')
+                                .fontSize(9)
+                                .text(oDate, txDateX, rowY,
+                                    { width: 56, lineBreak: false });
+
+                            doc
+                                .fillColor(c.ink)
+                                .font('Helvetica-Bold')
+                                .fontSize(10)
+                                .text(this.pdfFitText(tx.Description || '', 21),
+                                    txDescX, rowY,
+                                    { width: 164, lineBreak: false });
+
+                            doc
+                                .fillColor(c.muted)
+                                .font('Helvetica')
+                                .fontSize(9);
+
+                            if (tx.Card?.Name &&
+                                cardImageBuffers.has(tx.Card.ID)) {
+                                const imgBuf =
+                                    cardImageBuffers.get(tx.Card.ID)!;
+                                doc.save()
+                                    .circle(txCardX + 5.5, rowY + 4, 5.5)
+                                    .clip()
+                                    .image(imgBuf, txCardX, rowY - 1.5,
+                                        { width: 11, height: 11 })
+                                    .restore();
+                            }
+
+                            doc.text(this.pdfFitText(tx.Card?.Name || '', 9),
+                                txCardX + 13, rowY,
+                                { width: 62, lineBreak: false })
+                                .text(
+                                    this.pdfFitText(
+                                        tx.Category?.Name || 'Sem categoria', 13),
+                                    txCatX, rowY,
+                                    { width: 96, lineBreak: false })
+                                .text(installment, txInstX, rowY,
+                                    { width: 34, lineBreak: false });
+
+                            doc
+                                .fillColor(c.ink)
+                                .font('Helvetica-Bold')
+                                .fontSize(10)
+                                .text(
+                                    this.pdfMoney(
+                                        tx.Currency?.Code || CurrencyCode,
+                                        Number(tx.Amount ?? 0)
+                                    ),
+                                    txValueRight - 120, rowY,
+                                    { width: 120, align: 'right', lineBreak: false }
+                                );
+
+                            doc.y = rowY + txRowH;
+
                         }
-
-                        const oExpenseDate =
-                            new Date(`${tx.Date}T00:00:00`);
-
-                        const oDate =
-                            `${this.addLeftZeros(oExpenseDate.getDate())}/` +
-                            `${this.addLeftZeros(oExpenseDate.getMonth() + 1)}/` +
-                            `${oExpenseDate.getFullYear()}`;
-
-                        const installment =
-                            `${tx.Installment ?? 1}/` +
-                            `${tx.TotalInstallments ?? 1}`;
-
-                        doc
-                            .fillColor(c.muted)
-                            .font('Helvetica')
-                            .fontSize(9)
-                            .text(oDate, txDateX, rowY,
-                                { width: 56, lineBreak: false });
-
-                        doc
-                            .fillColor(c.ink)
-                            .font('Helvetica-Bold')
-                            .fontSize(10)
-                            .text(this.pdfFitText(tx.Description || '', 21),
-                                txDescX, rowY,
-                                { width: 164, lineBreak: false });
-
-                        doc
-                            .fillColor(c.muted)
-                            .font('Helvetica')
-                            .fontSize(9);
-
-                        if (tx.Card?.Name &&
-                            cardImageBuffers.has(tx.Card.ID)) {
-                            const imgBuf =
-                                cardImageBuffers.get(tx.Card.ID)!;
-                            doc.save()
-                                .circle(txCardX + 5.5, rowY + 4, 5.5)
-                                .clip()
-                                .image(imgBuf, txCardX, rowY - 1.5,
-                                    { width: 11, height: 11 })
-                                .restore();
-                        }
-
-                        doc.text(this.pdfFitText(tx.Card?.Name || '', 9),
-                            txCardX + 13, rowY,
-                            { width: 62, lineBreak: false })
-                            .text(
-                                this.pdfFitText(
-                                    tx.Category?.Name || 'Sem categoria', 13),
-                                txCatX, rowY,
-                                { width: 96, lineBreak: false })
-                            .text(installment, txInstX, rowY,
-                                { width: 34, lineBreak: false });
-
-                        doc
-                            .fillColor(c.ink)
-                            .font('Helvetica-Bold')
-                            .fontSize(10)
-                            .text(
-                                this.pdfMoney(
-                                    tx.Currency?.Code || CurrencyCode,
-                                    Number(tx.Amount ?? 0)
-                                ),
-                                txValueRight - 120, rowY,
-                                { width: 120, align: 'right', lineBreak: false }
-                            );
-
-                        doc.y = rowY + txRowH;
 
                     }
 

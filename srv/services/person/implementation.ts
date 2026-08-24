@@ -543,6 +543,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 const attachments: any[] = [];
                 const debtSummaries: {
                     DebtName: string;
+                    Balance: number;
                     BalanceWithSymbol: string;
                     PercentPaid: number;
                     DueDay: string;
@@ -625,6 +626,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                     debtSummaries.push({
                         DebtName: liability.Name,
+                        Balance: balance.toNumber(),
                         BalanceWithSymbol:
                             this.pdfMoney(
                                 liability.Currency?.Code,
@@ -655,6 +657,74 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         content: pdfResult.value
                     });
 
+                }
+
+                // --- PDF consolidado (visão geral) ---
+                const consolidatedTx: any[] = [];
+
+                for (const card of personCards) {
+
+                    const cardInvoices =
+                        invoicesByCard.get(card.Id) || [];
+
+                    for (const invoice of cardInvoices) {
+
+                        const txs =
+                            transactionsByInvoice.get(invoice.Id) || [];
+
+                        for (const tx of txs) {
+
+                            consolidatedTx.push({
+                                Amount: tx.Amount?.toNumber() ?? 0,
+                                Description: tx.Description,
+                                Date: tx.Date,
+                                Installment: tx.Installment,
+                                TotalInstallments: tx.TotalInstallments,
+                                Currency: {
+                                    Code: tx.Currency?.Code || currency
+                                },
+                                Card: {
+                                    ID: card.Id,
+                                    Name: card.Name
+                                },
+                                Category: {
+                                    ID: tx.Category?.Id || '',
+                                    Name: tx.Category?.Name || ''
+                                }
+                            });
+
+                        }
+
+                    }
+
+                }
+
+                const consolidatedDebts = debtSummaries.map(d => ({
+                    Name: d.DebtName,
+                    Balance: d.Balance,
+                    TotalAmount: 0,
+                    PercentPaid: d.PercentPaid,
+                    DueDay: d.DueDay,
+                    Currency: currency
+                }));
+
+                const consolidatedResult =
+                    await this.generateConsolidatedPDF(
+                        cache._logoCache!,
+                        person,
+                        consolidatedTx,
+                        consolidatedDebts,
+                        today.year,
+                        today.month,
+                        this.getMessage(`month.${today.month}`, request),
+                        currency
+                    );
+
+                if (consolidatedResult.isRight()) {
+                    attachments.push({
+                        filename: `Visao Geral ${this.sanitizeFileName(person.Name)} ${this.addLeftZeros(today.month)}-${today.year}.pdf`,
+                        content: consolidatedResult.value
+                    });
                 }
 
                 if (!attachments.length) continue;
@@ -2189,7 +2259,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 doc.font('Helvetica-Bold').fontSize(8);
 
-                let pillX = doc.page.width - 44 - (doc.widthOfString(dueLabel) + 16);
+                let pillX = doc.page.width - 72 - (doc.widthOfString(dueLabel) + 16);
 
                 drawPill(dueLabel, pillX, cardY + 20, c.tint, c.primaryDark);
 
@@ -2580,7 +2650,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 drawPill(
                     statusLabel,
-                    doc.page.width - 44 - (doc.widthOfString(statusLabel) + 16),
+                    doc.page.width - 72 - (doc.widthOfString(statusLabel) + 16),
                     heroY + 20, statusBg, statusFg
                 );
 
@@ -2838,6 +2908,575 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
     protected parentField(): string | null {
         return 'ID';
+    }
+
+
+    private async generateConsolidatedPDF(
+        Logo: Buffer,
+        Person: PersonModel,
+        Transactions: any[],
+        Liabilities: {
+            Name: string;
+            Balance: number;
+            TotalAmount: number;
+            PercentPaid: number;
+            DueDay: string;
+            Currency: string;
+        }[],
+        Year: number,
+        Month: number,
+        MonthDescription: string,
+        CurrencyCode: string
+    ): Promise<Either<AbstractError, Buffer>> {
+
+        try {
+
+            const c = this.pdfPalette();
+
+            const oCurrency =
+                this.currencySymbol(CurrencyCode);
+
+            // --- category summaries ---
+            const categoryMap = new Map<string, {
+                Name: string;
+                TotalAmount: number;
+                Count: number;
+            }>();
+
+            let totalAll = 0;
+
+            for (const tx of Transactions) {
+
+                const catId = tx.Category?.ID || '__none__';
+                const catName = tx.Category?.Name || 'Sem categoria';
+
+                if (!categoryMap.has(catId)) {
+                    categoryMap.set(catId, {
+                        Name: catName, TotalAmount: 0, Count: 0
+                    });
+                }
+
+                const entry = categoryMap.get(catId)!;
+                entry.TotalAmount += Number(tx.Amount ?? 0);
+                entry.Count += 1;
+                totalAll += Number(tx.Amount ?? 0);
+
+            }
+
+            const categorySummary = [...categoryMap.values()]
+                .sort((a, b) => b.TotalAmount - a.TotalAmount);
+
+            // --- unique card/category IDs for images ---
+            const uniqueCardIds =
+                [...new Set(Transactions
+                    .map(t => t.Card?.ID)
+                    .filter(Boolean))] as string[];
+
+            const uniqueCatIds =
+                [...new Set(Transactions
+                    .map(t => t.Category?.ID)
+                    .filter(Boolean))] as string[];
+
+            // --- load images ---
+            const cardImageBuffers = new Map<string, Buffer>();
+            const catImageBuffers = new Map<string, Buffer>();
+
+            if (uniqueCardIds.length) {
+                const rows =
+                    await this.CardRepository.findImageByIds(uniqueCardIds) || [];
+                for (const row of rows) {
+                    if (row.Image) {
+                        cardImageBuffers.set(
+                            row.ID,
+                            await this.readableToBuffer(row.Image) as Buffer
+                        );
+                    }
+                }
+            }
+
+            if (uniqueCatIds.length) {
+                const rows =
+                    await this.CategoryRepository.findImageByIds(uniqueCatIds) || [];
+                for (const row of rows) {
+                    if (row.Image) {
+                        catImageBuffers.set(
+                            row.ID,
+                            await this.readableToBuffer(row.Image) as Buffer
+                        );
+                    }
+                }
+            }
+
+            return await this.renderBrandedPdf(
+                Logo,
+                `Visão Geral · ${MonthDescription} ${Year}`,
+                async (doc, shell) => {
+
+                    const oMaxY = doc.page.height - doc.page.margins.bottom;
+
+                    doc.moveDown(0.5);
+
+                    // greeting
+                    doc
+                        .fillColor(c.ink)
+                        .font('Helvetica-Bold')
+                        .fontSize(18)
+                        .text(`Olá, ${Person.Name?.split(' ')[0]}!`);
+
+                    doc
+                        .fillColor(c.muted)
+                        .font('Helvetica')
+                        .fontSize(10)
+                        .text(
+                            `Visão completa das suas finanças em ${MonthDescription} de ${Year}.`
+                        );
+
+                    doc.moveDown(1);
+
+                    // --- hero: total ---
+                    const heroH = 90;
+                    const heroY = doc.y;
+
+                    doc
+                        .save()
+                        .roundedRect(44, heroY, doc.page.width - 88, heroH, 10)
+                        .fill(c.tint)
+                        .restore();
+
+                    doc
+                        .font('Helvetica')
+                        .fontSize(9)
+                        .fillColor(c.muted)
+                        .text('TOTAL DE GASTOS NO MÊS',
+                            72, heroY + 18, { lineBreak: false });
+
+                    doc
+                        .fillColor(c.primary)
+                        .font('Helvetica-Bold')
+                        .fontSize(30)
+                        .text(
+                            this.pdfMoney(CurrencyCode, totalAll),
+                            72, heroY + 38,
+                            { lineBreak: false }
+                        );
+
+                    doc
+                        .font('Helvetica')
+                        .fontSize(10)
+                        .fillColor(c.muted)
+                        .text(
+                            `${Transactions.length} transações`,
+                            72, heroY + 72,
+                            { lineBreak: false }
+                        );
+
+                    doc.y = heroY + heroH + 18;
+
+                    // --- KPIs ---
+                    const kpiW = (doc.page.width - 88 - 16) / 3;
+                    const kpiH = 64;
+                    const kpiY = doc.y;
+
+                    const kpis = [
+                        { Label: 'TRANSAÇÕES', Value: String(Transactions.length) },
+                        { Label: 'CARTÕES', Value: String(uniqueCardIds.length) },
+                        { Label: 'CATEGORIAS', Value: String(categorySummary.length) }
+                    ];
+
+                    kpis.forEach((kpi, idx) => {
+                        const kx = 44 + idx * (kpiW + 8);
+                        doc.save()
+                            .roundedRect(kx, kpiY, kpiW, kpiH, 8)
+                            .fill(c.surface)
+                            .restore();
+                        doc.font('Helvetica').fontSize(8).fillColor(c.muted)
+                            .text(kpi.Label, kx + 14, kpiY + 14,
+                                { width: kpiW - 28, lineBreak: false });
+                        doc.font('Helvetica-Bold').fontSize(22).fillColor(c.primary)
+                            .text(kpi.Value, kx + 14, kpiY + 34,
+                                { width: kpiW - 28, lineBreak: false });
+                    });
+
+                    doc.y = kpiY + kpiH + 18;
+
+                    // --- expense metrics mini-cards (2×3) ---
+                    const metrics = [
+                        { Label: 'Total de despesas',
+                          Val: this.pdfMoney(CurrencyCode, totalAll) },
+                        { Label: 'Despesas do mês',
+                          Val: this.pdfMoney(CurrencyCode, totalAll) },
+                        { Label: 'Total de transações',
+                          Val: String(Transactions.length) },
+                        { Label: 'Total de cartões',
+                          Val: String(uniqueCardIds.length) },
+                        { Label: 'Total de categorias',
+                          Val: String(categorySummary.length) },
+                        { Label: 'Total de dívidas',
+                          Val: String(Liabilities.length) }
+                    ];
+
+                    const mColW = (doc.page.width - 88 - 12) / 2;
+                    const mRowH = 46;
+                    const mGap = 8;
+
+                    for (let i = 0; i < metrics.length; i++) {
+
+                        const row = Math.floor(i / 2);
+                        const col = i % 2;
+                        const mx = 44 + col * (mColW + 12);
+                        const my = doc.y + row * (mRowH + mGap);
+
+                        if (my + mRowH > oMaxY) {
+                            shell.newPage();
+                        }
+
+                        doc.save()
+                            .roundedRect(mx, my, mColW, mRowH, 6)
+                            .fill(c.surface)
+                            .restore();
+
+                        doc.font('Helvetica').fontSize(8).fillColor(c.muted)
+                            .text(metrics[i].Label, mx + 12, my + 10,
+                                { width: mColW - 24, lineBreak: false });
+
+                        doc.font('Helvetica-Bold').fontSize(13).fillColor(c.ink)
+                            .text(metrics[i].Val, mx + 12, my + 27,
+                                { width: mColW - 24, lineBreak: false });
+
+                    }
+
+                    const mRows = Math.ceil(metrics.length / 2);
+                    doc.y += mRows * (mRowH + mGap) + 14;
+
+                    // --- page 2+: categories ---
+                    shell.newPage();
+
+                    this.pdfSectionTitle(doc, 'Gastos por categoria',
+                        `${categorySummary.length} categorias · ${this.pdfMoney(CurrencyCode, totalAll)} total`);
+
+                    for (let i = 0; i < categorySummary.length; i++) {
+
+                        const cat = categorySummary[i];
+                        const percent = totalAll > 0
+                            ? (cat.TotalAmount / totalAll) * 100
+                            : 0;
+
+                        const rowH = 44;
+                        const rowY = doc.y;
+
+                        if (rowY + rowH > oMaxY) {
+                            shell.newPage();
+                        }
+
+                        const barX = 156;
+                        const barMaxW = doc.page.width - 72 - barX - 80;
+                        const barH = 7;
+                        const barY = rowY + 24;
+
+                        // zebra
+                        if (i % 2 === 0) {
+                            doc.save()
+                                .rect(44, rowY - 4, doc.page.width - 88, rowH)
+                                .fill(c.surface)
+                                .restore();
+                        }
+
+                        // category circle
+                        const circleX = 60;
+                        const circleR = 14;
+
+                        doc.save()
+                            .circle(circleX, rowY + 14, circleR)
+                            .fill(c.tint)
+                            .restore();
+
+                        // category image inside circle
+                        let catImageKey = '';
+                        for (const [key, val] of categoryMap.entries()) {
+                            if (val.Name === cat.Name) {
+                                catImageKey = key;
+                                break;
+                            }
+                        }
+
+                        if (catImageKey && catImageKey !== '__none__') {
+                            const imgBuf = catImageBuffers.get(catImageKey);
+                            if (imgBuf) {
+                                doc.save()
+                                    .circle(circleX, rowY + 14, circleR)
+                                    .clip()
+                                    .image(imgBuf, circleX - circleR, rowY,
+                                        { width: circleR * 2, height: circleR * 2 })
+                                    .restore();
+                            }
+                        }
+
+                        // category name
+                        doc.font('Helvetica-Bold').fontSize(10).fillColor(c.ink)
+                            .text(cat.Name, barX - 36, rowY + 6,
+                                { width: 100, lineBreak: false });
+
+                        doc.font('Helvetica').fontSize(8).fillColor(c.muted)
+                            .text(`${cat.Count} transações`, barX - 36, rowY + 22,
+                                { width: 100, lineBreak: false });
+
+                        // bar background
+                        doc.save()
+                            .roundedRect(barX, barY, barMaxW, barH, 3)
+                            .fill(c.line)
+                            .restore();
+
+                        // bar fill
+                        if (percent > 0) {
+                            const fillW = Math.max(6, barMaxW * (percent / 100));
+                            doc.save()
+                                .roundedRect(barX, barY, fillW, barH, 3)
+                                .fill(c.primary)
+                                .restore();
+                        }
+
+                        // percentage
+                        doc.font('Helvetica-Bold').fontSize(9).fillColor(c.primary)
+                            .text(`${percent.toFixed(1)}%`, barX + barMaxW + 8, rowY + 6,
+                                { width: 50, align: 'right', lineBreak: false });
+
+                        // amount
+                        doc.font('Helvetica-Bold').fontSize(10).fillColor(c.ink)
+                            .text(
+                                this.pdfMoney(CurrencyCode, cat.TotalAmount),
+                                doc.page.width - 72 - 130, rowY + 22,
+                                { width: 130, align: 'right', lineBreak: false }
+                            );
+
+                        doc.y = rowY + rowH + 4;
+
+                    }
+
+                    doc.y += 10;
+
+                    // --- page 3+: transactions table ---
+                    shell.newPage();
+
+                    const sortedTx = [...Transactions]
+                        .sort((a: any, b: any) =>
+                            String(a.Date ?? '').localeCompare(String(b.Date ?? '')));
+
+                    this.pdfSectionTitle(doc, 'Todas as transações',
+                        `${sortedTx.length} transações · ${MonthDescription} ${Year}`);
+
+                    const txColW = [
+                        doc.page.width - 88 - 230,
+                        80,
+                        70,
+                        80
+                    ];
+
+                    const txHeaders = ['Descrição', 'Categoria', 'Parcela', 'Valor'];
+
+                    const drawTxHeader = () => {
+
+                        const hy = doc.y;
+
+                        doc.save()
+                            .rect(44, hy - 4, doc.page.width - 88, 22)
+                            .fill(c.primary)
+                            .restore();
+
+                        let hx = 52;
+
+                        for (let h = 0; h < txHeaders.length; h++) {
+
+                            doc.font('Helvetica-Bold').fontSize(8)
+                                .fillColor('#ffffff')
+                                .text(txHeaders[h], hx, hy,
+                                    { width: txColW[h], align: h === 3 ? 'right' : 'left',
+                                      lineBreak: false });
+
+                            hx += txColW[h];
+
+                        }
+
+                        doc.y = hy + 22;
+
+                    };
+
+                    drawTxHeader();
+
+                    for (let i = 0; i < sortedTx.length; i++) {
+
+                        const tx = sortedTx[i];
+
+                        if (doc.y + 18 > oMaxY) {
+                            shell.newPage();
+                            drawTxHeader();
+                        }
+
+                        const rowY = doc.y;
+
+                        if (i % 2 === 0) {
+                            doc.save()
+                                .rect(44, rowY - 3, doc.page.width - 88, 18)
+                                .fill(c.surface)
+                                .restore();
+                        }
+
+                        let txX = 52;
+
+                        // description + card image
+                        const descText = this.pdfFitText(tx.Description || '', 38);
+
+                        if (tx.Card?.ID && cardImageBuffers.has(tx.Card.ID)) {
+                            const imgBuf = cardImageBuffers.get(tx.Card.ID)!;
+                            doc.save()
+                                .circle(txX + 7, rowY + 5, 7)
+                                .clip()
+                                .image(imgBuf, txX, rowY - 2,
+                                    { width: 14, height: 14 })
+                                .restore();
+                            doc.font('Helvetica').fontSize(9).fillColor(c.ink)
+                                .text(descText, txX + 18, rowY,
+                                    { width: txColW[0] - 18, lineBreak: false });
+                        } else {
+                            doc.font('Helvetica').fontSize(9).fillColor(c.ink)
+                                .text(descText, txX, rowY,
+                                    { width: txColW[0], lineBreak: false });
+                        }
+
+                        txX += txColW[0];
+
+                        // category
+                        doc.font('Helvetica').fontSize(9).fillColor(c.muted)
+                            .text(this.pdfFitText(tx.Category?.Name || '-', 12), txX, rowY,
+                                { width: txColW[1], lineBreak: false });
+
+                        txX += txColW[1];
+
+                        // installment
+                        const installment =
+                            `${tx.Installment ?? 1}/${tx.TotalInstallments ?? 1}`;
+
+                        doc.font('Helvetica').fontSize(9).fillColor(c.muted)
+                            .text(installment, txX, rowY,
+                                { width: txColW[2], lineBreak: false });
+
+                        txX += txColW[2];
+
+                        // value
+                        doc.font('Helvetica-Bold').fontSize(9)
+                            .fillColor(c.ink)
+                            .text(
+                                this.pdfMoney(
+                                    tx.Currency?.Code || CurrencyCode,
+                                    Number(tx.Amount ?? 0)
+                                ),
+                                txX, rowY,
+                                { width: txColW[2], align: 'right', lineBreak: false }
+                            );
+
+                        doc.y = rowY + 18;
+
+                    }
+
+                    doc.y += 10;
+
+                    // --- liabilities section ---
+                    if (Liabilities.length) {
+
+                        if (doc.y + 120 > oMaxY) {
+                            shell.newPage();
+                        }
+
+                        this.pdfSectionTitle(doc, 'Dívidas em aberto',
+                            `${Liabilities.length} dívida(s)`);
+
+                        const lColW = (doc.page.width - 88 - 12) / 2;
+                        const lRowH = 68;
+                        const lGap = 8;
+
+                        for (let i = 0; i < Liabilities.length; i++) {
+
+                            const debt = Liabilities[i];
+                            const col = i % 2;
+                            const row = Math.floor(i / 2);
+                            const lx = 44 + col * (lColW + 12);
+                            const ly = doc.y + row * (lRowH + lGap);
+
+                            if (ly + lRowH > oMaxY) {
+                                shell.newPage();
+                            }
+
+                            doc.save()
+                                .roundedRect(lx, ly, lColW, lRowH, 8)
+                                .fill(c.surface)
+                                .restore();
+
+                            // tint strip
+                            doc.save()
+                                .rect(lx, ly, 5, lRowH)
+                                .fill(c.primary)
+                                .restore();
+
+                            doc.font('Helvetica-Bold').fontSize(10).fillColor(c.ink)
+                                .text(debt.Name, lx + 16, ly + 12,
+                                    { width: lColW - 32, lineBreak: false });
+
+                            doc.font('Helvetica-Bold').fontSize(13)
+                                .fillColor(c.negative)
+                                .text(this.pdfMoney(CurrencyCode, debt.Balance),
+                                    lx + 16, ly + 30,
+                                    { width: lColW - 32, lineBreak: false });
+
+                            // progress bar
+                            const barX2 = lx + 16;
+                            const barMaxW2 = lColW - 32;
+                            const barY2 = ly + 50;
+                            const pct = Math.min(100, Math.max(0, debt.PercentPaid));
+
+                            doc.save()
+                                .roundedRect(barX2, barY2, barMaxW2, 5, 2)
+                                .fill(c.line)
+                                .restore();
+
+                            if (pct > 0) {
+                                doc.save()
+                                    .roundedRect(barX2, barY2,
+                                        Math.max(4, barMaxW2 * (pct / 100)), 5, 2)
+                                    .fill(c.primary)
+                                    .restore();
+                            }
+
+                            doc.font('Helvetica').fontSize(7.5).fillColor(c.muted)
+                                .text(`${pct.toFixed(0)}% pago · vence dia ${debt.DueDay}`,
+                                    barX2, barY2 + 9,
+                                    { width: barMaxW2, lineBreak: false });
+
+                            if (col === 1 || i === Liabilities.length - 1) {
+                                doc.y = ly + lRowH + lGap;
+                            }
+
+                        }
+
+                        doc.y += 6;
+
+                    }
+
+                }
+            );
+
+        } catch (error) {
+
+            const err = error as Error;
+
+            return left(
+                new AbstractError(
+                    err.message,
+                    403,
+                    err.stack as string
+                )
+            );
+
+        }
+
     }
 
 

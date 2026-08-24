@@ -37,6 +37,8 @@ export type CompleteInvoiceReturnProperties = {
 
     TotalExpenses?: number;
     MonthExpenses?: number;
+    MonthLiabilitiesExpenses?: number;
+    MonthTotalExpenses?: number;
     MonthExpensesToPay?: number;
     MonthExpensesClosed?: number;
     MonthExpensesPayed?: number;

@@ -182,7 +182,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     monthExpenses: Decimal,
                     monthExpensesToPay: Decimal,
                     monthExpensesClosed: Decimal,
-                    monthExpensesPayed: Decimal
+                    monthExpensesPayed: Decimal,
+                    monthLiabilitiesExpenses: Decimal
                 }
 
                 if (oExpensesResult?.isLeft()) {
@@ -405,10 +406,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 cardsAdditionalFilters
             ) || [];
 
-            // Dívidas seguem a MESMA regra de seleção dos cartões, filtrada
-            // direto no banco: sem mês/ano informado entram apenas as que
-            // ainda vencem no período corrente (DueDay >= hoje); com mês/ano,
-            // todas. Em ambos os casos somente as EM ABERTO.
             const liabilitiesAdditionalFilters = Year || Month
                 ? { Status: 'OPEN' }
                 : { Status: 'OPEN', DueDay: { '>=': today.day } };
@@ -449,9 +446,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 cards.map(c => c.Id),
                 invoicesAdditionalFilters
             ) || [];
-
-            // Sem faturas ainda é possível enviar: a pessoa pode ter apenas
-            // dívidas selecionadas para o período.
 
             const transactions = await this.TransactionRepository.findByInvoiceIds(
                 invoices.map(i => i.Id)
@@ -557,8 +551,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     }[];
                 }[] = [];
 
-                // Todas as categorias da pessoa: resolve nomes das
-                // transações mesmo sem expansão da relação no SQL.
                 const personCategories =
                     await this.CategoryRepository.findByPersonIds(
                         [person.Id]
@@ -622,8 +614,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 }
 
-                // PDF de cada dívida selecionada: saldo devedor + últimas
-                // movimentações (mesma regra de seleção dos cartões).
                 for (const liability of personLiabilities) {
 
                     const movements =
@@ -633,7 +623,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     const balance =
                         outstandingBalance(liability.TotalAmount, summary);
 
-                    // Nada a detalhar: quitada e sem histórico.
                     if (balance.lessThanOrEqualTo(0) && !movements.length) {
                         continue;
                     }
@@ -686,7 +675,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 }
 
-                // --- PDF consolidado (visão geral) ---
                 const consolidatedTx: any[] = [];
 
                 for (const card of personCards) {
@@ -1517,6 +1505,13 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         oExpenses.totalExpenses?.toDecimalPlaces(2).toNumber(),
                     MonthExpenses:
                         oExpenses.monthExpenses?.toDecimalPlaces(2).toNumber(),
+                    MonthLiabilitiesExpenses:
+                        oExpenses.monthLiabilitiesExpenses
+                            ?.toDecimalPlaces(2).toNumber(),
+                    MonthTotalExpenses:
+                        oExpenses.monthExpenses
+                            ?.plus(oExpenses.monthLiabilitiesExpenses || 0)
+                            .toDecimalPlaces(2).toNumber(),
                     MonthExpensesToPay:
                         oExpenses.monthExpensesToPay?.toDecimalPlaces(2).toNumber(),
                     MonthExpensesClosed:
@@ -3853,7 +3848,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         monthExpenses: Decimal,
         monthExpensesToPay: Decimal,
         monthExpensesClosed: Decimal,
-        monthExpensesPayed: Decimal
+        monthExpensesPayed: Decimal,
+        monthLiabilitiesExpenses: Decimal
     }>> {
 
         try {
@@ -3863,6 +3859,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             let oMonthExpensesToPay = new Decimal(0);
             let oMonthExpensesClosed = new Decimal(0);
             let oMonthExpensesPayed = new Decimal(0);
+            let oMonthLiabilitiesExpenses = new Decimal(0);
 
             let oDate = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
             oDate = oDate.replaceAll(",", " ");
@@ -4040,11 +4037,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 for (const oTransaction of oLiabilityTransactions) {
 
-                    const oAmount =
-                        oTransaction.Amount || new Decimal(0);
-
-                    oTotalExpenses = oTotalExpenses.plus(oAmount);
-
                     const [oTrxYear, oTrxMonth] =
                         String(oTransaction.Date)
                             .split('-')
@@ -4052,22 +4044,12 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                     if (oTrxYear === oYear && oTrxMonth === oMonth) {
 
-                        oMonthExpenses = oMonthExpenses.plus(oAmount);
-
-                        const oTrxIsPast =
-                            (oTrxYear < oSystemYear) ||
-                            (oTrxYear === oSystemYear && oTrxMonth < oSystemMonth);
-
-                        const oTrxIsFuture =
-                            (oTrxYear > oSystemYear) ||
-                            (oTrxYear === oSystemYear && oTrxMonth > oSystemMonth);
-
-                        if (oTrxIsPast) {
-                            oMonthExpensesClosed = oMonthExpensesClosed.plus(oAmount);
-                            oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
-                        } else if (!oTrxIsFuture) {
-                            oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
-                        }
+                        // Dívidas não entram nas estatísticas de gastos:
+                        // possuem campo próprio (monthLiabilitiesExpenses).
+                        oMonthLiabilitiesExpenses =
+                            oMonthLiabilitiesExpenses.plus(
+                                oTransaction.Amount || new Decimal(0)
+                            );
 
                     }
 
@@ -4086,7 +4068,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 monthExpenses: oMonthExpenses,
                 monthExpensesToPay: oMonthExpensesToPay,
                 monthExpensesClosed: oMonthExpensesClosed,
-                monthExpensesPayed: oMonthExpensesPayed
+                monthExpensesPayed: oMonthExpensesPayed,
+                monthLiabilitiesExpenses: oMonthLiabilitiesExpenses
             });
 
         } catch (error) {

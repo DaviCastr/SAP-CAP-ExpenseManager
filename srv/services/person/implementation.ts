@@ -25,6 +25,7 @@ import { CardServiceImplementation } from "../card/implementation";
 import { LiabilityServiceImplementation } from "../liability/implementation";
 import { LiabilityRepository } from "@/repositories/liability";
 import { LiabilityTransactionRepository } from "@/repositories/liability-transaction";
+import { LiabilityTransactionServiceImplementation } from "../liability-transaction/implementation";
 import { LiabilityModel } from "@/models/liability";
 import { LiabilityTransactionModel } from "@/models/liability-transaction";
 import {
@@ -198,7 +199,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 const oCards = mapCards.get(oPersonModel?.Id as string) as Cards;
                 const oLiabilities = mapLiabilities.get(oPersonModel?.Id as string) || [];
-                const oExpensesResult = await this.recoverExpenses(oCards, oLiabilities);
+                const oExpensesResult = await this.recoverExpenses(oCards, oLiabilities, undefined, undefined, User);
                 let oExpenses: {
                     totalExpenses: Decimal,
                     monthExpenses: Decimal,
@@ -1597,7 +1598,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 (visibleCards || []).map(card => card.toEntityObject()) as Cards,
                 visibleLiabilities,
                 Number(Month),
-                Number(Year)
+                Number(Year),
+                request.user
             );
 
             let expensesPayload: Partial<CompleteInvoiceReturnProperties> = {};
@@ -3978,7 +3980,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         Cards: Cards,
         Liabilities: LiabilityModel[],
         TargetMonth?: number,
-        TargetYear?: number
+        TargetYear?: number,
+        AuthUser?: User
     ): Promise<Either<AbstractError, {
         totalExpenses: Decimal,
         monthExpenses: Decimal,
@@ -4034,9 +4037,36 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             const invoicesByCard = await this.InvoiceRepository.findByCardIDs(cardIds, { Year: { '>=': oYear } }) || [];
 
+            // Autorização na leitura dos dados: apenas faturas que o usuário
+            // logado pode ler entram nas estatísticas
+            let visibleInvoices = invoicesByCard;
+
+            if (AuthUser && invoicesByCard.length) {
+
+                const resultAuthInvoices =
+                    await (ServiceRegistry.get('Invoices') as InvoiceServiceImplementation).afterRead(
+                        invoicesByCard.map(invoice =>
+                            invoice.toEntityObject()) as any,
+                        AuthUser
+                    );
+
+                if (resultAuthInvoices.isLeft()) {
+                    return left(resultAuthInvoices.value);
+                }
+
+                const authorizedInvoiceIds = new Set<string>(
+                    (resultAuthInvoices.value || []).map(
+                        (invoice: any) => invoice.ID as string)
+                );
+
+                visibleInvoices = invoicesByCard.filter(
+                    invoice => authorizedInvoiceIds.has(invoice.Id));
+
+            }
+
             const mapInvoices = new Map<string, any[]>();
 
-            for (const inv of invoicesByCard) {
+            for (const inv of visibleInvoices) {
 
                 if (!inv?.Card) continue;
 
@@ -4171,7 +4201,34 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                         }
                     ) || [];
 
-                for (const oTransaction of oLiabilityTransactions) {
+                // Autorização na leitura dos dados: apenas movimentações de
+                // dívidas que o usuário logado pode ler entram nas estatísticas
+                let visibleLiabilityTransactions = oLiabilityTransactions;
+
+                if (AuthUser && visibleLiabilityTransactions.length) {
+
+                    const resultAuthTransactions =
+                        await (ServiceRegistry.get('LiabilityTransactions') as LiabilityTransactionServiceImplementation).afterRead(
+                            visibleLiabilityTransactions.map(transaction =>
+                                transaction.toEntityObject()) as any,
+                            AuthUser
+                        );
+
+                    if (resultAuthTransactions.isLeft()) {
+                        return left(resultAuthTransactions.value);
+                    }
+
+                    const authorizedTransactionIds = new Set<string>(
+                        (resultAuthTransactions.value || []).map(
+                            (transaction: any) => transaction.ID as string)
+                    );
+
+                    visibleLiabilityTransactions = visibleLiabilityTransactions.filter(
+                        transaction => authorizedTransactionIds.has(transaction.Id));
+
+                }
+
+                for (const oTransaction of visibleLiabilityTransactions) {
 
                     const [oTrxYear, oTrxMonth] =
                         String(oTransaction.Date)

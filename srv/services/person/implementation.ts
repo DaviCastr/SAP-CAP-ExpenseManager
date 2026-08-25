@@ -1501,14 +1501,15 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             );
 
             if (authPerson.isLeft()) return authPerson as any;
-            else if (!authPerson.value?.length) {
 
-                const oStack = new Error().stack as string;
+            if (!authPerson.value?.length) {
 
-                const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), this.entityCode()) ||
-                    'error.modificationPermissionDenied';
-
-                return left(new PermissionDenied(message, 403, oStack));
+                return right({
+                    ...CompleteInvoiceModel.empty(
+                        Number(Year),
+                        Number(Month)
+                    ).toEntityObject()
+                });
 
             }
 
@@ -1607,16 +1608,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 });
             }
 
-            const resultAuth = await this.authorizeCompleteInvoiceObjects(
+            const filteredRows = await this.filterCompleteInvoiceRows(
                 rows,
                 request.user
             );
 
-            if (resultAuth.isLeft()) return resultAuth as any;
+            if (filteredRows.isLeft()) return filteredRows as any;
 
             const result =
                 CompleteInvoiceModel.fromRepositoryRows(
-                    rows,
+                    filteredRows.value,
                     Number(Year),
                     Number(Month),
                     this.getMessage(
@@ -5916,10 +5917,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
     }
 
 
-    private async authorizeCompleteInvoiceObjects(
+    private async filterCompleteInvoiceRows(
         rows: any[],
         user: any
-    ): Promise<Either<AbstractError, boolean>> {
+    ): Promise<Either<AbstractError, any[]>> {
 
         const cardService =
             ServiceRegistry.get('Cards') as CardServiceImplementation;
@@ -5933,91 +5934,100 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
         const categoryService =
             ServiceRegistry.get('Categories') as CategoryServiceImplementation;
 
-        const cards = [
-            ...new Map(
-                rows.map(r => [r.CardID, { ID: r.CardID }])
-            ).values()
-        ];
+        const readAllowedIds = async (
+            service:
+                | CardServiceImplementation
+                | InvoiceServiceImplementation
+                | TransactionServiceImplementation
+                | CategoryServiceImplementation,
+            entities: any[]
+        ): Promise<Either<AbstractError, Set<string>>> => {
 
-        const invoices = [
-            ...new Map(
-                rows.map(r => [r.InvoiceID, { ID: r.InvoiceID, Card: { ID: r.CardID } }])
-            ).values()
-        ];
+            const allowed = new Set<string>();
 
-        const transactions = [
-            ...new Map(
-                rows.map(r => [r.TransactionID, { ID: r.TransactionID, Invoice: { ID: r.InvoiceID } }])
-            ).values()
-        ];
+            if (!entities.length) {
+                return right(allowed);
+            }
 
-        const categories = [
-            ...new Map(
-                rows
-                    .filter(r => r.CategoryID)
-                    .map(r => [r.CategoryID, { ID: r.CategoryID }])
-            ).values()
-        ];
+            const result = await service.afterRead(entities, user);
 
-        const resultAuthCard = await cardService.afterRead([cards[0]] as any, user);
+            if (result.isLeft()) {
+                return result as any;
+            }
 
-        if (resultAuthCard.isLeft()) return resultAuthCard as any;
-        else if (!resultAuthCard.value?.length) {
+            for (const entity of result.value || []) {
+                allowed.add((entity as any).ID as string);
+            }
 
-            const oStack = new Error().stack as string;
+            return right(allowed);
 
-            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), cardService.entityCode()) ||
-                'error.modificationPermissionDenied';
+        };
 
-            return left(new PermissionDenied(message, 403, oStack));
+        const allowedCards =
+            await readAllowedIds(
+                cardService,
+                [
+                    ...new Map(
+                        rows.map(r => [r.CardID, { ID: r.CardID }])
+                    ).values()
+                ]
+            );
 
-        }
+        if (allowedCards.isLeft()) return allowedCards as any;
 
-        const resultAuthInvoice = await invoiceService.afterRead([invoices[0]] as any, user);
+        const allowedInvoices =
+            await readAllowedIds(
+                invoiceService,
+                [
+                    ...new Map(
+                        rows.map(r => [
+                            r.InvoiceID,
+                            { ID: r.InvoiceID, Card: { ID: r.CardID } }
+                        ])
+                    ).values()
+                ]
+            );
 
-        if (resultAuthInvoice.isLeft()) return resultAuthInvoice as any;
-        else if (!resultAuthInvoice.value?.length) {
+        if (allowedInvoices.isLeft()) return allowedInvoices as any;
 
-            const oStack = new Error().stack as string;
+        const allowedTransactions =
+            await readAllowedIds(
+                transactionService,
+                [
+                    ...new Map(
+                        rows.map(r => [
+                            r.TransactionID,
+                            { ID: r.TransactionID, Invoice: { ID: r.InvoiceID } }
+                        ])
+                    ).values()
+                ]
+            );
 
-            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), invoiceService.entityCode()) ||
-                'error.modificationPermissionDenied';
+        if (allowedTransactions.isLeft()) return allowedTransactions as any;
 
-            return left(new PermissionDenied(message, 403, oStack));
+        const allowedCategories =
+            await readAllowedIds(
+                categoryService,
+                [
+                    ...new Map(
+                        rows
+                            .filter(r => r.CategoryID)
+                            .map(r => [r.CategoryID, { ID: r.CategoryID }])
+                    ).values()
+                ]
+            );
 
-        }
+        if (allowedCategories.isLeft()) return allowedCategories as any;
 
-        const resultAuthTransaction = await transactionService.afterRead([transactions[0]] as any, user);
+        const filtered = rows.filter(row =>
+            allowedCards.value.has(row.CardID) &&
+            allowedInvoices.value.has(row.InvoiceID) &&
+            allowedTransactions.value.has(row.TransactionID) &&
+            (!row.CategoryID || allowedCategories.value.has(row.CategoryID))
+        );
 
-        if (resultAuthTransaction.isLeft()) return resultAuthTransaction as any;
-        else if (!resultAuthTransaction.value?.length) {
+        return right(filtered);
 
-            const oStack = new Error().stack as string;
-
-            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), transactionService.entityCode()) ||
-                'error.modificationPermissionDenied';
-
-            return left(new PermissionDenied(message, 403, oStack));
-
-        }
-
-        if (!categories.length) return right(true);
-
-        const resultAuthCategory = await categoryService.afterRead([categories[0]] as any, user);
-
-        if (resultAuthCategory.isLeft()) return resultAuthCategory as any;
-        else if (!resultAuthCategory.value?.length) {
-
-            const oStack = new Error().stack as string;
-
-            const message = this.getMessage('error.modificationPermissionDenied', ServiceLocator.getRequest(), categoryService.entityCode()) ||
-                'error.modificationPermissionDenied';
-
-            return left(new PermissionDenied(message, 403, oStack));
-
-        }
-
-        return right(true);
     }
 
 

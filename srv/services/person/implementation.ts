@@ -121,12 +121,33 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             const cardsByPerson = await this.CardRepository.findByPersonIds(personIds) || [] as CardModel[];
 
+            // Autorização na leitura dos dados: apenas cartões que o usuário
+            // logado pode ler entram nas estatísticas da pessoa
+            const resultAuthCards =
+                await (ServiceRegistry.get('Cards') as CardServiceImplementation).afterRead(
+                    (cardsByPerson || []).map(card =>
+                        card.toEntityObject()) as any,
+                    User
+                );
+
+            if (resultAuthCards.isLeft()) {
+                return left(resultAuthCards.value);
+            }
+
+            const authorizedCardIds = new Set<string>(
+                (resultAuthCards.value || []).map(
+                    (card: any) => card.ID as string)
+            );
+
+            const visibleCardsByPerson = (cardsByPerson || [])
+                .filter(card => authorizedCardIds.has(card.Id));
+
             const liabilitiesByPerson =
                 await this.LiabilityRepository.findByPersonId(personIds) || [];
 
             const mapCards = new Map<string, any[]>();
 
-            for (const card of cardsByPerson) {
+            for (const card of visibleCardsByPerson) {
                 if (!mapCards.has(card?.Person?.Id)) {
                     mapCards.set(card?.Person?.Id, []);
                 }
@@ -1527,8 +1548,30 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             // Autorização na leitura dos dados: apenas liabilities que o
             // usuário logado pode ler entram nas estatísticas da fatura
             // completa (o mesmo mecanismo de afterRead usado nas entidades).
+            const cardService =
+                ServiceRegistry.get('Cards') as CardServiceImplementation;
+
             const liabilityService =
                 ServiceRegistry.get('Liabilities') as LiabilityServiceImplementation;
+
+            const resultAuthCards =
+                await cardService.afterRead(
+                    (cards || []).map(card =>
+                        card.toEntityObject()) as any,
+                    request.user
+                );
+
+            if (resultAuthCards.isLeft()) {
+                return resultAuthCards as any;
+            }
+
+            const authorizedCardIds = new Set<string>(
+                (resultAuthCards.value || []).map(
+                    (card: any) => card.ID as string)
+            );
+
+            const visibleCards = (cards || [])
+                .filter(card => authorizedCardIds.has(card.Id));
 
             const resultAuthLiabilities =
                 await liabilityService.afterRead(
@@ -1551,7 +1594,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     authorizedLiabilityIds.has(liability.Id));
 
             const oExpensesResult = await this.recoverExpenses(
-                (cards || []).map(card => card.toEntityObject()) as Cards,
+                (visibleCards || []).map(card => card.toEntityObject()) as Cards,
                 visibleLiabilities,
                 Number(Month),
                 Number(Year)

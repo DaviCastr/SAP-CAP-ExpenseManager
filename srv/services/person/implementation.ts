@@ -554,6 +554,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
             const cache = ServiceLocator.getEmailSendingCache();
 
+            let emailsSent = 0;
+
             for (const person of persons) {
 
                 const personCards = cardsByPerson.get(person.Id) || [];
@@ -869,6 +871,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                     attachments
                 });
 
+                emailsSent++;
+
                 await Promise.all(
                     invoicesToSend.map(inv =>
                         this.InvoiceRepository.update(
@@ -896,6 +900,11 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 }
 
+            }
+
+            if (oIsManualSend && emailsSent === 0) {
+                const message = this.getMessage('error.sendInvoicesNoData', request);
+                return left(new AbstractError(message, 404, ''));
             }
 
             return right(true);

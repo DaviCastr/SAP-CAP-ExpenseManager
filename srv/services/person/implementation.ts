@@ -4111,6 +4111,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                                 (oInvoice.Year == oSystemYear && oInvoice.Month > oSystemMonth);
 
                             oMonthExpenses = oMonthExpenses.plus(oAmount);
+                            oTotalExpenses = oTotalExpenses.plus(oAmount);
 
                             // Passado: tudo fechado e pago.
                             if (oInvoiceIsPast) {
@@ -4121,7 +4122,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                                 // Futuro: nada vencido nem fechado ainda.
                             } else if (oInvoiceIsFuture) {
 
-                                oTotalExpenses = oTotalExpenses.plus(oAmount);
+                                // Já contabilizado em oTotalExpenses acima.
 
                                 // Mês corrente: comparado com o dia de hoje,
                                 // fechou -> Closed, venceu -> Payed e o resto
@@ -4134,8 +4135,6 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                                 if (oCardModel.DueDay < oDay) {
                                     oMonthExpensesPayed = oMonthExpensesPayed.plus(oAmount);
-                                } else {
-                                    oTotalExpenses = oTotalExpenses.plus(oAmount);
                                 }
 
                             }

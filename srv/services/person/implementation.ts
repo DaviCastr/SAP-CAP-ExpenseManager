@@ -4019,20 +4019,10 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 oMonth = Number(TargetMonth);
             }
 
-            // O desvio de referência (cartão que fecha após o vencimento)
-            // existe apenas para identificar o ciclo corrente no mês vigente;
-            // em meses passados/futuros a fatura analisada é a rotulada com o
-            // próprio mês/ano consultado.
-            const oTargetIsPast =
-                (oYear < oSystemYear) ||
-                (oYear == oSystemYear && oMonth < oSystemMonth);
-
-            const oTargetIsFuture =
-                (oYear > oSystemYear) ||
-                (oYear == oSystemYear && oMonth > oSystemMonth);
-
-            const oApplyShift = !oTargetIsPast && !oTargetIsFuture;
-
+            // O desvio de referência (cartão que fecha após o vencimento) foi
+            // removido: cada mês analisado reflete exclusivamente as faturas
+            // rotuladas com o próprio mês/ano consultado, garantindo que ao
+            // avançar o período o mês anterior saia do cálculo.
             const cardIds = Cards.map(c => c.ID);
 
             const invoicesByCard = await this.InvoiceRepository.findByCardIDs(cardIds, { Year: { '>=': oYear } }) || [];
@@ -4086,26 +4076,8 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                 const oCardModel = CardModel.singleModel(Card);
 
-                // Cartões com fechamento após o vencimento têm a fatura de
-                // referência deslocada para o mês seguinte; essa fatura é o
-                // ciclo CORRENTE (ainda em aberto), então nunca deve ser
-                // classificada como paga/fechada pelas comparações de dia.
-                const oShiftedReference =
-                    oCardModel.ClosingDay > oCardModel.DueDay;
-
                 let oInvoiceMonth = oMonth;
                 let oInvoiceYear = oYear;
-
-                if (oApplyShift && oShiftedReference) {
-
-                    if (oInvoiceMonth == 12) {
-                        oInvoiceMonth = 1;
-                        oInvoiceYear += 1;
-                    } else {
-                        oInvoiceMonth += 1;
-                    }
-
-                }
 
                 try {
 
@@ -4151,14 +4123,9 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
                                 oTotalExpenses = oTotalExpenses.plus(oAmount);
 
-                                // Mês corrente: o ciclo corrente dos cartões com
-                                // referência deslocada está em aberto; nos demais,
-                                // fechou (independente de vencer ou não) -> Closed,
-                                // venceu -> Payed e o resto fica só no ToPay.
-                            } else if (oShiftedReference) {
-
-                                oTotalExpenses = oTotalExpenses.plus(oAmount);
-
+                                // Mês corrente: comparado com o dia de hoje,
+                                // fechou -> Closed, venceu -> Payed e o resto
+                                // fica só no ToPay.
                             } else {
 
                                 if (oCardModel.ClosingDay <= oDay) {

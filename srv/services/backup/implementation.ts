@@ -1,6 +1,6 @@
 import cds, { User } from '@sap/cds';
 import { AbstractError } from '@/errors';
-import { Backup, Card, Category, Entity, Invoice, Person, Share, Transaction } from '@models/apps/dflc/expensemanager/entities';
+import { Backup, Card, Category, Entity, Invoice, Liability, LiabilityTransaction, Person, Share, Transaction } from '@models/apps/dflc/expensemanager/entities';
 import { Either, left, right } from '@sweet-monads/either';
 import { BackupService } from './protocols';
 import { BaseServiceImplementation } from '../base/implementation';
@@ -22,6 +22,8 @@ import { InvoiceServiceImplementation } from '../invoice/implementation';
 import { TransactionServiceImplementation } from '../transaction/implementation';
 import { ShareServiceImplementation } from '../share/implementation';
 import { EntityServiceImplementation } from '../entity/implementation';
+import { LiabilityServiceImplementation } from '../liability/implementation';
+import { LiabilityTransactionServiceImplementation } from '../liability-transaction/implementation';
 
 export class BackupServiceImplementation extends BaseServiceImplementation<Backup> implements BackupService {
 
@@ -111,6 +113,8 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
             const entityRepo = (ServiceRegistry.get('Entities') as EntityServiceImplementation).Repository;
             const invoiceRepo = (ServiceRegistry.get('Invoices') as InvoiceServiceImplementation).Repository;
             const transactionRepo = (ServiceRegistry.get('Transactions') as TransactionServiceImplementation).Repository;
+            const liabilityRepo = (ServiceRegistry.get('Liabilities') as LiabilityServiceImplementation).Repository;
+            const liabilityTransactionRepo = (ServiceRegistry.get('LiabilityTransactions') as LiabilityTransactionServiceImplementation).Repository;
 
             const [
                 shares,
@@ -137,6 +141,12 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
             const transactions = await transactionRepo.findByInvoiceIds(invoiceIds);
 
+            const liabilities = await liabilityRepo.findByPersonIds(personIds);
+            const liabilityIds = liabilities?.map(l => l.Id);
+            const liabilityTransactions = liabilityIds?.length
+                ? (await liabilityTransactionRepo.findByLiabilityIds(liabilityIds)) || []
+                : [];
+
             const [
                 personImages,
                 categoryImages,
@@ -161,6 +171,8 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
             const entitiesByShare = groupBy(entities || [], 'Share', 'Id');
             const invoicesByCard = groupBy(invoices || [], 'Card', 'Id');
             const transactionsByInvoice = groupBy(transactions || [], 'Invoice', 'Id');
+            const liabilitiesByPerson = groupBy(liabilities || [], 'Person', 'Id');
+            const liabilityTransactionsByLiability = groupBy(liabilityTransactions || [], 'Liability', 'Id');
 
             const mapById = <T extends { ID: string, Image: Readable }>(arr: T[]) =>
                 arr?.reduce((acc, item) => {
@@ -260,6 +272,30 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
                     }));
                 }
 
+                const personLiabilities = liabilitiesByPerson[person.Id] || [];
+
+                if (personLiabilities.length) {
+
+                    const liabilityToRow = (l) => {
+                        const entity = l.toEntityObject();
+                        delete entity.LiabilityTransactions;
+                        return entity;
+                    };
+
+                    const liabilitySheet = workbook.addWorksheet('Liabilities');
+                    const liabilityHeaders = Object.keys(liabilityToRow(personLiabilities[0]));
+                    liabilitySheet.columns = liabilityHeaders.map(k => ({ header: k, key: k })) as any;
+                    liabilitySheet.addRows(personLiabilities.map(liabilityToRow));
+
+                    const allLiabilityTransactions = personLiabilities.flatMap(l => liabilityTransactionsByLiability[l.Id] || []);
+
+                    if (allLiabilityTransactions.length) {
+                        const liabilityTxSheet = workbook.addWorksheet('LiabilityTransactions');
+                        liabilityTxSheet.columns = Object.keys(allLiabilityTransactions[0].toEntityObject()).map(k => ({ header: k, key: k })) as any;
+                        liabilityTxSheet.addRows(allLiabilityTransactions.map(t => t.toEntityObject()));
+                    }
+                }
+
                 const excelBuffer = await workbook.xlsx.writeBuffer() as any;
                 personZip.addFile(`Dados_${person.Id}.xlsx`, excelBuffer);
 
@@ -343,7 +379,7 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
             const { workbook, binaryFiles } = result.value;
 
-            const tables = ['Persons', 'Shares', 'Entities', 'Categories', 'Cards', 'Invoices', 'Transactions'];
+            const tables = ['Persons', 'Shares', 'Entities', 'Categories', 'Cards', 'Invoices', 'Transactions', 'Liabilities', 'LiabilityTransactions'];
 
             for (const table of tables) {
 
@@ -693,6 +729,43 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
     }
 
 
+    private buildLiabilities(row: any): Liability {
+
+        return {
+            ID: row.ID,
+            Name: this.get(row.Name, row.Nome),
+            Description: this.get(row.Description, row.Descricao),
+            Currency: this.relation(row.Currency, { code: row.Moeda_code }),
+            TotalAmount: this.get(row.TotalAmount, row.ValorTotal),
+            OutstandingBalance: this.get(row.OutstandingBalance, row.SaldoEmAberto),
+            PaymentPercentage: this.get(row.PaymentPercentage, row.PercentualPagamento),
+            Status: this.get(row.Status),
+            DueDay: this.get(row.DueDay, row.DiaVencimento),
+            InvoiceSentMonth: this.get(row.InvoiceSentMonth, row.MesAvisoEnviado),
+            InvoiceSentYear: this.get(row.InvoiceSentYear, row.AnoAvisoEnviado),
+            Person: this.relation(row.Person, { ID: row.Pessoa_ID }),
+            ...this.audit(row)
+        };
+
+    }
+
+
+    private buildLiabilityTransactions(row: any): LiabilityTransaction {
+
+        return {
+            ID: row.ID,
+            Liability: this.relation(row.Liability, { ID: row.Divida_ID }),
+            Date: this.get(row.Date, row.Data),
+            Description: this.get(row.Description, row.Descricao),
+            Currency: this.relation(row.Currency, { code: row.Moeda_code }),
+            Amount: this.get(row.Amount, row.Valor),
+            Type: this.get(row.Type, row.Tipo),
+            ...this.audit(row)
+        };
+
+    }
+
+
     private readonly rowMappers: Record<string, (row: any, binaryFiles: Record<string, any>) => any> = {
 
         Persons: (row, binaryFiles) => this.buildPersons(row, binaryFiles),
@@ -707,7 +780,11 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
         Invoices: (row) => this.buildInvoices(row),
 
-        Transactions: (row) => this.buildTransactions(row)
+        Transactions: (row) => this.buildTransactions(row),
+
+        Liabilities: (row) => this.buildLiabilities(row),
+
+        LiabilityTransactions: (row) => this.buildLiabilityTransactions(row)
 
     };
 

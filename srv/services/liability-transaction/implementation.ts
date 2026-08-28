@@ -848,6 +848,34 @@ export class LiabilityTransactionServiceImplementation
 
         }
 
+        const transactionCurrency =
+            entity?.Currency_code ||
+            entity?.Currency?.code;
+
+        const liabilityCurrency =
+            liability?.Currency?.Code;
+
+        if (
+            transactionCurrency &&
+            liabilityCurrency &&
+            transactionCurrency !== liabilityCurrency
+        ) {
+
+            return left(
+                new PermissionDenied(
+                    this.getMessage(
+                        "error.transactionCurrencyMismatch",
+                        request,
+                        entityCode
+                    ) ||
+                    "error.transactionCurrencyMismatch",
+                    400,
+                    stack
+                )
+            );
+
+        }
+
         if (type === "IN") {
 
             const rows =

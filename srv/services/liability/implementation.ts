@@ -277,6 +277,71 @@ export class LiabilityServiceImplementation
     }
 
     /**
+     * A debt cannot have a currency different from its owner person. When the
+     * liability carries a `Person_ID` and a `Currency_code`, reads the person
+     * and rejects the write if the currencies diverge.
+     *
+     * @param {any} data the liability payload/entity being written
+     * @param {any} request the current request (for error localization)
+     * @param {string} stack the error stack
+     * @returns {Either<AbstractError, boolean>} left with a localized error, or
+     *   right when it matches (or the check cannot be performed)
+     */
+    private async validateCurrencyAgainstPerson(
+        data: any,
+        request: any,
+        stack: string
+    ): Promise<
+        Either<AbstractError, boolean>
+    > {
+
+        const personId =
+            data?.Person_ID;
+
+        const currencyCode =
+            data?.Currency_code;
+
+        if (
+            !personId ||
+            !currencyCode
+        ) {
+            return right(true);
+        }
+
+        const person =
+            await this.PersonRepository
+                .findById(
+                    personId
+                );
+
+        const personCurrency =
+            person?.Currency?.Code;
+
+        if (
+            personCurrency &&
+            currencyCode !== personCurrency
+        ) {
+
+            return left(
+                new PermissionDenied(
+                    this.getMessage(
+                        "error.liabilityCurrencyMismatch",
+                        request,
+                        this.entityCode()
+                    ) ||
+                    "error.liabilityCurrencyMismatch",
+                    400,
+                    stack
+                )
+            );
+
+        }
+
+        return right(true);
+
+    }
+
+    /**
      * Recomputes the derived values of a debt from ALL its persisted
      * transactions (never incremental, never from the payload). The write goes
      * to the entity set the current request works on, so during a draft
@@ -489,6 +554,17 @@ export class LiabilityServiceImplementation
                 "OPEN";
         }
 
+        const currencyCheck =
+            await this.validateCurrencyAgainstPerson(
+                data,
+                ServiceLocator.getRequest(),
+                new Error().stack || ""
+            );
+
+        if (currencyCheck.isLeft()) {
+            return currencyCheck;
+        }
+
         return super.beforeCreate(
             entity,
             user
@@ -541,6 +617,17 @@ export class LiabilityServiceImplementation
             delete payload.TotalIn;
             delete payload.TotalOut;
 
+        }
+
+        const currencyCheck =
+            await this.validateCurrencyAgainstPerson(
+                data,
+                request,
+                new Error().stack || ""
+            );
+
+        if (currencyCheck.isLeft()) {
+            return currencyCheck;
         }
 
         if (

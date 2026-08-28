@@ -366,7 +366,13 @@ export class LiabilityServiceImplementation
                             percentage,
 
                         Status:
-                            status
+                            status,
+
+                        TotalIn:
+                            summary.TotalIn,
+
+                        TotalOut:
+                            summary.TotalOut
                     },
                     draftExists
                         ? this.Repository
@@ -462,6 +468,22 @@ export class LiabilityServiceImplementation
                 0;
         }
 
+        if (
+            data.TotalIn === undefined ||
+            data.TotalIn === null
+        ) {
+            data.TotalIn =
+                0;
+        }
+
+        if (
+            data.TotalOut === undefined ||
+            data.TotalOut === null
+        ) {
+            data.TotalOut =
+                0;
+        }
+
         if (!data.Status) {
             data.Status =
                 "OPEN";
@@ -502,6 +524,8 @@ export class LiabilityServiceImplementation
         delete data.OutstandingBalance;
         delete data.PaymentPercentage;
         delete data.Status;
+        delete data.TotalIn;
+        delete data.TotalOut;
 
         const request =
             ServiceLocator.getRequest();
@@ -514,6 +538,8 @@ export class LiabilityServiceImplementation
             delete payload.OutstandingBalance;
             delete payload.PaymentPercentage;
             delete payload.Status;
+            delete payload.TotalIn;
+            delete payload.TotalOut;
 
         }
 

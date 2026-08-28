@@ -52,6 +52,8 @@ export interface LiabilityRepository extends BaseRepository {
             OutstandingBalance?: number | Decimal;
             PaymentPercentage?: number | Decimal;
             Status?: string;
+            TotalIn?: number | Decimal;
+            TotalOut?: number | Decimal;
         },
         Entity?: entity
     ): Promise<boolean>;

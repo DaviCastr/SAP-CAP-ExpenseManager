@@ -531,7 +531,13 @@ export class LiabilityTransactionServiceImplementation
                             percentage,
 
                         Status:
-                            status
+                            status,
+
+                        TotalIn:
+                            summary.TotalIn,
+
+                        TotalOut:
+                            summary.TotalOut
                     },
                     draftExists
                         ? this.LiabilityRepository

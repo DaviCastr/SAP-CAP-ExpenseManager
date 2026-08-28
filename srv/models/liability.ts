@@ -16,6 +16,9 @@ type LiabilityProperties = {
     OutstandingBalance?: Decimal;
     PaymentPercentage?: Decimal;
 
+    TotalIn?: Decimal;
+    TotalOut?: Decimal;
+
     Status?: string;
 
     DueDay?: number;
@@ -65,6 +68,9 @@ export class LiabilityModel extends BaseModel {
                 OutstandingBalance: this.retrieveDecimal(item.OutstandingBalance),
                 PaymentPercentage: this.retrieveDecimal(item.PaymentPercentage),
 
+                TotalIn: this.retrieveDecimal(item.TotalIn),
+                TotalOut: this.retrieveDecimal(item.TotalOut),
+
                 Status: item.Status as string,
 
                 DueDay: item.DueDay as number,
@@ -95,6 +101,9 @@ export class LiabilityModel extends BaseModel {
     public get TotalAmount() { return this.props.TotalAmount; }
     public get OutstandingBalance() { return this.props.OutstandingBalance; }
     public get PaymentPercentage() { return this.props.PaymentPercentage; }
+
+    public get TotalIn() { return this.props.TotalIn; }
+    public get TotalOut() { return this.props.TotalOut; }
 
     public get Status() { return this.props.Status; }
 
@@ -129,6 +138,9 @@ export class LiabilityModel extends BaseModel {
             TotalAmount: this.props.TotalAmount?.toNumber(),
             OutstandingBalance: this.props.OutstandingBalance?.toNumber(),
             PaymentPercentage: this.props.PaymentPercentage?.toNumber(),
+
+            TotalIn: this.props.TotalIn?.toNumber(),
+            TotalOut: this.props.TotalOut?.toNumber(),
 
             Status: this.props.Status,
 

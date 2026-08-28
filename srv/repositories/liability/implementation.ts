@@ -295,6 +295,8 @@ export class LiabilityRepositoryImplementation
             OutstandingBalance?: number | Decimal;
             PaymentPercentage?: number | Decimal;
             Status?: string;
+            TotalIn?: number | Decimal;
+            TotalOut?: number | Decimal;
         },
         Entity?: entity
     ): Promise<boolean> {
@@ -312,7 +314,17 @@ export class LiabilityRepositoryImplementation
                     : data.PaymentPercentage,
 
             Status:
-                data.Status
+                data.Status,
+
+            TotalIn:
+                data.TotalIn instanceof Decimal
+                    ? data.TotalIn.toNumber()
+                    : data.TotalIn,
+
+            TotalOut:
+                data.TotalOut instanceof Decimal
+                    ? data.TotalOut.toNumber()
+                    : data.TotalOut
 
         };
 

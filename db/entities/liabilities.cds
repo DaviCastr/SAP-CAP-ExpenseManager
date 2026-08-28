@@ -25,6 +25,12 @@ entity Liabilities : cuid, managed {
     OutstandingBalance    : Decimal(15, 2);
     PaymentPercentage     : Decimal(9, 2);
 
+    @Semantics.amount.currencyCode: 'Currency'
+    TotalIn               : Decimal(15, 2);
+
+    @Semantics.amount.currencyCode: 'Currency'
+    TotalOut              : Decimal(15, 2);
+
     Status                : types.LiabilityStatus default #OPEN;
 
     DueDay                : Integer;

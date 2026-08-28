@@ -44,4 +44,9 @@ export interface LiabilityTransactionRepository extends BaseRepository {
         data: Partial<LiabilityTransaction>
     ): Promise<boolean>;
 
+    updateCurrencyByLiabilityId(
+        liabilityId: Liability["ID"],
+        currencyCode: string
+    ): Promise<boolean>;
+
 }

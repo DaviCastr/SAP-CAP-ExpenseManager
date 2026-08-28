@@ -250,6 +250,31 @@ export class LiabilityTransactionRepositoryImplementation
     }
 
 
+    public async updateCurrencyByLiabilityId(
+        liabilityId: Liability["ID"],
+        currencyCode: string
+    ): Promise<boolean> {
+
+        await UPDATE(this.getEntity(true))
+            .set({ Currency_code: currencyCode })
+            .where({ Liability_ID: liabilityId });
+
+        const drafts =
+            this.getDraftsEntity();
+
+        if (drafts) {
+
+            await UPDATE(drafts)
+                .set({ Currency_code: currencyCode })
+                .where({ Liability_ID: liabilityId });
+
+        }
+
+        return true;
+
+    }
+
+
     protected getEntity(
         ignoreDraft?: boolean
     ): entity {

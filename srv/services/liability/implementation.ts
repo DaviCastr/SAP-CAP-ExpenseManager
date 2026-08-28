@@ -277,41 +277,6 @@ export class LiabilityServiceImplementation
     }
 
     /**
-     * The liability currency is the source of truth for all its movements, so
-     * whenever a liability is created or has its currency changed, propagate it
-     * to the transactions (both active and draft rows). This keeps the
-     * mandatory `Currency_code` of `LiabilityTransactions` consistent and avoids
-     * `ASSERT_MANDATORY` failures when activating the deep person draft.
-     *
-     * @param {any} data the liability payload/entity being written
-     */
-    private async propagateCurrencyToTransactions(
-        data: any
-    ): Promise<void> {
-
-        const currencyCode =
-            data?.Currency_code;
-
-        const liabilityId =
-            data?.ID;
-
-        if (
-            !currencyCode ||
-            !liabilityId
-        ) {
-            return;
-        }
-
-        await this
-            .LiabilityTransactionRepository
-            .updateCurrencyByLiabilityId(
-                liabilityId,
-                currencyCode
-            );
-
-    }
-
-    /**
      * Recomputes the derived values of a debt from ALL its persisted
      * transactions (never incremental, never from the payload). The write goes
      * to the entity set the current request works on, so during a draft
@@ -524,10 +489,6 @@ export class LiabilityServiceImplementation
                 "OPEN";
         }
 
-        await this.propagateCurrencyToTransactions(
-            data
-        );
-
         return super.beforeCreate(
             entity,
             user
@@ -581,10 +542,6 @@ export class LiabilityServiceImplementation
             delete payload.TotalOut;
 
         }
-
-        await this.propagateCurrencyToTransactions(
-            data
-        );
 
         if (
             data.TotalAmount === undefined ||

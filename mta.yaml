@@ -19,6 +19,8 @@ modules:
     parameters:
       instances: 1
       buildpack: nodejs_buildpack
+      readiness-health-check-type: http
+      readiness-health-check-http-endpoint: /health
     build-parameters:
       builder: npm-ci
     provides:
@@ -58,7 +60,6 @@ modules:
         properties:
           app-protocol: ${protocol}
           app-uri: ${default-uri}
-
 resources:
 
   - name: ExpenseManager-db
@@ -74,13 +75,17 @@ resources:
       service-plan: application
       path: ./xs-security.json
       config:
+        oauth2-configuration:
+          redirect-uris:
+            - https://*.${default-domain}/login/*
+          credential-types:
+            - binding-secret
+            - x509
         xsappname: ExpenseManager-uaa-${space}
         tenant-mode: dedicated
 
   - name: ExpenseManager-destination
     type: org.cloudfoundry.managed-service
-    requires:
-    - name: srv-api
     parameters:
       service: destination
       service-plan: lite
@@ -90,7 +95,7 @@ resources:
           instance:
             existing_destinations_policy: update
             destinations:
-              - Name: ExpenseManager
+              - Name: ExpenseManager-srv-api
                 URL: ~{srv-api/srv-url}
                 Authentication: NoAuthentication
                 Type: HTTP
@@ -105,14 +110,18 @@ resources:
           subaccount:
             existing_destinations_policy: update
             destinations:
-              - Name: ExpenseManager-destination
+              - Name: ExpenseManager-srv-api
                 URL: ~{srv-api/srv-url}
-                Authentication: OAuth2UserTokenExchange
+                Authentication: NoAuthentication
                 Type: HTTP
                 ProxyType: Internet
-                HTML5Runtime_enabled: true
-                HTML5.DynamicDestination: true
                 HTML5.ForwardAuthToken: true
-                TokenServiceInstanceName: ExpenseManager-uaa
-                TokenServiceKeyName: ExpenseManager-uaa-key
-    
+                HTML5.DynamicDestination: true
+                sap.cloud.service: ExpenseManager
+    requires:
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api # must be used in xs-app.json as well
+          url: ~{srv-url}
+          forwardAuthToken: true

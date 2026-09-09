@@ -113,6 +113,9 @@ resources:
         oauth2-configuration:
           redirect-uris:
             - https://*.${default-domain}/login/*
+            - https://*.cfapps.us10-003.hana.ondemand.com/**
+            - http://localhost:*/**
+            - https://davicastr.github.io/**
           credential-types:
             - binding-secret
             - x509

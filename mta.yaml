@@ -60,6 +60,41 @@ modules:
         properties:
           app-protocol: ${protocol}
           app-uri: ${default-uri}
+
+  - name: ExpenseManager-destinations
+    type: com.sap.application.content
+    requires:
+      - name: ExpenseManager-uaa
+        parameters:
+          service-key:
+            name: ExpenseManager-uaa-key
+      - name: ExpenseManager-destination
+        parameters:
+          content-target: true
+      - name: srv-api
+    build-parameters:
+      no-source: true
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            - Name: ExpenseManager-auth
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: ExpenseManager-uaa
+              ServiceKeyName: ExpenseManager-uaa-key
+              sap.cloud.service: ExpenseManager
+        subaccount:
+          existing_destinations_policy: update
+          destinations:
+            - Authentication: OAuth2UserTokenExchange
+              Name: ExpenseManager-srv-api
+              TokenServiceInstanceName: ExpenseManager-uaa
+              TokenServiceKeyName: ExpenseManager-uaa-key
+              URL: ~{srv-api/srv-url}
+              HTML5.DynamicDestination: true
+              sap.cloud.service: ExpenseManager
+
 resources:
 
   - name: ExpenseManager-db
@@ -107,17 +142,6 @@ resources:
                 Authentication: NoAuthentication
                 Type: HTTP
                 ProxyType: Internet
-          subaccount:
-            existing_destinations_policy: update
-            destinations:
-              - Name: ExpenseManager-srv-api
-                URL: ~{srv-api/srv-url}
-                Authentication: NoAuthentication
-                Type: HTTP
-                ProxyType: Internet
-                HTML5.ForwardAuthToken: true
-                HTML5.DynamicDestination: true
-                sap.cloud.service: ExpenseManager
     requires:
       - name: srv-api
         group: destinations

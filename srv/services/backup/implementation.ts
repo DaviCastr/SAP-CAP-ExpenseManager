@@ -52,6 +52,10 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
     public async beforeUpdate(Backup: Backup, User: User): Promise<Either<AbstractError, boolean>> {
 
+        if (ServiceLocator.targetIsDraft()) {
+            return right(true);
+        }
+
         return this.processImport(Backup);
 
     }
@@ -346,9 +350,11 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
         try {
 
-            if (Backup?.Backup) {
+            const oContent = Backup?.Backup ?? (Backup?.ID ? await this.Repository.findDraftContent(Backup.ID) : undefined);
 
-                const oBackupBuffer = await this.readableToBuffer(Backup?.Backup);
+            if (oContent) {
+
+                const oBackupBuffer = await this.readableToBuffer(oContent as Readable);
 
                 if (oBackupBuffer) {
                     return this.importBackup(oBackupBuffer as Buffer);

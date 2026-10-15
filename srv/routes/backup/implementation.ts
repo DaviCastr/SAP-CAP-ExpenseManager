@@ -25,6 +25,8 @@ export class BackupRouteImplementation extends BaseRouteImplementation<Backup> i
 
         this.mainBase(Service, Backups);
 
+        Service.before('CREATE', Backups, this.beforeCreate.bind(this));
+
         Service.on('ProcessBackupDelete', this.processBackupDelete.bind(this));
 
         Service.on('ExportBackup', this.exportBackup.bind(this));

@@ -11,6 +11,21 @@ import { ServiceLocator } from "@/infrastructure/ServiceLocator";
 export class BackupRepositoryImplementation extends BaseRepositoryImplementation implements BackupRepository {
 
 
+    public async findDraftContent(Id: Backup['ID']): Promise<unknown> {
+
+        const oDraftEntity = (cds.entities['BackupService.Backups'] as any)?.drafts as entity | undefined;
+
+        if (!oDraftEntity) {
+            return undefined;
+        }
+
+        const oDraft = await cds.run(SELECT.one.from(oDraftEntity).columns('Backup').where({ ID: Id }));
+
+        return oDraft?.Backup;
+
+    }
+
+
     public async findById(Id: Backup['ID']): Promise<BackupModel | null> {
 
         let oBackupEntity = this.getEntity();

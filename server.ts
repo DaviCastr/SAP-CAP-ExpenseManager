@@ -1,11 +1,13 @@
 import cds from '@sap/cds';
 import { oAuthRouter } from './srv/auth/authRouter';
 import { corsMiddleware } from './srv/middlewares/cors';
+import { databaseHealth } from './srv/middlewares/health';
 import { ServiceLocator } from './srv/infrastructure/ServiceLocator';
 
 cds.on('bootstrap', (app) => {
     app.use(corsMiddleware);
     app.use('/auth', oAuthRouter);
+    app.get('/health/db', databaseHealth);
 });
 
 // Agendador do SendInvoices automático: executa ao iniciar o serviço

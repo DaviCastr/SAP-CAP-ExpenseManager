@@ -1,0 +1,36 @@
+name: Start BTP trial
+
+on:
+  schedule:
+    - cron: '13 20,0,3 * * *'
+    - cron: '13 18,22,23 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: start-trial
+  cancel-in-progress: false
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      CF_APP: ${{ vars.CF_APP || 'ExpenseManager-srv' }}
+      HANA_INSTANCE: ${{ vars.HANA_INSTANCE }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Cloud Foundry
+        uses: ./.github/actions/cf-login
+        with:
+          api: ${{ vars.CF_API || 'https://api.cf.us10-001.hana.ondemand.com' }}
+          org: ${{ vars.CF_ORG }}
+          space: ${{ vars.CF_SPACE || 'dev' }}
+          username: ${{ secrets.CF_USERNAME }}
+          password: ${{ secrets.CF_PASSWORD }}
+
+      - name: Start SAP HANA Cloud and the application
+        run: bash .github/scripts/start-trial.sh

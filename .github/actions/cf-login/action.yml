@@ -1,0 +1,55 @@
+name: Cloud Foundry login
+description: Installs the Cloud Foundry CLI v8, validates the configuration and logs in
+
+inputs:
+  api:
+    description: Cloud Foundry API endpoint
+    required: true
+  org:
+    description: Cloud Foundry organization
+    required: true
+  space:
+    description: Cloud Foundry space
+    required: true
+  username:
+    description: BTP user
+    required: true
+  password:
+    description: BTP password
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check configuration
+      shell: bash
+      env:
+        CF_USERNAME: ${{ inputs.username }}
+        CF_PASSWORD: ${{ inputs.password }}
+        CF_ORG: ${{ inputs.org }}
+      run: |
+        missing=()
+        [[ -n "$CF_USERNAME" ]] || missing+=("secret CF_USERNAME")
+        [[ -n "$CF_PASSWORD" ]] || missing+=("secret CF_PASSWORD")
+        [[ -n "$CF_ORG" ]] || missing+=("variable CF_ORG")
+        if (( ${#missing[@]} )); then
+          echo "::error::Missing repository configuration: ${missing[*]}. Create them in Settings > Secrets and variables > Actions (Repository secrets / Repository variables)."
+          exit 1
+        fi
+
+    - name: Install Cloud Foundry CLI
+      shell: bash
+      run: |
+        curl -sSL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github" | tar -zx -C /tmp cf8
+        sudo install /tmp/cf8 /usr/local/bin/cf
+        cf version
+
+    - name: Log in
+      shell: bash
+      env:
+        CF_USERNAME: ${{ inputs.username }}
+        CF_PASSWORD: ${{ inputs.password }}
+      run: |
+        cf api "${{ inputs.api }}"
+        cf auth
+        cf target -o "${{ inputs.org }}" -s "${{ inputs.space }}"

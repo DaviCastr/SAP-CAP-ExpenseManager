@@ -39,28 +39,6 @@ modules:
     requires:
       - name: ExpenseManager-db
 
-  - name: ExpenseManager
-    type: approuter.nodejs
-    path: app/router
-    parameters:
-      keep-existing-routes: true
-      disk-quota: 256M
-      memory: 256M
-    requires:
-      - name: srv-api
-        group: destinations
-        properties:
-          name: srv-api # must be used in xs-app.json as well
-          url: ~{srv-url}
-          forwardAuthToken: true
-      - name: ExpenseManager-uaa
-
-    provides:
-      - name: app-api
-        properties:
-          app-protocol: ${protocol}
-          app-uri: ${default-uri}
-
   - name: ExpenseManager-destinations
     type: com.sap.application.content
     requires:
@@ -112,7 +90,6 @@ resources:
       config:
         oauth2-configuration:
           redirect-uris:
-            - https://*.${default-domain}/login/*
             - https://*.hana.ondemand.com/**
             - http://localhost:*/**
             - https://davicastr.github.io/**

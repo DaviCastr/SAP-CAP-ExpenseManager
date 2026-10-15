@@ -29,8 +29,7 @@
     "redirect-uris": [
       "https://*.hana.ondemand.com/**",
       "http://localhost:*/**",
-      "https://davicastr.github.io/**",
-      "https://benditalook.github.io/**"
+      "https://davicastr.github.io/**"
     ]
   }
 }

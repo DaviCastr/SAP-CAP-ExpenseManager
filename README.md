@@ -21,7 +21,7 @@ Usuários locais (basic auth): `davi / 123456` e `beatriz / 123456`.
 
 | Variável | Descrição |
 |---|---|
-| `SMTPHost`, `SMTPAddres`, `SMTPKey` | Servidor, email e senha de app usados no envio de emails (porta 587) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | Servidor, porta (padrão 587), email e senha de app usados no envio de emails |
 
 ## Deploy no BTP Trial
 
@@ -51,7 +51,7 @@ No trial o HANA Cloud é parado toda noite. Dois workflows cuidam do ambiente:
 | `CF_SPACE` | Variable | Opcional, padrão `dev` |
 | `CF_APP` | Variable | Opcional, padrão `ExpenseManager-srv` |
 | `HANA_INSTANCE` | Variable | Opcional; sem ela o workflow usa a primeira instância `hana-cloud*` do space |
-| `SMTP_HOST` | Variable | Opcional, padrão `smtp.gmail.com` |
+| `SMTP_HOST` / `SMTP_PORT` | Variable | Opcionais, padrão `smtp.gmail.com` / `587` |
 | `UAA_INSTANCE` / `UAA_KEY` | Variable | Opcionais, padrão `ExpenseManager-uaa` / `ExpenseManager-uaa-key` |
 | `UI5_REPOSITORY` / `UI5_PAGES_URL` | Variable | Opcionais, padrão `DaviCastr/SAP-UI5-ExpenseManager` / `https://davicastr.github.io/SAP-UI5-ExpenseManager/` (usado como redirect do login) |
 

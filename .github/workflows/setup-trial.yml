@@ -88,6 +88,7 @@ jobs:
         if: inputs.configure_smtp
         env:
           SMTP_HOST: ${{ vars.SMTP_HOST || 'smtp.gmail.com' }}
+          SMTP_PORT: ${{ vars.SMTP_PORT || '587' }}
           SMTP_USER: ${{ vars.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: bash .github/scripts/configure-smtp.sh

@@ -861,7 +861,7 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
                 });
 
                 await cache._smtpInstance.sendMail({
-                    from: `"Expense Manager" <${process.env.SMTPAddres}>`,
+                    from: `"Expense Manager" <${process.env.SMTP_USER}>`,
                     to: person.Email,
                     subject:
                         oIsPrediction
@@ -4935,9 +4935,9 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
     private validateEmailConfiguration(request: any): void {
 
-        if (!process.env.SMTPAddres ||
-            !process.env.SMTPHost ||
-            !process.env.SMTPKey) {
+        if (!process.env.SMTP_USER ||
+            !process.env.SMTP_HOST ||
+            !process.env.SMTP_PASSWORD) {
 
             throw new Error(
                 this.getMessage(
@@ -4987,14 +4987,16 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
 
         if (!cache._smtpInstance) {
 
+            const port = Number(process.env.SMTP_PORT || 587);
+
             cache._smtpInstance =
                 nodemailer.createTransport({
-                    host: process.env.SMTPHost,
-                    port: 587,
-                    secure: false,
+                    host: process.env.SMTP_HOST,
+                    port,
+                    secure: port === 465,
                     auth: {
-                        user: process.env.SMTPAddres,
-                        pass: process.env.SMTPKey
+                        user: process.env.SMTP_USER,
+                        pass: process.env.SMTP_PASSWORD
                     }
                 });
 

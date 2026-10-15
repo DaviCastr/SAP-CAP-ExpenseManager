@@ -9,9 +9,14 @@ if [[ -z "${SMTP_USER:-}" || -z "${SMTP_PASSWORD:-}" ]]; then
 fi
 
 echo "Configuring email for '${CF_APP}'"
-cf set-env "$CF_APP" SMTPHost "$SMTP_HOST" > /dev/null
-cf set-env "$CF_APP" SMTPAddres "$SMTP_USER" > /dev/null
-cf set-env "$CF_APP" SMTPKey "$SMTP_PASSWORD" > /dev/null
+cf set-env "$CF_APP" SMTP_HOST "$SMTP_HOST" > /dev/null
+cf set-env "$CF_APP" SMTP_PORT "$SMTP_PORT" > /dev/null
+cf set-env "$CF_APP" SMTP_USER "$SMTP_USER" > /dev/null
+cf set-env "$CF_APP" SMTP_PASSWORD "$SMTP_PASSWORD" > /dev/null
+
+for legacy_name in SMTPHost SMTPAddres SMTPKey; do
+    cf unset-env "$CF_APP" "$legacy_name" > /dev/null
+done
 
 cf restart "$CF_APP"
 

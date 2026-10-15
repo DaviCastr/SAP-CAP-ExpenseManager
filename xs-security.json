@@ -16,9 +16,18 @@
       "attribute-references": []
     }
   ],
+  "role-collections": [
+    {
+      "name": "ExpenseManager_User",
+      "description": "Expense Manager User",
+      "role-template-references": [
+        "$XSAPPNAME.ExpenseManagerUser"
+      ]
+    }
+  ],
   "oauth2-configuration": {
     "redirect-uris": [
-      "https://*.cfapps.us10-003.hana.ondemand.com/**",
+      "https://*.hana.ondemand.com/**",
       "http://localhost:*/**",
       "https://davicastr.github.io/**"
     ]

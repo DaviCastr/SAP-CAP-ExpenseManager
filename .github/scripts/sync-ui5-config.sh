@@ -40,7 +40,8 @@ jq -n \
             scope: "openid \($appName).ExpenseManagerUser",
             redirectUri: $redirectUri,
             tokenEndpoint: "\($service)/auth/login",
-            refreshEndpoint: "\($service)/auth/refresh"
+            refreshEndpoint: "\($service)/auth/refresh",
+            passwordEndpoint: "\($service)/auth/password"
         }
     }' > "ui5/${CONFIG_FILE}.new"
 

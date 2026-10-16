@@ -15,6 +15,15 @@ export class XsuaaTokenExchangeError extends Error {
 
 }
 
+export class XsuaaTokenEndpointError extends Error {
+
+    public constructor(public readonly status: number, public readonly body: string) {
+        super(`XSUAA token endpoint returned ${status}: ${body}`);
+        this.name = 'XsuaaTokenEndpointError';
+    }
+
+}
+
 function tryParseVcap(): XsuaaCredentials | null {
     try {
         const vcap = JSON.parse(process.env.VCAP_SERVICES || '{}');
@@ -71,8 +80,7 @@ async function callXsuaaTokenEndpoint(
     });
 
     if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`XSUAA token endpoint returned ${response.status}: ${text}`);
+        throw new XsuaaTokenEndpointError(response.status, await response.text());
     }
 
     return response.json() as Promise<Record<string, unknown>>;
@@ -90,6 +98,17 @@ export async function exchangeAuthorizationCode(
         grant_type: 'authorization_code',
         code,
         redirect_uri: redirectUri
+    });
+}
+
+export async function loginWithPassword(
+    username: string,
+    password: string
+): Promise<Record<string, unknown>> {
+    return callXsuaaTokenEndpoint({
+        grant_type: 'password',
+        username,
+        password
     });
 }
 

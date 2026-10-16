@@ -1,5 +1,15 @@
 # Fluxo de Autenticação — ExpenseManager (GitHub Pages + XSUAA + CAP)
 
+## Login com email e senha (tela própria)
+
+A tela de login do app tem um formulário de email e senha. Nesse caminho **não há navegação**: o front faz um `fetch` para `POST /auth/password` com `{ username, password }`, o CAP chama o `/oauth/token` do XSUAA com `grant_type=password` (usando o `clientsecret`) e devolve os tokens. A senha só é repassada ao XSUAA e nunca é registrada no log.
+
+- Credenciais inválidas → `401 invalid_credentials`
+- Mais de 10 tentativas em 15 minutos pelo mesmo IP → `429 too_many_attempts`
+- XSUAA indisponível → `502 login_failed`
+
+O link "Entrar pela página de login da SAP" continua disponível e usa o fluxo descrito abaixo.
+
 ## O ponto que mais confunde
 
 O fluxo tem **duas naturezas de chamada diferentes**, e misturar as duas é o que gera confusão:
@@ -147,6 +157,6 @@ Um **JWT**: três partes em Base64 separadas por ponto (`header.payload.signatur
 | `webapp/auth/providers/GithubPagesAuthenticationProvider.ts` | Dispara o redirect e detecta o `?code=` no retorno |
 | `webapp/auth/storage/SessionStorage.ts` | Guarda sessão e `state` (sobrevive ao recarregamento) |
 | `webapp/Component.ts` | Route guard: sem sessão vai pra Login, com sessão vai pra Home |
-| `srv/auth/authRouter.ts` (CAP) | Expõe `POST /auth/login` e `POST /auth/refresh` |
+| `srv/auth/authRouter.ts` (CAP) | Expõe `POST /auth/login`, `POST /auth/password` e `POST /auth/refresh` |
 | `srv/auth/xsuaa-token.ts` (CAP) | Lê o `clientsecret` do `VCAP_SERVICES` e chama o `/oauth/token` |
 | `srv/middlewares/cors.ts` (CAP) | Libera o origin `https://davicastr.github.io` |

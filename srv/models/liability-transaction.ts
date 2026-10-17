@@ -71,7 +71,10 @@ export class LiabilityTransactionModel extends BaseModel {
 
                 Description: item.Description as string,
 
-                Currency: CurrencyModel.singleModel(item?.Currency as any),
+                Currency: CurrencyModel.singleModel({
+                    ...(item?.Currency as any),
+                    code: (item?.Currency as any)?.code || item?.Currency_code as string
+                }),
 
                 Amount: this.retrieveDecimal(item.Amount),
 

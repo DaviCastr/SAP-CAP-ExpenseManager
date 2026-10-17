@@ -25,6 +25,8 @@ import { EntityServiceImplementation } from '../entity/implementation';
 import { LiabilityServiceImplementation } from '../liability/implementation';
 import { LiabilityTransactionServiceImplementation } from '../liability-transaction/implementation';
 
+const DEFAULT_CURRENCY = 'BRL';
+
 export class BackupServiceImplementation extends BaseServiceImplementation<Backup> implements BackupService {
 
     public Repository: BackupRepository;
@@ -387,6 +389,8 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
             const tables = ['Persons', 'Shares', 'Entities', 'Categories', 'Cards', 'Invoices', 'Transactions', 'Liabilities', 'LiabilityTransactions'];
 
+            this.liabilityCurrencies.clear();
+
             for (const table of tables) {
 
                 await this.processTable(table, workbook, binaryFiles);
@@ -737,11 +741,17 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
     private buildLiabilities(row: any): Liability {
 
+        const currency = this.relation(row.Currency, { code: row.Moeda_code ?? row.Currency_code });
+
+        if (currency?.code) {
+            this.liabilityCurrencies.set(row.ID, currency.code);
+        }
+
         return {
             ID: row.ID,
             Name: this.get(row.Name, row.Nome),
             Description: this.get(row.Description, row.Descricao),
-            Currency: this.relation(row.Currency, { code: row.Moeda_code }),
+            Currency: currency,
             TotalAmount: this.get(row.TotalAmount, row.ValorTotal),
             OutstandingBalance: this.get(row.OutstandingBalance, row.SaldoEmAberto),
             PaymentPercentage: this.get(row.PaymentPercentage, row.PercentualPagamento),
@@ -756,14 +766,22 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
     }
 
 
+    /**
+     * Backups exported before the currency fix have no currency on the debt
+     * movements; those inherit the currency of their debt (or BRL) so the
+     * restored rows pass the mandatory check.
+     */
     private buildLiabilityTransactions(row: any): LiabilityTransaction {
+
+        const liability = this.relation(row.Liability, { ID: row.Divida_ID });
+        const currency = this.relation(row.Currency, { code: row.Moeda_code ?? row.Currency_code });
 
         return {
             ID: row.ID,
-            Liability: this.relation(row.Liability, { ID: row.Divida_ID }),
+            Liability: liability,
             Date: this.get(row.Date, row.Data),
             Description: this.get(row.Description, row.Descricao),
-            Currency: this.relation(row.Currency, { code: row.Moeda_code }),
+            Currency: { code: currency?.code || this.liabilityCurrencies.get(liability?.ID) || DEFAULT_CURRENCY },
             Amount: this.get(row.Amount, row.Valor),
             Type: this.get(row.Type, row.Tipo),
             ...this.audit(row)
@@ -771,6 +789,8 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
 
     }
 
+
+    private readonly liabilityCurrencies = new Map<string, string>();
 
     private readonly rowMappers: Record<string, (row: any, binaryFiles: Record<string, any>) => any> = {
 

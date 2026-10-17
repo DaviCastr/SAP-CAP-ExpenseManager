@@ -4,6 +4,7 @@ import { corsMiddleware } from './srv/middlewares/cors';
 import { databaseHealth } from './srv/middlewares/health';
 import { ServiceLocator } from './srv/infrastructure/ServiceLocator';
 import { DataRepair } from './srv/infrastructure/DataRepair';
+import { UserBootstrap } from './srv/auth/UserBootstrap';
 
 cds.on('bootstrap', (app) => {
     app.use(corsMiddleware);
@@ -15,7 +16,10 @@ cds.on('bootstrap', (app) => {
 // e depois a cada 4 horas. Sem mês/ano informados, a ação opera no
 // modo automático (faturas não enviadas + dívidas ainda não remetidas
 // no mês corrente).
-cds.on('served', () => DataRepair.run());
+cds.on('served', async () => {
+    await UserBootstrap.run();
+    await DataRepair.run();
+});
 
 cds.on('listening', async () => {
 

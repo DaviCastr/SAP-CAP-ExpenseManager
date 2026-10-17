@@ -61,6 +61,10 @@
       "move_media_data_in_db": true
     },
     "requires": {
+      "auth": {
+        "kind": "custom",
+        "impl": "srv/auth/app-auth"
+      },
       "[development]": {
         "requires": {
           "db": {
@@ -68,36 +72,6 @@
               "database": ":memory:"
             },
             "kind": "sqlite"
-          },
-          "auth": {
-            "kind": "basic",
-            "users": {
-              "davi": {
-                "password": "123456",
-                "roles": [
-                  "admin"
-                ],
-                "attr": {
-                  "id": 1,
-                  "groups": [
-                    "group1",
-                    "group2"
-                  ]
-                }
-              },
-              "beatriz": {
-                "password": "123456",
-                "roles": [
-                  "read_only_user"
-                ],
-                "attr": {
-                  "id": 2,
-                  "groups": [
-                    "group1"
-                  ]
-                }
-              }
-            }
           }
         }
       },
@@ -105,9 +79,6 @@
         "requires": {
           "db": {
             "kind": "hana"
-          },
-          "auth": {
-            "kind": "xsuaa"
           }
         },
         "hana": {

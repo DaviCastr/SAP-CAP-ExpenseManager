@@ -7,6 +7,10 @@ on:
         description: Build and deploy the CAP application
         type: boolean
         default: true
+      configure_auth:
+        description: Configure the own login (token secret and first administrator)
+        type: boolean
+        default: true
       configure_smtp:
         description: Configure email (SMTP)
         type: boolean
@@ -28,8 +32,6 @@ jobs:
     env:
       CF_APP: ${{ vars.CF_APP || 'ExpenseManager-srv' }}
       HANA_INSTANCE: ${{ vars.HANA_INSTANCE }}
-      UAA_INSTANCE: ${{ vars.UAA_INSTANCE || 'ExpenseManager-uaa' }}
-      UAA_KEY: ${{ vars.UAA_KEY || 'ExpenseManager-uaa-key' }}
       UI5_REPOSITORY: ${{ vars.UI5_REPOSITORY || 'DaviCastr/SAP-UI5-ExpenseManager' }}
       UI5_PAGES_URL: ${{ vars.UI5_PAGES_URL || 'https://davicastr.github.io/SAP-UI5-ExpenseManager/' }}
       GIT_AUTHOR_NAME: Davi Castro
@@ -83,6 +85,15 @@ jobs:
       - name: Build and deploy CAP
         if: inputs.deploy_cap
         run: bash .github/scripts/deploy-cap.sh
+
+      - name: Configure login
+        if: inputs.configure_auth
+        env:
+          SETTINGS_SECRET: ${{ secrets.SETTINGS_SECRET }}
+          ADMIN_EMAIL: ${{ vars.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          RESTART_APP: ${{ !inputs.configure_smtp }}
+        run: bash .github/scripts/configure-auth.sh
 
       - name: Configure email
         if: inputs.configure_smtp

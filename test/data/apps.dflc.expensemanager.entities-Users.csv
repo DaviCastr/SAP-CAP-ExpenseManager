@@ -1,0 +1,4 @@
+ID;Email;Name;PasswordHash;Role;Status;MustChangePassword;TokenVersion
+u1111111-1111-1111-1111-111111111111;davi@teste.com;Davi Ferreira;scrypt$16384$8$1$3qcwc7JvgNJss23sa+duYA==$yYIDDU13252E30YDpPxayxYjzUKnQ8YyKB/CTgofsFX3Swzp5gqc3jNB7IPOiL28m5UTa2SwVGvI0pbdJp8BVQ==;Admin;Active;false;0
+u2222222-2222-2222-2222-222222222222;beatriz@teste.com;Beatriz;scrypt$16384$8$1$3qcwc7JvgNJss23sa+duYA==$yYIDDU13252E30YDpPxayxYjzUKnQ8YyKB/CTgofsFX3Swzp5gqc3jNB7IPOiL28m5UTa2SwVGvI0pbdJp8BVQ==;User;Active;false;0
+u3333333-3333-3333-3333-333333333333;novo@teste.com;Novo Usuario;scrypt$16384$8$1$3qcwc7JvgNJss23sa+duYA==$yYIDDU13252E30YDpPxayxYjzUKnQ8YyKB/CTgofsFX3Swzp5gqc3jNB7IPOiL28m5UTa2SwVGvI0pbdJp8BVQ==;User;Active;true;0

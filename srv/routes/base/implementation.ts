@@ -196,6 +196,11 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
             return this.returnRejectMessage(Request, oResult);
         }
 
+        // O afterRead filtra os $expand por permissão direto nos objetos lidos.
+        // Essa versão filtrada é a fonte dos relacionamentos ao remontar o
+        // resultado (a cópia bruta acima é anterior ao filtro).
+        const filteredData = oEntities.map(item => this.clone(item));
+
         oEntities.length = 0;
         oEntities.push(...entitiesData);
 
@@ -207,10 +212,27 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
 
             processedData = processedData.map((processedItem, index) => {
 
-                const originalItem = oEntities[index] || oEntities[0];
+                // Casa pelo ID (e rascunho/ativo), não pela posição: linhas
+                // removidas pelo filtro deslocariam os índices.
+                let originalIndex = processedItem ? (oEntities as any[]).findIndex((item: any) =>
+                    item?.ID !== undefined && item.ID === processedItem.ID &&
+                    (item.IsActiveEntity === undefined || processedItem.IsActiveEntity === undefined ||
+                        item.IsActiveEntity === processedItem.IsActiveEntity)) : -1;
+
+                // Sem ID para casar: usa a posição só se nenhuma linha foi removida.
+                if (originalIndex < 0 && processedData.length === oEntities.length) {
+                    originalIndex = index;
+                }
+
+                // Cópia bruta só com os itens de $expand que o filtro manteve
+                // (os objetos filtrados vêm convertidos pelos models e perdem
+                // campos técnicos, como os do draft, então não servem direto).
+                const originalItem = originalIndex >= 0
+                    ? this.pruneByFiltered(oEntities[originalIndex], filteredData[originalIndex])
+                    : undefined;
 
                 if (!originalItem || !processedItem) {
-                    return processedItem || originalItem;
+                    return processedItem;
                 }
 
                 const draftFields = { ...this.getDraftFields(originalItem) };
@@ -245,6 +267,53 @@ export abstract class BaseRouteImplementation<Entity> implements BaseRoute {
             }
 
         }
+
+    }
+
+
+    /**
+     * Remove da cópia bruta os itens de $expand que o afterRead descartou por
+     * falta de permissão (casando pelo ID), mantendo os demais intactos.
+     */
+    private pruneByFiltered(raw: any, filtered: any): any {
+
+        if (!raw || typeof raw !== 'object' || !filtered || typeof filtered !== 'object') {
+            return raw;
+        }
+
+        const pruned = { ...raw };
+
+        Object.keys(raw).forEach(field => {
+
+            const rawValue = raw[field];
+
+            if (!(field in filtered) || field.startsWith('Draft')) return;
+
+            const filteredValue = filtered[field];
+
+            if (Array.isArray(rawValue)) {
+
+                if (!Array.isArray(filteredValue)) {
+                    pruned[field] = [];
+                    return;
+                }
+
+                pruned[field] = rawValue
+                    .map(item => {
+                        const match = filteredValue.find((kept: any) => kept?.ID !== undefined && kept.ID === item?.ID);
+                        return match ? this.pruneByFiltered(item, match) : undefined;
+                    })
+                    .filter(item => item !== undefined);
+
+            } else if (rawValue && typeof rawValue === 'object' && rawValue.ID !== undefined) {
+
+                pruned[field] = filteredValue ? this.pruneByFiltered(rawValue, filteredValue) : null;
+
+            }
+
+        });
+
+        return pruned;
 
     }
 

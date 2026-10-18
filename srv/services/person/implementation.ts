@@ -6,7 +6,7 @@ import { PersonModel } from "@/models/person";
 import { PersonRepository } from "@/repositories/person";
 import { BaseServiceImplementation } from "../base/implementation";
 import { ShareRepository } from "@/repositories/share";
-import { User } from "@sap/cds";
+import cds, { User } from "@sap/cds";
 import { EntityRepository } from '@/repositories/entity';
 import { PermissionDenied } from "@/errors/permission-denied";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
@@ -393,6 +393,30 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             const request = ServiceLocator.getRequest();
 
             const { PersonId, Year, Month } = request.data;
+
+            // Só o agendador interno (usuário privilegiado) envia para todas as
+            // pessoas; pela API é obrigatório informar a pessoa e ter acesso a ela.
+            const oIsPrivileged = request.user instanceof (cds.User as any).Privileged;
+
+            if (!oIsPrivileged) {
+
+                if (!PersonId) {
+
+                    return left(new PermissionDenied(
+                        this.getMessage('error.modificationPermissionDenied', request, this.entityCode()) || 'error.modificationPermissionDenied',
+                        403,
+                        new Error().stack as string
+                    ));
+
+                }
+
+                const oPermission = await this.checkPermissionByPersonId(request.user, PersonId, this.getPermissionForRead());
+
+                if (oPermission.isLeft()) {
+                    return oPermission;
+                }
+
+            }
 
             this.validateEmailConfiguration(request);
 

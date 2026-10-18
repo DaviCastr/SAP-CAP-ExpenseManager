@@ -11,6 +11,8 @@ import { BaseRepository } from "@/repositories/base";
 import { EntityModel } from "@/models/entity";
 import { Orchestrator } from "@/infrastructure/Orchestrator";
 import { ServiceLocator } from "@/infrastructure/ServiceLocator";
+import { ServiceRegistry } from "@/infrastructure/ServiceRegistry";
+import { EntitiesCodes } from "@/constants/entities-codes";
 
 export abstract class BaseServiceImplementation<Entity> implements BaseService<Entity> {
 
@@ -111,17 +113,17 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
                 this.ensureParentField(Request, parentField);
             }
 
-            if (oEntityCode == 8) {
+            // $expand não dispara os handlers de READ das entidades expandidas,
+            // então o filtro de compartilhamento de cada uma vai junto na query.
+            this.applyShareWhereToExpands(Request.query.SELECT.columns, Request.target, oUserId);
+
+            // Backups não pertencem a uma pessoa: cada usuário só vê os seus.
+            if (oEntityCode == EntitiesCodes.Backups) {
+                Request.query.where([{ ref: ['createdBy'] }, '=', { val: oUserId }]);
                 return right(true);
             }
 
-            Request.query.where([
-                '(',
-                { ref: [...oPersonPath, 'createdBy'] }, '=', { val: oUserId },
-                'or',
-                { ref: [...oPersonPath, 'ID'] }, 'in', this.buildPermissionExists(oUserId, oEntityCode as number),
-                ')'
-            ]);
+            Request.query.where(this.buildShareWhere(oUserId));
 
             return right(true);
 
@@ -319,21 +321,18 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
                     if (oShares.length > 0) {
 
+                        // Basta um share conceder a permissão (antes só o último
+                        // share contava); leitura exige Permission >= 1, igual
+                        // ao filtro aplicado na query (beforeRead).
                         for (const oShare of oShares) {
 
                             const oEntities = await this.EntityRepository.findByShareId(oShare.Id);
 
-                            if (oEntities) {
+                            if (oEntities?.some((oEntity: EntityModel) =>
+                                oEntity.Entity == this.entityCode() && Number(oEntity.Permission) >= Permision)) {
 
-                                if (Permision > 1) {
-
-                                    oPermissionByShare = oEntities.filter((oEntity: EntityModel) => oEntity.Entity == this.entityCode() && oEntity.Permission >= Permision).length > 0;
-
-                                } else {
-
-                                    oPermissionByShare = oEntities.filter((oEntity: EntityModel) => oEntity.Entity == this.entityCode()).length > 0;
-
-                                }
+                                oPermissionByShare = true;
+                                break;
 
                             }
 
@@ -430,6 +429,63 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
             request.locale || 'pt',
             finalArgs
         ) as string;
+
+    }
+
+
+    /**
+     * Restrição de leitura da entidade: dono da pessoa ou usuário com share
+     * que inclua esta entidade (relativa à própria entidade, via personPath).
+     */
+    public buildShareWhere(oUserId: string): any[] {
+
+        const oPersonPath = this.personPath();
+
+        return [
+            '(',
+            { ref: [...oPersonPath, 'createdBy'] }, '=', { val: oUserId },
+            'or',
+            { ref: [...oPersonPath, 'ID'] }, 'in', this.buildPermissionExists(oUserId, this.entityCode()),
+            ')'
+        ];
+
+    }
+
+
+    /**
+     * Aplica, recursivamente, a restrição de compartilhamento de cada entidade
+     * expandida no where do próprio $expand (ex.: Persons?$expand=Liabilities
+     * só traz as dívidas se o share incluir Liabilities).
+     */
+    protected applyShareWhereToExpands(Columns: any[] | undefined, Target: any, oUserId: string): void {
+
+        for (const oColumn of Columns ?? []) {
+
+            if (!oColumn?.expand || !oColumn.ref) continue;
+
+            const oElement = Target?.elements?.[oColumn.ref[oColumn.ref.length - 1]];
+            const oChild = oElement?._target ?? cds.model?.definitions?.[oElement?.target];
+
+            if (!oChild) continue;
+
+            const sChildName = String(oChild.name).replace(/\.drafts$/, '').split('.').pop() as string;
+            const oChildService = ServiceRegistry.get(sChildName) as BaseServiceImplementation<any> | undefined;
+
+            if (oChildService && oChildService.entityCode() != EntitiesCodes.Backups) {
+
+                const aShareWhere = oChildService.buildShareWhere(oUserId);
+
+                oColumn.where = oColumn.where?.length
+                    ? ['(', ...oColumn.where, ')', 'and', ...aShareWhere]
+                    : aShareWhere;
+
+            }
+
+            if (Array.isArray(oColumn.expand)) {
+                this.applyShareWhereToExpands(oColumn.expand, oChild, oUserId);
+            }
+
+        }
 
     }
 

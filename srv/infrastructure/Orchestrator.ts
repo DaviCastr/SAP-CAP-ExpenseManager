@@ -86,7 +86,7 @@ export class Orchestrator {
         for (const key of Object.keys(obj)) {
 
             const value = obj[key];
-            const service = ServiceRegistry.get(key);
+            const service = ServiceRegistry.get(key) ?? Orchestrator.toOneService(key, value);
 
             if (!service) continue;
 
@@ -105,22 +105,34 @@ export class Orchestrator {
 
             } else if (this.isValidAssociation(key, value)) {
 
+                // processAfterRead devolve um Either com as linhas permitidas.
                 const result = await service.processAfterRead?.([value], user);
+                const allowed = result?.isRight?.() ? result.value : [];
 
-                if (!result || result.length === 0) {
-
-                    obj[key] = null;
-
-                } else {
-
-                    obj[key] = result[0];
-                }
+                obj[key] = allowed?.length ? allowed[0] : null;
 
             }
 
         }
 
         return right(obj);
+    }
+
+
+    /**
+     * Associações to-one usam o nome no singular (Person, Card, Invoice,
+     * Category, Liability, Share), mas o registro é pelo nome da entidade no
+     * plural. Só para leitura: o CAP não aplica where em $expand to-one, então
+     * a permissão delas é checada aqui.
+     */
+    static toOneService(key: string, value: any) {
+
+        if (!value || Array.isArray(value) || typeof value !== 'object' || !value.ID) return undefined;
+
+        const plural = key.endsWith('y') ? `${key.slice(0, -1)}ies` : `${key}s`;
+
+        return ServiceRegistry.get(plural);
+
     }
 
 

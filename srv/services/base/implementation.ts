@@ -192,6 +192,23 @@ export abstract class BaseServiceImplementation<Entity> implements BaseService<E
 
     public async processBeforeUpdate(Entity: Entity, User: User): Promise<Either<AbstractError, boolean>> {
 
+        // A permissão também vale para a pessoa atual do registro, não só para a
+        // informada no payload: senão daria para "mover" um item de outra pessoa
+        // para uma pessoa própria e assim editá-lo.
+        const oCurrentPersonId = (Entity as any)?.ID
+            ? await this.Repository.findPersonIdById((Entity as any).ID)
+            : null;
+
+        if (oCurrentPersonId) {
+
+            const oCurrent = await this.checkPermissionByPersonId(User, oCurrentPersonId, this.getPermissionForUpdate());
+
+            if (oCurrent.isLeft()) {
+                return oCurrent;
+            }
+
+        }
+
         const result = await this.checkPermission(Entity, User, this.getPermissionForUpdate());
 
         if (result.isLeft()) {

@@ -461,16 +461,79 @@ export class BackupServiceImplementation extends BaseServiceImplementation<Backu
         const existingIds = new Set(existing?.map((r: any) => r.Id));
         const inserts: any[] = [];
 
+        const oUser = ServiceLocator.getRequest()?.user;
+        const oAllowedByPerson = new Map<string, boolean>();
+
         for (const row of rows) {
 
             if (existingIds.has(row.ID)) continue;
 
             const entity = this.mapRowToEntity(table, row, binaryFiles);
+
+            // O arquivo não decide a autoria: tudo entra como de quem importa
+            // (uma pessoa nova passa a pertencer a ele).
+            entity.createdBy = oUser?.id;
+            entity.modifiedBy = oUser?.id;
+
+            // Linhas filhas só entram se quem importa puder criar nesta entidade
+            // para a pessoa dona da linha (mesma regra de share do app). Sem isso
+            // um backup forjado criaria Shares/Entities dando acesso a pessoas
+            // de outros usuários.
+            if (table !== 'Persons') {
+
+                const oPersonId = await this.resolveImportPersonId(table, entity);
+
+                if (!oPersonId) continue;
+
+                if (!oAllowedByPerson.has(oPersonId)) {
+                    const oPermission = await service.checkPermissionByPersonId(oUser as any, oPersonId, 2);
+                    oAllowedByPerson.set(oPersonId, oPermission.isRight());
+                }
+
+                if (!oAllowedByPerson.get(oPersonId)) continue;
+
+            }
+
             inserts.push(this.cleanEntity(entity));
 
         }
 
         await this.batchInsert(table, inserts);
+
+    }
+
+
+    /**
+     * Pessoa dona de uma linha importada, pelo pai direto (Person) ou subindo
+     * pelo pai já gravado (Share, Card, Invoice, Liability).
+     */
+    private async resolveImportPersonId(table: string, entity: any): Promise<string | null> {
+
+        const parents: Record<string, [string, string | null]> = {
+            Shares: ['Person', null],
+            Categories: ['Person', null],
+            Cards: ['Person', null],
+            Liabilities: ['Person', null],
+            Entities: ['Share', 'Shares'],
+            Invoices: ['Card', 'Cards'],
+            Transactions: ['Invoice', 'Invoices'],
+            LiabilityTransactions: ['Liability', 'Liabilities']
+        };
+
+        const parent = parents[table];
+
+        if (!parent) return null;
+
+        const [field, parentTable] = parent;
+        const parentId = entity?.[field]?.ID ?? entity?.[`${field}_ID`];
+
+        if (!parentId) return null;
+
+        if (!parentTable) return parentId;
+
+        const parentService = ServiceRegistry.get(parentTable) as BaseServiceImplementation<any> | undefined;
+
+        return await parentService?.Repository.findPersonIdById(parentId) ?? null;
 
     }
 

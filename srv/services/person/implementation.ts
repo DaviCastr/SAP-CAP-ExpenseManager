@@ -143,8 +143,29 @@ export class PersonServiceImplementation extends BaseServiceImplementation<Perso
             const visibleCardsByPerson = (cardsByPerson || [])
                 .filter(card => authorizedCardIds.has(card.Id));
 
-            const liabilitiesByPerson =
+            const allLiabilitiesByPerson =
                 await this.LiabilityRepository.findByPersonId(personIds) || [];
+
+            // Mesma regra dos cartões: só dívidas que o usuário pode ler entram
+            // nos totais da pessoa (sem share de Liabilities, nada é somado)
+            const resultAuthLiabilities =
+                await (ServiceRegistry.get('Liabilities') as LiabilityServiceImplementation).afterRead(
+                    allLiabilitiesByPerson.map(liability =>
+                        liability.toEntityObject()) as any,
+                    User
+                );
+
+            if (resultAuthLiabilities.isLeft()) {
+                return left(resultAuthLiabilities.value);
+            }
+
+            const authorizedLiabilityIds = new Set<string>(
+                (resultAuthLiabilities.value || []).map(
+                    (liability: any) => liability.ID as string)
+            );
+
+            const liabilitiesByPerson = allLiabilitiesByPerson
+                .filter(liability => authorizedLiabilityIds.has(liability.Id as string));
 
             const mapCards = new Map<string, any[]>();
 
